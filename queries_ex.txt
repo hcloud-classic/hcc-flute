@@ -1,0 +1,48 @@
+//// volume
+// list
+query List_Volume {
+  list_volume {
+    uuid
+    size
+    type
+    server_uuid
+  }
+}
+
+// read
+query Select_Volume {
+  volume(uuid: "7284772e-3811-4030-a311-2da8ff705850") {
+    uuid
+    size
+    type
+    server_uuid
+  }
+}
+
+// create
+mutation Create_Volume {
+  create_volume(size: 1024000, type: "ext4", server_uuid: "7284772e-3811-4030-a311-2da8ff705850") {
+    size
+    type
+    server_uuid
+  }
+}
+
+// update
+mutation Update_Volume {
+  update_volume(uuid: "1dad3b09-acaf-44fe-9fdd-5d3a1323e5a2", size: 1024, type: "zfs", server_uuid: "7284772e-3811-4030-a311-2da8ff705850") {
+    uuid
+    size
+    type
+    server_uuid
+  }
+}
+
+// delete
+mutation _ {
+  delete_volume(uuid: "05333605-561d-4e8c-b566-07c92d915657") {
+    uuid
+  }
+}
+
+// test

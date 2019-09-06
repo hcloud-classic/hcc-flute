@@ -1,0 +1,57 @@
+stages:
+    - init
+    - test
+    - build
+    - run
+
+before_script:
+    - export GOROOT="/opt/go"
+    - export GOPATH="/home/gitlab-runner/go"
+    - export PATH="$PATH:$GOROOT/bin:$GOPATH/bin"
+    - gmake dep
+
+copy_dir:
+    stage: init
+    script:
+    - gmake copy_dir
+
+unit_tests:
+  stage: test
+  script:
+    - gmake test
+
+race_detector:
+  stage: test
+  script:
+    - gmake race
+
+code_coverage:
+  stage: test
+  script:
+    - gmake coverage
+  only:
+  - master
+
+go_report:
+  stage: test
+  script:
+    - gmake goreport
+  only:
+  - master
+
+lint_code:
+  stage: test
+  script:
+    - gmake lint_dep
+    - gmake lint
+
+build:
+  stage: build
+  script:
+    - gmake
+    - if pgrep GraphQL_Cello; then killall GraphQL_Cello; fi
+    - nohup sudo $PWD/GraphQL_Cello &
+    - echo "Finished"
+  only:
+  - master
+
