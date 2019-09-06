@@ -53,7 +53,7 @@ goreport_dep: ## Get the dependencies for goreport
 goreport: goreport_dep ## Make goreport
 	@git submodule sync --recursive
 	@git submodule update --init --recursive
-	@./graphql_cello_badge/update_goreport_grade.sh
+	@./hcloud-badge/hcloud_badge.sh flute
 
 build: ## Build the binary file
 	@$(GOROOT)/bin/go build -o $(PROJECT_NAME) main.go
