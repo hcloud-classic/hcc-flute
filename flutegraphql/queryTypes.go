@@ -1,9 +1,9 @@
-package cellographql
+package flutegraphql
 
 import (
-	"GraphQL_Cello/cellologger"
-	"GraphQL_Cello/cellomysql"
-	"GraphQL_Cello/cellotypes"
+	"GraphQL_Flute/flutelogger"
+	"GraphQL_Flute/flutemysql"
+	"GraphQL_Flute/flutetypes"
 	"github.com/graphql-go/graphql"
 )
 
@@ -24,11 +24,11 @@ var queryTypes = graphql.NewObject(
 					},
 				},
 				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-					cellologger.Logger.Println("Resolving: volume")
+					flutelogger.Logger.Println("Resolving: volume")
 
 					requestedUUID, ok := p.Args["uuid"].(string)
 					if ok {
-						volume := new(cellotypes.Volume)
+						volume := new(flutetypes.Volume)
 
 						var uuid string
 						var size int
@@ -36,9 +36,9 @@ var queryTypes = graphql.NewObject(
 						var serverUUID string
 
 						sql := "select * from volume where uuid = ?"
-						err := cellomysql.Db.QueryRow(sql, requestedUUID).Scan(&uuid, &size, &_type, &serverUUID)
+						err := flutemysql.Db.QueryRow(sql, requestedUUID).Scan(&uuid, &size, &_type, &serverUUID)
 						if err != nil {
-							cellologger.Logger.Println(err)
+							flutelogger.Logger.Println(err)
 							return nil, nil
 						}
 
@@ -60,18 +60,18 @@ var queryTypes = graphql.NewObject(
 				Type:        graphql.NewList(volumeType),
 				Description: "Get volume list",
 				Resolve: func(params graphql.ResolveParams) (interface{}, error) {
-					cellologger.Logger.Println("Resolving: list_volume")
+					flutelogger.Logger.Println("Resolving: list_volume")
 
-					var volumes []cellotypes.Volume
+					var volumes []flutetypes.Volume
 					var uuid string
 					var size int
 					var _type string
 					var serverUUID string
 
 					sql := "select * from volume"
-					stmt, err := cellomysql.Db.Query(sql)
+					stmt, err := flutemysql.Db.Query(sql)
 					if err != nil {
-						cellologger.Logger.Println(err)
+						flutelogger.Logger.Println(err)
 						return nil, nil
 					}
 					defer stmt.Close()
@@ -79,12 +79,12 @@ var queryTypes = graphql.NewObject(
 					for stmt.Next() {
 						err := stmt.Scan(&uuid, &size, &_type, &serverUUID)
 						if err != nil {
-							cellologger.Logger.Println(err)
+							flutelogger.Logger.Println(err)
 						}
 
-						volume := cellotypes.Volume{UUID: uuid, Size: size, Type: _type, ServerUUID: serverUUID}
+						volume := flutetypes.Volume{UUID: uuid, Size: size, Type: _type, ServerUUID: serverUUID}
 
-						cellologger.Logger.Println(volume)
+						flutelogger.Logger.Println(volume)
 						volumes = append(volumes, volume)
 					}
 

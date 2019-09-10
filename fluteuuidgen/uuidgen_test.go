@@ -1,4 +1,4 @@
-package cellouuidgen
+package fluteuuidgen
 
 import "testing"
 

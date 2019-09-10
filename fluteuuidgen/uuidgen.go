@@ -1,7 +1,7 @@
-package cellouuidgen
+package fluteuuidgen
 
 import (
-	"GraphQL_Cello/cellologger"
+	"GraphQL_Flute/flutelogger"
 	"github.com/nu7hatch/gouuid"
 )
 
@@ -9,7 +9,7 @@ import (
 func Uuidgen() (string, error) {
 	out, err := uuid.NewV4()
 	if err != nil {
-		cellologger.Logger.Println(err)
+		flutelogger.Logger.Println(err)
 		return "", err
 	}
 

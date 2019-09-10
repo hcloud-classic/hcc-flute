@@ -1,4 +1,4 @@
-PROJECT_NAME := "GraphQL_Cello"
+PROJECT_NAME := "GraphQL_Flute"
 PKG_LIST := $(shell go list ${PROJECT_NAME}/...)
 
 .PHONY: all dep build docker clean gofmt goreport goreport_deb test coverage coverhtml lint
@@ -59,9 +59,9 @@ build: ## Build the binary file
 	@$(GOROOT)/bin/go build -o $(PROJECT_NAME) main.go
 
 docker: ## Build docker image and push it to private docker registry
-	@sudo docker build -t graphql_cello .
-	@sudo docker tag graphql_cello:latest 192.168.110.230:5000/graphql_cello:latest
-	@sudo docker push 192.168.110.230:5000/graphql_cello:latest
+	@sudo docker build -t graphql_flute .
+	@sudo docker tag graphql_flute:latest 192.168.110.250:5000/graphql_flute:latest
+	@sudo docker push 192.168.110.250:5000/graphql_flute:latest
 
 clean: ## Remove previous build
 	@rm -f $(PROJECT_NAME)

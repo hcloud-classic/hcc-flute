@@ -1,4 +1,4 @@
-package cellocheckroot
+package flutecheckroot
 
 import "testing"
 

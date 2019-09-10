@@ -1,4 +1,4 @@
-package cellotypes
+package flutetypes
 
 // Volume : Struct of volume
 type Volume struct {

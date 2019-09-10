@@ -1,4 +1,4 @@
-package cellologger
+package flutelogger
 
 import (
 	"fmt"
@@ -10,7 +10,7 @@ import (
 )
 
 // LogName : Log folder name. Also used as log prefix.
-var LogName = "cello"
+var LogName = "flute"
 
 // Logger : Pointer of logger
 var Logger *log.Logger

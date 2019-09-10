@@ -49,8 +49,8 @@ build:
   stage: build
   script:
     - gmake
-    - if pgrep GraphQL_Cello; then killall GraphQL_Cello; fi
-    - nohup sudo $PWD/GraphQL_Cello &
+    - if pgrep GraphQL_Flute; then killall GraphQL_Flute; fi
+    - nohup sudo $PWD/GraphQL_Flute &
     - echo "Finished"
   only:
   - master

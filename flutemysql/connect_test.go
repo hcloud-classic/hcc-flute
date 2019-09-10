@@ -1,20 +1,20 @@
-package cellomysql
+package flutemysql
 
 import (
-	"GraphQL_Cello/cellocheckroot"
-	"GraphQL_Cello/cellologger"
+	"GraphQL_Flute/flutecheckroot"
+	"GraphQL_Flute/flutelogger"
 	"testing"
 )
 
 func Test_DB_Prepare(t *testing.T) {
-	if !cellocheckroot.CheckRoot() {
+	if !flutecheckroot.CheckRoot() {
 		t.Fatal("Failed to get root permission!")
 	}
 
-	if !cellologger.Prepare() {
+	if !flutelogger.Prepare() {
 		t.Fatal("Failed to prepare logger!")
 	}
-	defer cellologger.FpLog.Close()
+	defer flutelogger.FpLog.Close()
 
 	err := Prepare()
 	if err != nil {

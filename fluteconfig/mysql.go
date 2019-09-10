@@ -1,4 +1,4 @@
-package celloconfig
+package fluteconfig
 
 // MysqlID : MySQL server login id
 var MysqlID = "root"
@@ -7,10 +7,10 @@ var MysqlID = "root"
 var MysqlPassword = "gojolla"
 
 // MysqlAddress : MySQL server address
-var MysqlAddress = "192.168.110.230"
+var MysqlAddress = "192.168.110.240"
 
 // MysqlPort : MySQL server port number
 var MysqlPort = "3306"
 
 // MysqlDatabase : MySQL server database name of module
-var MysqlDatabase = "cello"
+var MysqlDatabase = "flute"

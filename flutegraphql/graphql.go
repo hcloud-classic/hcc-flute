@@ -1,4 +1,4 @@
-package cellographql
+package flutegraphql
 
 import (
 	"github.com/graphql-go/graphql"

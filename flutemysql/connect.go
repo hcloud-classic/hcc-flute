@@ -1,8 +1,8 @@
-package cellomysql
+package flutemysql
 
 import (
-	"GraphQL_Cello/celloconfig"
-	"GraphQL_Cello/cellologger"
+	"GraphQL_Flute/fluteconfig"
+	"GraphQL_Flute/flutelogger"
 	"database/sql"
 	_ "github.com/go-sql-driver/mysql" // Needed for connect mysql
 )
@@ -13,18 +13,18 @@ var Db *sql.DB
 // Prepare : Connect to mysql and prepare pointer of mysql connection
 func Prepare() error {
 	var err error
-	Db, err = sql.Open("mysql", celloconfig.MysqlID+":"+celloconfig.MysqlPassword+"@tcp("+
-		celloconfig.MysqlAddress+":"+celloconfig.MysqlPort+")/"+celloconfig.MysqlDatabase+"?parseTime=true")
+	Db, err = sql.Open("mysql", fluteconfig.MysqlID+":"+fluteconfig.MysqlPassword+"@tcp("+
+		fluteconfig.MysqlAddress+":"+fluteconfig.MysqlPort+")/"+fluteconfig.MysqlDatabase+"?parseTime=true")
 	if err != nil {
-		cellologger.Logger.Println(err)
+		flutelogger.Logger.Println(err)
 		return err
 	}
 
-	cellologger.Logger.Println("db is connected")
+	flutelogger.Logger.Println("db is connected")
 
 	err = Db.Ping()
 	if err != nil {
-		cellologger.Logger.Println(err.Error())
+		flutelogger.Logger.Println(err.Error())
 		return err
 	}
 

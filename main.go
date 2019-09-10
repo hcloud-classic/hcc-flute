@@ -1,11 +1,11 @@
 package main
 
 import (
-	"GraphQL_flute/flutecheckroot"
-	"GraphQL_flute/fluteconfig"
-	"GraphQL_flute/flutegraphql"
-	"GraphQL_flute/flutelogger"
-	"GraphQL_flute/flutemysql"
+	"GraphQL_Flute/flutecheckroot"
+	"GraphQL_Flute/fluteconfig"
+	"GraphQL_Flute/flutegraphql"
+	"GraphQL_Flute/flutelogger"
+	"GraphQL_Flute/flutemysql"
 	"net/http"
 )
 
