@@ -20,11 +20,16 @@ query Select_Volume {
 }
 
 // create
-mutation Create_Volume {
-  create_volume(size: 1024000, type: "ext4", server_uuid: "7284772e-3811-4030-a311-2da8ff705850") {
-    size
-    type
-    server_uuid
+mutation _ {
+  create_node(ipmi_ip: "172.31.0.1", detail: "Compute1") {
+    uuid
+    mac_addr
+    ipmi_ip
+    status
+    cpu
+    memory
+    detail
+    created_at
   }
 }
 
