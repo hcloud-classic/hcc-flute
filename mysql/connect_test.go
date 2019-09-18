@@ -1,20 +1,20 @@
-package flutemysql
+package mysql
 
 import (
-	"GraphQL_Flute/flutecheckroot"
-	"GraphQL_Flute/flutelogger"
+	"hcloud-flute/checkroot"
+	"hcloud-flute/logger"
 	"testing"
 )
 
 func Test_DB_Prepare(t *testing.T) {
-	if !flutecheckroot.CheckRoot() {
+	if !checkroot.CheckRoot() {
 		t.Fatal("Failed to get root permission!")
 	}
 
-	if !flutelogger.Prepare() {
+	if !logger.Prepare() {
 		t.Fatal("Failed to prepare logger!")
 	}
-	defer flutelogger.FpLog.Close()
+	defer logger.FpLog.Close()
 
 	err := Prepare()
 	if err != nil {

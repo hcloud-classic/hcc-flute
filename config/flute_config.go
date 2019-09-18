@@ -1,4 +1,4 @@
-package fluteconfig
+package config
 
 import "github.com/Terry-Mao/goconf"
 
@@ -8,8 +8,6 @@ type fluteConfig struct {
 	MysqlConfig *goconf.Section
 	HttpConfig  *goconf.Section
 }
-
-var FluteConfig fluteConfig
 
 /*-----------------------------------
          Config File Example

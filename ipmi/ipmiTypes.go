@@ -1,4 +1,4 @@
-package fluteipmi
+package ipmi
 
 type IpmiNode struct {
 	OdataContext      string `json:"@odata.context"`

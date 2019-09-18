@@ -1,4 +1,4 @@
-package fluteuuidgen
+package uuidgen
 
 import "testing"
 

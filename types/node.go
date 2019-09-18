@@ -1,4 +1,4 @@
-package flutetypes
+package types
 
 import "time"
 

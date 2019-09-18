@@ -1,4 +1,4 @@
-package flutetypes
+package types
 
 // Ipmi : Struct of ipmi
 type Ipmi struct {

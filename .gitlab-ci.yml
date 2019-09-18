@@ -49,8 +49,8 @@ build:
   stage: build
   script:
     - gmake
-    - if pgrep GraphQL_Flute; then killall GraphQL_Flute; fi
-    - nohup sudo $PWD/GraphQL_Flute &
+    - if pgrep hcloud-flute; then killall hcloud-flute; fi
+    - nohup sudo $PWD/hcloud-flute &
     - echo "Finished"
   only:
   - master

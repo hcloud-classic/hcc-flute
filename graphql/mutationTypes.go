@@ -1,10 +1,10 @@
-package flutegraphql
+package graphql
 
 import (
-	"GraphQL_Flute/fluteipmi"
-	"GraphQL_Flute/flutelogger"
-	"GraphQL_Flute/flutemysql"
-	"GraphQL_Flute/flutetypes"
+	"hcloud-flute/ipmi"
+	"hcloud-flute/logger"
+	"hcloud-flute/mysql"
+	"hcloud-flute/types"
 	"github.com/graphql-go/graphql"
 )
 
@@ -27,55 +27,55 @@ var mutationTypes = graphql.NewObject(graphql.ObjectConfig{
 				},
 			},
 			Resolve: func(params graphql.ResolveParams) (interface{}, error) {
-				flutelogger.Logger.Println("Resolving: create_node")
+				logger.Logger.Println("Resolving: create_node")
 
 				ipmiIp, uuidOk := params.Args["ipmi_ip"].(string)
 
 				if uuidOk {
-					serialNo, err := fluteipmi.GetSerialNo(ipmiIp)
+					serialNo, err := ipmi.GetSerialNo(ipmiIp)
 					if err != nil {
-						flutelogger.Logger.Fatal(err)
+						logger.Logger.Fatal(err)
 					}
 
-					uuid, err := fluteipmi.GetUuid(ipmiIp, serialNo)
+					uuid, err := ipmi.GetUuid(ipmiIp, serialNo)
 					if err != nil {
-						flutelogger.Logger.Fatal(err)
+						logger.Logger.Fatal(err)
 						return nil, nil
 					}
 
-					mac, err := fluteipmi.GetBMCNICMac(ipmiIp)
+					mac, err := ipmi.GetBMCNICMac(ipmiIp)
 					if err != nil {
-						flutelogger.Logger.Fatal(err)
+						logger.Logger.Fatal(err)
 						return nil, nil
 					}
 
-					powerState, err := fluteipmi.GetPowerState(ipmiIp, serialNo)
+					powerState, err := ipmi.GetPowerState(ipmiIp, serialNo)
 					if err != nil {
-						flutelogger.Logger.Fatal(err)
+						logger.Logger.Fatal(err)
 						return nil, nil
 					}
 
-					processors, err := fluteipmi.GetProcessors(ipmiIp, serialNo)
+					processors, err := ipmi.GetProcessors(ipmiIp, serialNo)
 					if err != nil {
-						flutelogger.Logger.Fatal(err)
+						logger.Logger.Fatal(err)
 						return nil, nil
 					}
 
-					cores, err := fluteipmi.GetProcessorsCores(ipmiIp, serialNo, processors)
+					cores, err := ipmi.GetProcessorsCores(ipmiIp, serialNo, processors)
 					if err != nil {
-						flutelogger.Logger.Fatal(err)
+						logger.Logger.Fatal(err)
 						return nil, nil
 					}
 
-					memory, err := fluteipmi.GetTotalSystemMemory(ipmiIp, serialNo)
+					memory, err := ipmi.GetTotalSystemMemory(ipmiIp, serialNo)
 					if err != nil {
-						flutelogger.Logger.Fatal(err)
+						logger.Logger.Fatal(err)
 						return nil, nil
 					}
 
 					////////////////////////////////////////////////////////
 					// Get node info from RestfulAPI by IPMI
-					node := flutetypes.Node {
+					node := types.Node {
 						UUID:         uuid,
 						MacAddr:      mac,
 						IpmiIP:       ipmiIp,
@@ -86,18 +86,18 @@ var mutationTypes = graphql.NewObject(graphql.ObjectConfig{
 					}
 
 					sql := "insert into node(uuid, mac_addr, ipmi_ip, status, cpu, memory, detail, created_at) values (?, ?, ?, ?, ?, ?, ?, now())"
-					stmt, err := flutemysql.Db.Prepare(sql)
+					stmt, err := mysql.Db.Prepare(sql)
 					if err != nil {
-						flutelogger.Logger.Println(err.Error())
+						logger.Logger.Println(err.Error())
 						return nil, nil
 					}
 					defer stmt.Close()
 					result, err2 := stmt.Exec(node.UUID, node.MacAddr, node.IpmiIP, node.Status, node.Cpu, node.Memory, node.Detail)
 					if err2 != nil {
-						flutelogger.Logger.Println(err2)
+						logger.Logger.Println(err2)
 						return nil, nil
 					}
-					flutelogger.Logger.Println(result.LastInsertId())
+					logger.Logger.Println(result.LastInsertId())
 
 					return node, nil
 				}
@@ -127,14 +127,14 @@ var mutationTypes = graphql.NewObject(graphql.ObjectConfig{
 		//		},
 		//	},
 		//	Resolve: func(params graphql.ResolveParams) (interface{}, error) {
-		//		flutelogger.Logger.Println("Resolving: update_volume")
+		//		logger.Logger.Println("Resolving: update_volume")
 		//
 		//		requestedUUID, _ := params.Args["uuid"].(string)
 		//		size, sizeOk := params.Args["size"].(int)
 		//		_type, _typeOk := params.Args["type"].(string)
 		//		serverUUID, serverUUIDOk := params.Args["server_uuid"].(string)
 		//
-		//		volume := new(flutetypes.Volume)
+		//		volume := new(types.Volume)
 		//
 		//		if sizeOk && _typeOk && serverUUIDOk {
 		//			volume.UUID = requestedUUID
@@ -143,18 +143,18 @@ var mutationTypes = graphql.NewObject(graphql.ObjectConfig{
 		//			volume.ServerUUID = serverUUID
 		//
 		//			sql := "update volume set size = ?, type = ?, server_uuid = ? where uuid = ?"
-		//			stmt, err := flutemysql.Db.Prepare(sql)
+		//			stmt, err := mysql.Db.Prepare(sql)
 		//			if err != nil {
-		//				flutelogger.Logger.Println(err.Error())
+		//				logger.Logger.Println(err.Error())
 		//				return nil, nil
 		//			}
 		//			defer stmt.Close()
 		//			result, err2 := stmt.Exec(volume.Size, volume.Type, volume.ServerUUID, volume.UUID)
 		//			if err2 != nil {
-		//				flutelogger.Logger.Println(err2)
+		//				logger.Logger.Println(err2)
 		//				return nil, nil
 		//			}
-		//			flutelogger.Logger.Println(result.LastInsertId())
+		//			logger.Logger.Println(result.LastInsertId())
 		//
 		//			return volume, nil
 		//		}
@@ -174,23 +174,23 @@ var mutationTypes = graphql.NewObject(graphql.ObjectConfig{
 		//		},
 		//	},
 		//	Resolve: func(params graphql.ResolveParams) (interface{}, error) {
-		//		flutelogger.Logger.Println("Resolving: delete_volume")
+		//		logger.Logger.Println("Resolving: delete_volume")
 		//
 		//		requestedUUID, ok := params.Args["uuid"].(string)
 		//		if ok {
 		//			sql := "delete from volume where uuid = ?"
-		//			stmt, err := flutemysql.Db.Prepare(sql)
+		//			stmt, err := mysql.Db.Prepare(sql)
 		//			if err != nil {
-		//				flutelogger.Logger.Println(err.Error())
+		//				logger.Logger.Println(err.Error())
 		//				return nil, nil
 		//			}
 		//			defer stmt.Close()
 		//			result, err2 := stmt.Exec(requestedUUID)
 		//			if err2 != nil {
-		//				flutelogger.Logger.Println(err2)
+		//				logger.Logger.Println(err2)
 		//				return nil, nil
 		//			}
-		//			flutelogger.Logger.Println(result.RowsAffected())
+		//			logger.Logger.Println(result.RowsAffected())
 		//
 		//			return requestedUUID, nil
 		//		}
@@ -216,50 +216,50 @@ var mutationTypes = graphql.NewObject(graphql.ObjectConfig{
 				},
 			},
 			Resolve: func(params graphql.ResolveParams) (interface{}, error) {
-				flutelogger.Logger.Println("Resolving: update_node")
+				logger.Logger.Println("Resolving: update_node")
 
 				uuid, uuidOk := params.Args["uuid"].(string)
 				ipmiIp, ipmiIpOk := params.Args["ipmi_ip"].(string)
 
 				if uuidOk && ipmiIpOk {
-					serialNo, err := fluteipmi.GetSerialNo(ipmiIp)
+					serialNo, err := ipmi.GetSerialNo(ipmiIp)
 					if err != nil {
-						flutelogger.Logger.Fatal(err)
+						logger.Logger.Fatal(err)
 					}
 
-					mac, err := fluteipmi.GetBMCNICMac(ipmiIp)
+					mac, err := ipmi.GetBMCNICMac(ipmiIp)
 					if err != nil {
-						flutelogger.Logger.Fatal(err)
+						logger.Logger.Fatal(err)
 						return nil, nil
 					}
 
-					powerState, err := fluteipmi.GetPowerState(ipmiIp, serialNo)
+					powerState, err := ipmi.GetPowerState(ipmiIp, serialNo)
 					if err != nil {
-						flutelogger.Logger.Fatal(err)
+						logger.Logger.Fatal(err)
 						return nil, nil
 					}
 
-					processors, err := fluteipmi.GetProcessors(ipmiIp, serialNo)
+					processors, err := ipmi.GetProcessors(ipmiIp, serialNo)
 					if err != nil {
-						flutelogger.Logger.Fatal(err)
+						logger.Logger.Fatal(err)
 						return nil, nil
 					}
 
-					cores, err := fluteipmi.GetProcessorsCores(ipmiIp, serialNo, processors)
+					cores, err := ipmi.GetProcessorsCores(ipmiIp, serialNo, processors)
 					if err != nil {
-						flutelogger.Logger.Fatal(err)
+						logger.Logger.Fatal(err)
 						return nil, nil
 					}
 
-					memory, err := fluteipmi.GetTotalSystemMemory(ipmiIp, serialNo)
+					memory, err := ipmi.GetTotalSystemMemory(ipmiIp, serialNo)
 					if err != nil {
-						flutelogger.Logger.Fatal(err)
+						logger.Logger.Fatal(err)
 						return nil, nil
 					}
 
 					////////////////////////////////////////////////////////
 					// Get node info from RestfulAPI by IPMI
-					node := flutetypes.Node{
+					node := types.Node{
 						UUID:    uuid,
 						MacAddr: mac,
 						IpmiIP:  ipmiIp,
@@ -270,18 +270,18 @@ var mutationTypes = graphql.NewObject(graphql.ObjectConfig{
 					}
 
 					sql := "update note set mac_addr = ?, ipmi_ip = ?, status = ?, cpu = ?, memory = ?, detail = ? where uuid = ?"
-					stmt, err := flutemysql.Db.Prepare(sql)
+					stmt, err := mysql.Db.Prepare(sql)
 					if err != nil {
-						flutelogger.Logger.Println(err.Error())
+						logger.Logger.Println(err.Error())
 						return nil, nil
 					}
 					defer stmt.Close()
 					result, err2 := stmt.Exec(node.MacAddr, node.IpmiIP, node.Status, node.Cpu, node.Memory, node.Detail, node.UUID)
 					if err2 != nil {
-						flutelogger.Logger.Println(err2)
+						logger.Logger.Println(err2)
 						return nil, nil
 					}
-					flutelogger.Logger.Println(result.LastInsertId())
+					logger.Logger.Println(result.LastInsertId())
 
 					return node, nil
 				}
@@ -305,50 +305,50 @@ var mutationTypes = graphql.NewObject(graphql.ObjectConfig{
 				},
 			},
 			Resolve: func(params graphql.ResolveParams) (interface{}, error) {
-				flutelogger.Logger.Println("Resolving: update_node")
+				logger.Logger.Println("Resolving: update_node")
 
 				uuid, uuidOk := params.Args["uuid"].(string)
 				ipmiIp, ipmiIpOk := params.Args["ipmi_ip"].(string)
 
 				if uuidOk && ipmiIpOk {
-					serialNo, err := fluteipmi.GetSerialNo(ipmiIp)
+					serialNo, err := ipmi.GetSerialNo(ipmiIp)
 					if err != nil {
-						flutelogger.Logger.Fatal(err)
+						logger.Logger.Fatal(err)
 					}
 
-					mac, err := fluteipmi.GetBMCNICMac(ipmiIp)
+					mac, err := ipmi.GetBMCNICMac(ipmiIp)
 					if err != nil {
-						flutelogger.Logger.Fatal(err)
+						logger.Logger.Fatal(err)
 						return nil, nil
 					}
 
-					powerState, err := fluteipmi.GetPowerState(ipmiIp, serialNo)
+					powerState, err := ipmi.GetPowerState(ipmiIp, serialNo)
 					if err != nil {
-						flutelogger.Logger.Fatal(err)
+						logger.Logger.Fatal(err)
 						return nil, nil
 					}
 
-					processors, err := fluteipmi.GetProcessors(ipmiIp, serialNo)
+					processors, err := ipmi.GetProcessors(ipmiIp, serialNo)
 					if err != nil {
-						flutelogger.Logger.Fatal(err)
+						logger.Logger.Fatal(err)
 						return nil, nil
 					}
 
-					cores, err := fluteipmi.GetProcessorsCores(ipmiIp, serialNo, processors)
+					cores, err := ipmi.GetProcessorsCores(ipmiIp, serialNo, processors)
 					if err != nil {
-						flutelogger.Logger.Fatal(err)
+						logger.Logger.Fatal(err)
 						return nil, nil
 					}
 
-					memory, err := fluteipmi.GetTotalSystemMemory(ipmiIp, serialNo)
+					memory, err := ipmi.GetTotalSystemMemory(ipmiIp, serialNo)
 					if err != nil {
-						flutelogger.Logger.Fatal(err)
+						logger.Logger.Fatal(err)
 						return nil, nil
 					}
 
 					////////////////////////////////////////////////////////
 					// Get node info from RestfulAPI by IPMI
-					node := flutetypes.Node{
+					node := types.Node{
 						UUID:    uuid,
 						MacAddr: mac,
 						IpmiIP:  ipmiIp,
@@ -359,18 +359,18 @@ var mutationTypes = graphql.NewObject(graphql.ObjectConfig{
 					}
 
 					sql := "update note set mac_addr = ?, ipmi_ip = ?, status = ?, cpu = ?, memory = ?, detail = ? where uuid = ?"
-					stmt, err := flutemysql.Db.Prepare(sql)
+					stmt, err := mysql.Db.Prepare(sql)
 					if err != nil {
-						flutelogger.Logger.Println(err.Error())
+						logger.Logger.Println(err.Error())
 						return nil, nil
 					}
 					defer stmt.Close()
 					result, err2 := stmt.Exec(node.MacAddr, node.IpmiIP, node.Status, node.Cpu, node.Memory, node.Detail, node.UUID)
 					if err2 != nil {
-						flutelogger.Logger.Println(err2)
+						logger.Logger.Println(err2)
 						return nil, nil
 					}
-					flutelogger.Logger.Println(result.LastInsertId())
+					logger.Logger.Println(result.LastInsertId())
 
 					return node, nil
 				}
@@ -391,7 +391,7 @@ var mutationTypes = graphql.NewObject(graphql.ObjectConfig{
 				},
 			},
 			Resolve: func(params graphql.ResolveParams) (interface{}, error) {
-				flutelogger.Logger.Println("Resolving: on_node")
+				logger.Logger.Println("Resolving: on_node")
 
 				uuid, uuidOk := params.Args["uuid"].(string)
 
@@ -399,9 +399,9 @@ var mutationTypes = graphql.NewObject(graphql.ObjectConfig{
 					var ipmiIp string
 
 					sql := "select ipmi_ip from node where uuid = ?"
-					err := flutemysql.Db.QueryRow(sql, uuid).Scan(&ipmiIp)
+					err := mysql.Db.QueryRow(sql, uuid).Scan(&ipmiIp)
 					if err != nil {
-						flutelogger.Logger.Println(err)
+						logger.Logger.Println(err)
 						return nil, nil
 					}
 
@@ -409,7 +409,7 @@ var mutationTypes = graphql.NewObject(graphql.ObjectConfig{
 ///// Power State On ///////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////
 
-					return result, nil
+					return nil, nil
 				}
 
 				return nil, nil

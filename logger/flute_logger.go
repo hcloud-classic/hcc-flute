@@ -1,4 +1,4 @@
-package flutelogger
+package logger
 
 import (
 	"fmt"

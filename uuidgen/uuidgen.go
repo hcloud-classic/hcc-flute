@@ -1,7 +1,7 @@
-package fluteuuidgen
+package uuidgen
 
 import (
-	"GraphQL_Flute/flutelogger"
+	"hcloud-flute/logger"
 	"github.com/nu7hatch/gouuid"
 )
 
@@ -9,7 +9,7 @@ import (
 func Uuidgen() (string, error) {
 	out, err := uuid.NewV4()
 	if err != nil {
-		flutelogger.Logger.Println(err)
+		logger.Logger.Println(err)
 		return "", err
 	}
 

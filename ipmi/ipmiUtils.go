@@ -1,7 +1,7 @@
-package fluteipmi
+package ipmi
 
 import (
-	"GraphQL_Flute/flutelogger"
+	"hcloud-flute/logger"
 	"bytes"
 	"crypto/tls"
 	"encoding/json"
@@ -33,7 +33,7 @@ func GetSerialNo(ipmiIp string) (string, error) {
 			var ipmiNode IpmiNode
 			err = json.Unmarshal([]byte(str), &ipmiNode)
 			if err != nil {
-				flutelogger.Logger.Fatal(err)
+				logger.Logger.Fatal(err)
 			}
 
 			serialNo := ipmiNode.Members[0].OdataID[len("/redfish/v1/Systems/"):]
@@ -69,7 +69,7 @@ func GetUuid(ipmiIp string, serialNo string) (string, error) {
 			var ipmiNodeInfo IpmiNodeInfo
 			err = json.Unmarshal([]byte(str), &ipmiNodeInfo)
 			if err != nil {
-				flutelogger.Logger.Fatal(err)
+				logger.Logger.Fatal(err)
 			}
 
 			uuid := ipmiNodeInfo.UUID
@@ -105,7 +105,7 @@ func GetPowerState(ipmiIp string, serialNo string) (string, error) {
 			var ipmiNodeInfo IpmiNodeInfo
 			err = json.Unmarshal([]byte(str), &ipmiNodeInfo)
 			if err != nil {
-				flutelogger.Logger.Fatal(err)
+				logger.Logger.Fatal(err)
 			}
 
 			powerState := ipmiNodeInfo.PowerState
@@ -141,7 +141,7 @@ func GetProcessors(ipmiIp string, serialNo string) (int, error) {
 			var processors Processors
 			err = json.Unmarshal([]byte(str), &processors)
 			if err != nil {
-				flutelogger.Logger.Fatal(err)
+				logger.Logger.Fatal(err)
 			}
 
 			count := len(processors.Members)
@@ -180,7 +180,7 @@ func GetProcessorsCores(ipmiIp string, serialNo string, processors int) (int, er
 				var cpu Cpu
 				err = json.Unmarshal([]byte(str), &cpu)
 				if err != nil {
-					flutelogger.Logger.Fatal(err)
+					logger.Logger.Fatal(err)
 				}
 
 				totalCores := cpu.TotalCores
@@ -222,7 +222,7 @@ func GetProcessorsThreads(ipmiIp string, serialNo string, processors int) (int, 
 				var cpu Cpu
 				err = json.Unmarshal([]byte(str), &cpu)
 				if err != nil {
-					flutelogger.Logger.Fatal(err)
+					logger.Logger.Fatal(err)
 				}
 
 				totalThreads := cpu.TotalThreads
@@ -261,7 +261,7 @@ func GetTotalSystemMemory(ipmiIp string, serialNo string) (int, error) {
 			var ipmiNodeInfo IpmiNodeInfo
 			err = json.Unmarshal([]byte(str), &ipmiNodeInfo)
 			if err != nil {
-				flutelogger.Logger.Fatal(err)
+				logger.Logger.Fatal(err)
 			}
 
 			memoryGiB := ipmiNodeInfo.MemorySummary.TotalSystemMemoryGiB
@@ -278,51 +278,51 @@ func GetTotalSystemMemory(ipmiIp string, serialNo string) (int, error) {
 func GetInfo(ipmiIp string) {
 	serialNo, err := GetSerialNo(ipmiIp)
 	if err != nil {
-		flutelogger.Logger.Fatal(err)
+		logger.Logger.Fatal(err)
 	}
-	flutelogger.Logger.Println("SerialNo: " + serialNo)
+	logger.Logger.Println("SerialNo: " + serialNo)
 
 	uuid, err := GetUuid(ipmiIp, serialNo)
 	if err != nil {
-		flutelogger.Logger.Fatal(err)
+		logger.Logger.Fatal(err)
 	}
-	flutelogger.Logger.Println("UUID: " + uuid)
+	logger.Logger.Println("UUID: " + uuid)
 
 	powerState, err := GetPowerState(ipmiIp, serialNo)
 	if err != nil {
-		flutelogger.Logger.Fatal(err)
+		logger.Logger.Fatal(err)
 	}
-	flutelogger.Logger.Println("Status: " + powerState)
+	logger.Logger.Println("Status: " + powerState)
 
 	processors, err := GetProcessors(ipmiIp, serialNo)
 	if err != nil {
-		flutelogger.Logger.Fatal(err)
+		logger.Logger.Fatal(err)
 	}
-	flutelogger.Logger.Println("Processors: " + strconv.Itoa(processors))
+	logger.Logger.Println("Processors: " + strconv.Itoa(processors))
 
 	cores, err := GetProcessorsCores(ipmiIp, serialNo, processors)
 	if err != nil {
-		flutelogger.Logger.Fatal(err)
+		logger.Logger.Fatal(err)
 	}
-	flutelogger.Logger.Println("Cores: " + strconv.Itoa(cores))
+	logger.Logger.Println("Cores: " + strconv.Itoa(cores))
 
 	threads, err := GetProcessorsThreads(ipmiIp, serialNo, processors)
 	if err != nil {
-		flutelogger.Logger.Fatal(err)
+		logger.Logger.Fatal(err)
 	}
-	flutelogger.Logger.Println("Threads: " + strconv.Itoa(threads))
+	logger.Logger.Println("Threads: " + strconv.Itoa(threads))
 
 	memory, err := GetTotalSystemMemory(ipmiIp, serialNo)
 	if err != nil {
-		flutelogger.Logger.Fatal(err)
+		logger.Logger.Fatal(err)
 	}
-	flutelogger.Logger.Println("Memory: " + strconv.Itoa(memory) + "GiB")
+	logger.Logger.Println("Memory: " + strconv.Itoa(memory) + "GiB")
 
 	mac, err := GetBMCNICMac(ipmiIp)
 	if err != nil {
-		flutelogger.Logger.Fatal(err)
+		logger.Logger.Fatal(err)
 	}
-	flutelogger.Logger.Println("MAC Address: " + mac)
+	logger.Logger.Println("MAC Address: " + mac)
 }
 
 func ChangePowerState(ipmiIp string, serialNo string, state string) (string, error) {
@@ -333,7 +333,7 @@ func ChangePowerState(ipmiIp string, serialNo string, state string) (string, err
 	resetType := ResetType{state}
 	jsonBytes, err := json.Marshal(resetType)
 	if err != nil {
-		flutelogger.Logger.Fatal(err)
+		logger.Logger.Fatal(err)
 	}
 
 	req, err := http.NewRequest("POST", "https://" + ipmiIp + "/redfish/v1/Systems/" + serialNo + "/Actions/ComputerSystem.Reset", bytes.NewBuffer(jsonBytes))
@@ -355,7 +355,7 @@ func ChangePowerState(ipmiIp string, serialNo string, state string) (string, err
 			var processors Processors
 			err = json.Unmarshal([]byte(str), &processors)
 			if err != nil {
-				flutelogger.Logger.Fatal(err)
+				logger.Logger.Fatal(err)
 			}
 
 			return str, nil
@@ -389,7 +389,7 @@ func GetBMCNICMac(ipmiIp string) (string, error) {
 			var bmcNIC BMCNIC
 			err = json.Unmarshal([]byte(str), &bmcNIC)
 			if err != nil {
-				flutelogger.Logger.Fatal(err)
+				logger.Logger.Fatal(err)
 			}
 
 			macAddress := bmcNIC.MACAddress

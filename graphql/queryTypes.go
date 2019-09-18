@@ -1,9 +1,9 @@
-package flutegraphql
+package graphql
 
 import (
-	"GraphQL_Flute/flutelogger"
-	"GraphQL_Flute/flutemysql"
-	"GraphQL_Flute/flutetypes"
+	"hcloud-flute/logger"
+	"hcloud-flute/mysql"
+	"hcloud-flute/types"
 	"github.com/graphql-go/graphql"
 	"time"
 )
@@ -25,11 +25,11 @@ var queryTypes = graphql.NewObject(
 					},
 				},
 				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-					flutelogger.Logger.Println("Resolving: node")
+					logger.Logger.Println("Resolving: node")
 
 					requestedUUID, ok := p.Args["uuid"].(string)
 					if ok {
-						node := new(flutetypes.Node)
+						node := new(types.Node)
 
 						var uuid string
 						var macAddr string
@@ -41,9 +41,9 @@ var queryTypes = graphql.NewObject(
 						var createdAt time.Time
 
 						sql := "select * from node where uuid = ?"
-						err := flutemysql.Db.QueryRow(sql, requestedUUID).Scan(&uuid, &macAddr, &ipmiIp, &status, &cpu, &memory, &detail, &createdAt)
+						err := mysql.Db.QueryRow(sql, requestedUUID).Scan(&uuid, &macAddr, &ipmiIp, &status, &cpu, &memory, &detail, &createdAt)
 						if err != nil {
-							flutelogger.Logger.Println(err)
+							logger.Logger.Println(err)
 							return nil, nil
 						}
 
@@ -69,9 +69,9 @@ var queryTypes = graphql.NewObject(
 				Type:        graphql.NewList(nodeType),
 				Description: "Get node list",
 				Resolve: func(params graphql.ResolveParams) (interface{}, error) {
-					flutelogger.Logger.Println("Resolving: list_node")
+					logger.Logger.Println("Resolving: list_node")
 
-					var nodes []flutetypes.Node
+					var nodes []types.Node
 					var uuid string
 					var macAddr string
 					var ipmiIp string
@@ -82,9 +82,9 @@ var queryTypes = graphql.NewObject(
 					var createdAt time.Time
 
 					sql := "select * from node"
-					stmt, err := flutemysql.Db.Query(sql)
+					stmt, err := mysql.Db.Query(sql)
 					if err != nil {
-						flutelogger.Logger.Println(err)
+						logger.Logger.Println(err)
 						return nil, nil
 					}
 					defer stmt.Close()
@@ -92,12 +92,12 @@ var queryTypes = graphql.NewObject(
 					for stmt.Next() {
 						err := stmt.Scan(&uuid, &macAddr, &ipmiIp, &status, &cpu, &memory, &detail, &createdAt)
 						if err != nil {
-							flutelogger.Logger.Println(err)
+							logger.Logger.Println(err)
 						}
 
-						node := flutetypes.Node{UUID: uuid, MacAddr: macAddr, IpmiIP: ipmiIp, Status: status, Cpu: cpu, Memory: memory, Detail: detail, CreatedAt: createdAt}
+						node := types.Node{UUID: uuid, MacAddr: macAddr, IpmiIP: ipmiIp, Status: status, Cpu: cpu, Memory: memory, Detail: detail, CreatedAt: createdAt}
 
-						flutelogger.Logger.Println(node)
+						logger.Logger.Println(node)
 						nodes = append(nodes, node)
 					}
 
@@ -118,18 +118,18 @@ var queryTypes = graphql.NewObject(
 					},
 				},
 				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-					flutelogger.Logger.Println("Resolving: ipmi")
+					logger.Logger.Println("Resolving: ipmi")
 
 					requestedUUID, ok := p.Args["uuid"].(string)
 					if ok {
-						ipmi := new(flutetypes.Ipmi)
+						ipmi := new(types.Ipmi)
 
 						var uuid string
 
 						sql := "select * from ipmi where uuid = ?"
-						err := flutemysql.Db.QueryRow(sql, requestedUUID).Scan(&uuid)
+						err := mysql.Db.QueryRow(sql, requestedUUID).Scan(&uuid)
 						if err != nil {
-							flutelogger.Logger.Println(err)
+							logger.Logger.Println(err)
 							return nil, nil
 						}
 
@@ -148,15 +148,15 @@ var queryTypes = graphql.NewObject(
 				Type:        graphql.NewList(nodeType),
 				Description: "Get ipmi list",
 				Resolve: func(params graphql.ResolveParams) (interface{}, error) {
-					flutelogger.Logger.Println("Resolving: list_ipmi")
+					logger.Logger.Println("Resolving: list_ipmi")
 
-					var ipmis []flutetypes.Ipmi
+					var ipmis []types.Ipmi
 					var uuid string
 
 					sql := "select * from ipmi"
-					stmt, err := flutemysql.Db.Query(sql)
+					stmt, err := mysql.Db.Query(sql)
 					if err != nil {
-						flutelogger.Logger.Println(err)
+						logger.Logger.Println(err)
 						return nil, nil
 					}
 					defer stmt.Close()
@@ -164,12 +164,12 @@ var queryTypes = graphql.NewObject(
 					for stmt.Next() {
 						err := stmt.Scan(&uuid)
 						if err != nil {
-							flutelogger.Logger.Println(err)
+							logger.Logger.Println(err)
 						}
 
-						ipmi := flutetypes.Ipmi{UUID: uuid}
+						ipmi := types.Ipmi{UUID: uuid}
 
-						flutelogger.Logger.Println(ipmi)
+						logger.Logger.Println(ipmi)
 						ipmis = append(ipmis, ipmi)
 					}
 

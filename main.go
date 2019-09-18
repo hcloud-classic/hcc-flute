@@ -1,38 +1,38 @@
 package main
 
 import (
-	"GraphQL_Flute/flutecheckroot"
-	"GraphQL_Flute/fluteconfig"
-	"GraphQL_Flute/flutegraphql"
-	"GraphQL_Flute/flutelogger"
-	"GraphQL_Flute/flutemysql"
+	"hcloud-flute/checkroot"
+	"hcloud-flute/config"
+	"hcloud-flute/graphql"
+	"hcloud-flute/logger"
+	"hcloud-flute/mysql"
 	"net/http"
 	"strconv"
 )
 
 func main() {
-	if !flutecheckroot.CheckRoot() {
+	if !checkroot.CheckRoot() {
 		return
 	}
 
-	if !flutelogger.Prepare() {
+	if !logger.Prepare() {
 		return
 	}
-	defer flutelogger.FpLog.Close()
+	defer logger.FpLog.Close()
 
-	fluteconfig.ConfigParser()
+	config.ConfigParser()
 
-	err := flutemysql.Prepare()
+	err := mysql.Prepare()
 	if err != nil {
 		return
 	}
-	defer flutemysql.Db.Close()
+	defer mysql.Db.Close()
 
-	http.Handle("/graphql", flutegraphql.GraphqlHandler)
+	http.Handle("/graphql", graphql.GraphqlHandler)
 
-	flutelogger.Logger.Println("Server is running on port " + strconv.Itoa(int(fluteconfig.Http.Port)))
-	err = http.ListenAndServe(":" + strconv.Itoa(int(fluteconfig.Http.Port)), nil)
+	logger.Logger.Println("Server is running on port " + strconv.Itoa(int(config.Http.Port)))
+	err = http.ListenAndServe(":" + strconv.Itoa(int(config.Http.Port)), nil)
 	if err != nil {
-		flutelogger.Logger.Println("Failed to prepare http server!")
+		logger.Logger.Println("Failed to prepare http server!")
 	}
 }

@@ -1,4 +1,4 @@
-package fluteconfig
+package config
 
 type mysql struct {
 	ID          string    `goconf:"mysql:id"`       // ID : MySQL server login id

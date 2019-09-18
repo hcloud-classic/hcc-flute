@@ -1,4 +1,4 @@
-package flutecheckroot
+package checkroot
 
 import (
 	"fmt"
