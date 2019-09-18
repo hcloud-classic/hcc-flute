@@ -4,7 +4,7 @@ package fluteconfig
 var MysqlID = "root"
 
 // MysqlPassword : MySQL server login password
-var MysqlPassword = "gojolla"
+var MysqlPassword = "qwe1212!Q"
 
 // MysqlAddress : MySQL server address
 var MysqlAddress = "192.168.110.240"
