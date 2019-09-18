@@ -30,6 +30,7 @@ coverhtml: coverage ## Generate global code coverage report in HTML
 	@$(GOROOT)/bin/go tool cover -html=coverage.out
 
 dep: ## Get the dependencies for build
+	@$(GOROOT)/bin/go get -u github.com/Terry-Mao/goconf
 	@$(GOROOT)/bin/go get -u github.com/nu7hatch/gouuid
 	@$(GOROOT)/bin/go get -u github.com/go-sql-driver/mysql
 	@$(GOROOT)/bin/go get -u github.com/graphql-go/graphql

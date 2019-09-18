@@ -7,6 +7,7 @@ import (
 	"GraphQL_Flute/flutelogger"
 	"GraphQL_Flute/flutemysql"
 	"net/http"
+	"strconv"
 )
 
 func main() {
@@ -19,6 +20,8 @@ func main() {
 	}
 	defer flutelogger.FpLog.Close()
 
+	fluteconfig.ConfigParser()
+
 	err := flutemysql.Prepare()
 	if err != nil {
 		return
@@ -27,8 +30,8 @@ func main() {
 
 	http.Handle("/graphql", flutegraphql.GraphqlHandler)
 
-	flutelogger.Logger.Println("Server is running on port " + fluteconfig.HTTPPort)
-	err = http.ListenAndServe(":"+fluteconfig.HTTPPort, nil)
+	flutelogger.Logger.Println("Server is running on port " + strconv.Itoa(int(fluteconfig.Http.Port)))
+	err = http.ListenAndServe(":" + strconv.Itoa(int(fluteconfig.Http.Port)), nil)
 	if err != nil {
 		flutelogger.Logger.Println("Failed to prepare http server!")
 	}
