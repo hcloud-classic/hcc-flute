@@ -1,13 +1,13 @@
 package config
 
 import (
-	"hcloud-flute/logger"
 	"github.com/Terry-Mao/goconf"
+	"hcloud-flute/logger"
 )
 
 var Conf = goconf.New()
 
-func ConfigParser() {
+func Parser() {
 	var config = fluteConfig{}
 	var err error
 

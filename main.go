@@ -20,7 +20,7 @@ func main() {
 	}
 	defer logger.FpLog.Close()
 
-	config.ConfigParser()
+	config.Parser()
 
 	err := mysql.Prepare()
 	if err != nil {
