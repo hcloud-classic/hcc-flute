@@ -8,7 +8,6 @@ before_script:
     - export GOROOT="/opt/go"
     - export GOPATH="/home/gitlab-runner/go"
     - export PATH="$PATH:$GOROOT/bin:$GOPATH/bin"
-    - gmake dep
 
 copy_dir:
     stage: init

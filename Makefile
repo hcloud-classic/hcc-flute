@@ -2,9 +2,9 @@ ROOT_PROJECT_NAME := "hcc"
 PROJECT_NAME := "flute"
 PKG_LIST := $(shell go list ${ROOT_PROJECT_NAME}/${PROJECT_NAME}/...)
 
-.PHONY: all dep build docker clean gofmt goreport goreport_deb test coverage coverhtml lint
+.PHONY: all build docker clean gofmt goreport goreport_deb test coverage coverhtml lint
 
-all: dep build
+all: build
 
 copy_dir: ## Copy project folder to GOPATH
 	@mkdir -p $(GOPATH)/src/${ROOT_PROJECT_NAME}
@@ -30,13 +30,6 @@ coverage: ## Generate global code coverage report
 
 coverhtml: coverage ## Generate global code coverage report in HTML
 	@$(GOROOT)/bin/go tool cover -html=coverage.out
-
-dep: ## Get the dependencies for build
-	@$(GOROOT)/bin/go get -u github.com/Terry-Mao/goconf
-	@$(GOROOT)/bin/go get -u github.com/nu7hatch/gouuid
-	@$(GOROOT)/bin/go get -u github.com/go-sql-driver/mysql
-	@$(GOROOT)/bin/go get -u github.com/graphql-go/graphql
-	@$(GOROOT)/bin/go get -u github.com/graphql-go/handler
 
 gofmt: ## Run gofmt for go files
 	@find -name '*.go' -exec $(GOROOT)/bin/gofmt -s -w {} \;
