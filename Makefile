@@ -41,6 +41,9 @@ goreport_dep: ## Get the dependencies for goreport
 goreport: goreport_dep ## Make goreport
 	@git submodule sync --recursive
 	@git submodule update --init --recursive
+	@git --git-dir=$(PWD)/hcloud-badge/.git fetch --all
+	@git --git-dir=$(PWD)/hcloud-badge/.git checkout feature/dev
+	@git --git-dir=$(PWD)/hcloud-badge/.git pull origin feature/dev
 	@./hcloud-badge/hcloud_badge.sh flute
 
 build: ## Build the binary file
