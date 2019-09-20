@@ -1,11 +1,11 @@
 package main
 
 import (
-	"hcloud-flute/checkroot"
-	"hcloud-flute/config"
-	"hcloud-flute/graphql"
-	"hcloud-flute/logger"
-	"hcloud-flute/mysql"
+	"hcc/hcloud-flute/checkroot"
+	"hcc/hcloud-flute/config"
+	"hcc/hcloud-flute/graphql"
+	"hcc/hcloud-flute/logger"
+	"hcc/hcloud-flute/mysql"
 	"net/http"
 	"strconv"
 )

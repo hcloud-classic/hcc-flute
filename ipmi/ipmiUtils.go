@@ -1,7 +1,7 @@
 package ipmi
 
 import (
-	"hcloud-flute/logger"
+	"hcc/hcloud-flute/logger"
 	"bytes"
 	"crypto/tls"
 	"encoding/json"

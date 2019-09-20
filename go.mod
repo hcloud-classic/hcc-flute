@@ -1,6 +1,6 @@
-module hcloud-flute
+module hcc/hcloud-flute
 
-go 1.12
+go 1.13
 
 require (
 	github.com/Terry-Mao/goconf v0.0.0-20161115082538-13cb73d70c44

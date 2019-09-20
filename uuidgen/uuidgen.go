@@ -1,7 +1,7 @@
 package uuidgen
 
 import (
-	"hcloud-flute/logger"
+	"hcc/hcloud-flute/logger"
 	"github.com/nu7hatch/gouuid"
 )
 
