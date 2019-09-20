@@ -48,9 +48,9 @@ build:
   stage: build
   script:
     - gmake
+    - sudo ezjail-admin stop flute
     - sudo cp $PWD/flute /usr/jails/basejail/bin/
     - sudo chmod 755 /usr/jails/basejail/bin/flute
-    - sudo ezjail-admin stop flute
     - sudo ezjail-admin start flute &
     - echo "Finished"
   only:
