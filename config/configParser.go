@@ -2,7 +2,7 @@ package config
 
 import (
 	"github.com/Terry-Mao/goconf"
-	"hcc/hcloud-flute/logger"
+	"hcc/flute/logger"
 )
 
 var Conf = goconf.New()

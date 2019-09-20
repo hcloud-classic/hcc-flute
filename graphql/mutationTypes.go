@@ -1,10 +1,10 @@
 package graphql
 
 import (
-	"hcc/hcloud-flute/ipmi"
-	"hcc/hcloud-flute/logger"
-	"hcc/hcloud-flute/mysql"
-	"hcc/hcloud-flute/types"
+	"hcc/flute/ipmi"
+	"hcc/flute/logger"
+	"hcc/flute/mysql"
+	"hcc/flute/types"
 	"github.com/graphql-go/graphql"
 )
 

@@ -1,8 +1,8 @@
 package mysql
 
 import (
-	"hcc/hcloud-flute/config"
-	"hcc/hcloud-flute/logger"
+	"hcc/flute/config"
+	"hcc/flute/logger"
 	"database/sql"
 	_ "github.com/go-sql-driver/mysql" // Needed for connect mysql
 	"strconv"

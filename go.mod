@@ -1,4 +1,4 @@
-module hcc/hcloud-flute
+module hcc/flute
 
 go 1.13
 

@@ -1,7 +1,7 @@
 package logger
 
 import (
-	"hcc/hcloud-flute/checkroot"
+	"hcc/flute/checkroot"
 	"testing"
 )
 

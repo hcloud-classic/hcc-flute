@@ -1,9 +1,9 @@
 package graphql
 
 import (
-	"hcc/hcloud-flute/logger"
-	"hcc/hcloud-flute/mysql"
-	"hcc/hcloud-flute/types"
+	"hcc/flute/logger"
+	"hcc/flute/mysql"
+	"hcc/flute/types"
 	"github.com/graphql-go/graphql"
 	"time"
 )

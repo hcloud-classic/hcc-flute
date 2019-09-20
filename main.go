@@ -1,11 +1,11 @@
 package main
 
 import (
-	"hcc/hcloud-flute/checkroot"
-	"hcc/hcloud-flute/config"
-	"hcc/hcloud-flute/graphql"
-	"hcc/hcloud-flute/logger"
-	"hcc/hcloud-flute/mysql"
+	"hcc/flute/checkroot"
+	"hcc/flute/config"
+	"hcc/flute/graphql"
+	"hcc/flute/logger"
+	"hcc/flute/mysql"
 	"net/http"
 	"strconv"
 )
@@ -31,7 +31,7 @@ func main() {
 	http.Handle("/graphql", graphql.GraphqlHandler)
 
 	logger.Logger.Println("Server is running on port " + strconv.Itoa(int(config.Http.Port)))
-	err = http.ListenAndServe(":" + strconv.Itoa(int(config.Http.Port)), nil)
+	err = http.ListenAndServe(":"+strconv.Itoa(int(config.Http.Port)), nil)
 	if err != nil {
 		logger.Logger.Println("Failed to prepare http server!")
 	}
