@@ -47,7 +47,7 @@ goreport: goreport_dep ## Make goreport
 	@./hcloud-badge/hcloud_badge.sh flute
 
 build: ## Build the binary file
-	@$(GOROOT)/bin/go build -o ${ROOT_PROJECT_NAME}/$(PROJECT_NAME) main.go
+	@$(GOROOT)/bin/go build -o $(PROJECT_NAME) main.go
 
 docker: ## Build docker image and push it to private docker registry
 	@sudo docker build -t flute .
@@ -55,7 +55,7 @@ docker: ## Build docker image and push it to private docker registry
 	@sudo docker push 192.168.110.250:5000/flute:latest
 
 clean: ## Remove previous build
-	@rm -f ${ROOT_PROJECT_NAME}/$(PROJECT_NAME)
+	@rm -f $(PROJECT_NAME)
 
 help: ## Display this help screen
 	@grep -h -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
