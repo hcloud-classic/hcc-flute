@@ -38,11 +38,11 @@ go_report:
   only:
   - master
 
-lint_code:
-  stage: test
-  script:
-    - gmake lint_dep
-    - gmake lint
+#lint_code:
+#  stage: test
+#  script:
+#    - gmake lint_dep
+#    - gmake lint
 
 build:
   stage: build
