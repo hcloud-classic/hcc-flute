@@ -49,8 +49,10 @@ build:
   stage: build
   script:
     - gmake
-    - if pgrep hcloud-flute; then killall hcloud-flute; fi
-    - nohup sudo $PWD/hcloud-flute &
+    - sudo cp $PWD/flute /usr/jails/basejail/bin/
+    - sudo chmod 755 /usr/jails/basejail/bin/flute
+    - sudo ezjail-admin stop flute
+    - sudo ezjail-admin start flute &
     - echo "Finished"
   only:
   - master

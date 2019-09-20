@@ -1,13 +1,15 @@
-PROJECT_NAME := "hcloud-flute"
-PKG_LIST := $(shell go list ${PROJECT_NAME}/...)
+ROOT_PROJECT_NAME := "hcc"
+PROJECT_NAME := "flute"
+PKG_LIST := $(shell go list ${ROOT_PROJECT_NAME}/${PROJECT_NAME}/...)
 
 .PHONY: all dep build docker clean gofmt goreport goreport_deb test coverage coverhtml lint
 
 all: dep build
 
 copy_dir: ## Copy project folder to GOPATH
-	@rm -rf $(GOPATH)/src/${PROJECT_NAME}
-	@cp -Rp `pwd` $(GOPATH)/src/${PROJECT_NAME}
+	@mkdir -p $(GOPATH)/src/${ROOT_PROJECT_NAME}
+	@rm -rf $(GOPATH)/src/${ROOT_PROJECT_NAME}/${PROJECT_NAME}
+	@cp -Rp `pwd` $(GOPATH)/src/${ROOT_PROJECT_NAME}/${PROJECT_NAME}
 
 lint_dep: ## Get the dependencies for golint
 	@$(GOROOT)/bin/go get -u golang.org/x/lint/golint
@@ -42,14 +44,6 @@ gofmt: ## Run gofmt for go files
 goreport_dep: ## Get the dependencies for goreport
 	@$(GOROOT)/bin/go get -u github.com/gojp/goreportcard/cmd/goreportcard-cli
 	@$(GOROOT)/bin/go install github.com/gojp/goreportcard/cmd/goreportcard-cli
-	@$(GOROOT)/bin/go get -u github.com/alecthomas/gometalinter
-	@$(GOROOT)/bin/go install github.com/alecthomas/gometalinter
-	@$(GOROOT)/bin/go get -u github.com/fzipp/gocyclo
-	@$(GOROOT)/bin/go install github.com/fzipp/gocyclo
-	@$(GOROOT)/bin/go get -u github.com/gordonklaus/ineffassign
-	@$(GOROOT)/bin/go install github.com/gordonklaus/ineffassign
-	@$(GOROOT)/bin/go get -u github.com/client9/misspell/cmd/misspell
-	@$(GOROOT)/bin/go install github.com/client9/misspell/cmd/misspell
 
 goreport: goreport_dep ## Make goreport
 	@git submodule sync --recursive
@@ -57,15 +51,15 @@ goreport: goreport_dep ## Make goreport
 	@./hcloud-badge/hcloud_badge.sh flute
 
 build: ## Build the binary file
-	@$(GOROOT)/bin/go build -o $(PROJECT_NAME) main.go
+	@$(GOROOT)/bin/go build -o ${ROOT_PROJECT_NAME}/$(PROJECT_NAME) main.go
 
 docker: ## Build docker image and push it to private docker registry
-	@sudo docker build -t hcloud-flute .
-	@sudo docker tag graphql_flute:latest 192.168.110.250:5000/hcloud-flute:latest
-	@sudo docker push 192.168.110.250:5000/hcloud-flute:latest
+	@sudo docker build -t flute .
+	@sudo docker tag graphql_flute:latest 192.168.110.250:5000/flute:latest
+	@sudo docker push 192.168.110.250:5000/flute:latest
 
 clean: ## Remove previous build
-	@rm -f $(PROJECT_NAME)
+	@rm -f ${ROOT_PROJECT_NAME}/$(PROJECT_NAME)
 
 help: ## Display this help screen
 	@grep -h -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
