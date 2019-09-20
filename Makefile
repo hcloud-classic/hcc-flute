@@ -44,15 +44,15 @@ goreport: goreport_dep ## Make goreport
 	@git --git-dir=$(PWD)/hcloud-badge/.git fetch --all
 	@git --git-dir=$(PWD)/hcloud-badge/.git checkout feature/dev
 	@git --git-dir=$(PWD)/hcloud-badge/.git pull origin feature/dev
-	@./hcloud-badge/hcloud_badge.sh flute
+	@./hcloud-badge/hcloud_badge.sh $(PROJECT_NAME)
 
 build: ## Build the binary file
 	@$(GOROOT)/bin/go build -o $(PROJECT_NAME) main.go
 
 docker: ## Build docker image and push it to private docker registry
-	@sudo docker build -t flute .
-	@sudo docker tag graphql_flute:latest 192.168.110.250:5000/flute:latest
-	@sudo docker push 192.168.110.250:5000/flute:latest
+	@sudo docker build -t $(PROJECT_NAME) .
+	@sudo docker tag ${ROOT_PROJECT_NAME}_$(PROJECT_NAME):latest 192.168.110.250:5000/$(PROJECT_NAME):latest
+	@sudo docker push 192.168.110.250:5000/$(PROJECT_NAME):latest
 
 clean: ## Remove previous build
 	@rm -f $(PROJECT_NAME)
