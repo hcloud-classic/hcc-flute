@@ -1,21 +1,29 @@
-//// volume
+//// node
 // list
-query List_Volume {
-  list_volume {
+{
+  list_node {
     uuid
-    size
-    type
-    server_uuid
+    mac_addr
+    ipmi_ip
+    status
+    cpu
+    memory
+    detail
+    created_at
   }
 }
 
 // read
-query Select_Volume {
-  volume(uuid: "7284772e-3811-4030-a311-2da8ff705850") {
+{
+  node(uuid: "18aada80-b696-11e8-906e-000ffee02d5c") {
     uuid
-    size
-    type
-    server_uuid
+    mac_addr
+    ipmi_ip
+    status
+    cpu
+    memory
+    detail
+    created_at
   }
 }
 
