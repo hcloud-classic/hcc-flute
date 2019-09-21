@@ -17,6 +17,9 @@ func GetSerialNo(ipmiIP string) (string, error) {
 
 	client := &http.Client{}
 	req, err := http.NewRequest("GET", "https://"+ipmiIP+"/redfish/v1/Systems/", nil)
+	if err != nil {
+		return "", err
+	}
 	req.SetBasicAuth(username, password)
 	resp, err := client.Do(req)
 
@@ -54,6 +57,9 @@ func GetUUID(ipmiIP string, serialNo string) (string, error) {
 
 	client := &http.Client{}
 	req, err := http.NewRequest("GET", "https://"+ipmiIP+"/redfish/v1/Systems/"+serialNo, nil)
+	if err != nil {
+		return "", err
+	}
 	req.SetBasicAuth(username, password)
 	resp, err := client.Do(req)
 
@@ -91,6 +97,9 @@ func GetPowerState(ipmiIP string, serialNo string) (string, error) {
 
 	client := &http.Client{}
 	req, err := http.NewRequest("GET", "https://"+ipmiIP+"/redfish/v1/Systems/"+serialNo, nil)
+	if err != nil {
+		return "", err
+	}
 	req.SetBasicAuth(username, password)
 	resp, err := client.Do(req)
 
@@ -128,6 +137,9 @@ func GetProcessors(ipmiIP string, serialNo string) (int, error) {
 
 	client := &http.Client{}
 	req, err := http.NewRequest("GET", "https://"+ipmiIP+"/redfish/v1/Systems/"+serialNo+"/Processors", nil)
+	if err != nil {
+		return 0, err
+	}
 	req.SetBasicAuth(username, password)
 	resp, err := client.Do(req)
 
@@ -169,6 +181,9 @@ func GetProcessorsCores(ipmiIP string, serialNo string, processors int) (int, er
 
 	for i := 1; i <= processors; i++ {
 		req, err := http.NewRequest("GET", "https://"+ipmiIP+"/redfish/v1/Systems/"+serialNo+"/Processors/CPU"+strconv.Itoa(i), nil)
+		if err != nil {
+			return 0, err
+		}
 		req.SetBasicAuth(username, password)
 		resp, err := client.Do(req)
 
@@ -212,6 +227,9 @@ func GetProcessorsThreads(ipmiIP string, serialNo string, processors int) (int, 
 
 	for i := 1; i <= processors; i++ {
 		req, err := http.NewRequest("GET", "https://"+ipmiIP+"/redfish/v1/Systems/"+serialNo+"/Processors/CPU"+strconv.Itoa(i), nil)
+		if err != nil {
+			return 0, err
+		}
 		req.SetBasicAuth(username, password)
 		resp, err := client.Do(req)
 
@@ -252,6 +270,9 @@ func GetTotalSystemMemory(ipmiIP string, serialNo string) (int, error) {
 
 	client := &http.Client{}
 	req, err := http.NewRequest("GET", "https://"+ipmiIP+"/redfish/v1/Systems/"+serialNo, nil)
+	if err != nil {
+		return 0, err
+	}
 	req.SetBasicAuth(username, password)
 	resp, err := client.Do(req)
 
@@ -348,6 +369,9 @@ func ChangePowerState(ipmiIP string, serialNo string, state string) (string, err
 	}
 
 	req, err := http.NewRequest("POST", "https://"+ipmiIP+"/redfish/v1/Systems/"+serialNo+"/Actions/ComputerSystem.Reset", bytes.NewBuffer(jsonBytes))
+	if err != nil {
+		return "", err
+	}
 	req.SetBasicAuth(username, password)
 
 	resp, err := client.Do(req)
@@ -385,6 +409,9 @@ func GetBMCNICMac(ipmiIP string) (string, error) {
 
 	client := &http.Client{}
 	req, err := http.NewRequest("GET", "https://"+ipmiIP+"/redfish/v1/Managers/BMC/EthernetInterfaces/3", nil)
+	if err != nil {
+		return "", err
+	}
 	req.SetBasicAuth(username, password)
 	resp, err := client.Do(req)
 
