@@ -1,6 +1,6 @@
 package ipmi
 
-type IpmiNode struct {
+type ipmiNode struct {
 	OdataContext      string `json:"@odata.context"`
 	OdataID           string `json:"@odata.id"`
 	OdataType         string `json:"@odata.type"`
@@ -11,7 +11,7 @@ type IpmiNode struct {
 	} `json:"Members"`
 }
 
-type IpmiNodeInfo struct {
+type ipmiNodeInfo struct {
 	OdataContext string `json:"@odata.context"`
 	OdataID      string `json:"@odata.id"`
 	OdataType    string `json:"@odata.type"`
@@ -111,7 +111,7 @@ type IpmiNodeInfo struct {
 	} `json:"Actions"`
 }
 
-type Processors struct {
+type ipmiProcessors struct {
 	OdataContext      string `json:"@odata.context"`
 	OdataID           string `json:"@odata.id"`
 	OdataType         string `json:"@odata.type"`
@@ -122,7 +122,7 @@ type Processors struct {
 	} `json:"Members"`
 }
 
-type Cpu struct {
+type ipmiCPU struct {
 	OdataContext          string `json:"@odata.context"`
 	OdataID               string `json:"@odata.id"`
 	OdataType             string `json:"@odata.type"`
@@ -158,11 +158,11 @@ type Cpu struct {
 	} `json:"Oem"`
 }
 
-type ResetType struct {
+type ipmiResetType struct {
 	ResetType string `json:"ResetType"`
 }
 
-type BMCNIC struct {
+type ipmiBMCNIC struct {
 	OdataType    string `json:"@odata.type"`
 	OdataContext string `json:"@odata.context"`
 	OdataID      string `json:"@odata.id"`

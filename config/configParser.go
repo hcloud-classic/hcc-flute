@@ -5,18 +5,18 @@ import (
 	"hcc/flute/logger"
 )
 
-var Conf = goconf.New()
-
+// Parser : Parse config file
 func Parser() {
+	var conf = goconf.New()
 	var config = fluteConfig{}
 	var err error
 
-	if err = Conf.Parse(configLocation)
+	if err = conf.Parse(configLocation)
 	err != nil {
 		logger.Logger.Panicln(err)
 	}
 
-	config.MysqlConfig = Conf.Get("mysql")
+	config.MysqlConfig = conf.Get("mysql")
 	if config.MysqlConfig == nil {
 		logger.Logger.Panicln("no mysql section")
 	}
@@ -47,13 +47,13 @@ func Parser() {
 		logger.Logger.Panicln(err)
 	}
 
-	config.HttpConfig = Conf.Get("http")
-	if config.HttpConfig == nil {
+	config.HTTPConfig = conf.Get("http")
+	if config.HTTPConfig == nil {
 		logger.Logger.Panicln("no http section")
 	}
 
-	Http = http{}
-	Http.Port, err = config.HttpConfig.Int("port")
+	HTTP = http{}
+	HTTP.Port, err = config.HTTPConfig.Int("port")
 	if err != nil {
 		logger.Logger.Panicln(err)
 	}

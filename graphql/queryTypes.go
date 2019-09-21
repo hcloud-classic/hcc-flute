@@ -33,7 +33,7 @@ var queryTypes = graphql.NewObject(
 
 						var uuid string
 						var macAddr string
-						var ipmiIp string
+						var ipmiIP string
 						var status string
 						var cpu int
 						var memory int
@@ -41,7 +41,7 @@ var queryTypes = graphql.NewObject(
 						var createdAt time.Time
 
 						sql := "select * from node where uuid = ?"
-						err := mysql.Db.QueryRow(sql, requestedUUID).Scan(&uuid, &macAddr, &ipmiIp, &status, &cpu, &memory, &detail, &createdAt)
+						err := mysql.Db.QueryRow(sql, requestedUUID).Scan(&uuid, &macAddr, &ipmiIP, &status, &cpu, &memory, &detail, &createdAt)
 						if err != nil {
 							logger.Logger.Println(err)
 							return nil, nil
@@ -49,9 +49,9 @@ var queryTypes = graphql.NewObject(
 
 						node.UUID = uuid
 						node.MacAddr = macAddr
-						node.IpmiIP = ipmiIp
+						node.IpmiIP = ipmiIP
 						node.Status = status
-						node.Cpu = cpu
+						node.CPU = cpu
 						node.Memory = memory
 						node.Detail = detail
 						node.CreatedAt = createdAt
@@ -74,7 +74,7 @@ var queryTypes = graphql.NewObject(
 					var nodes []types.Node
 					var uuid string
 					var macAddr string
-					var ipmiIp string
+					var ipmiIP string
 					var status string
 					var cpu int
 					var memory int
@@ -90,12 +90,12 @@ var queryTypes = graphql.NewObject(
 					defer stmt.Close()
 
 					for stmt.Next() {
-						err := stmt.Scan(&uuid, &macAddr, &ipmiIp, &status, &cpu, &memory, &detail, &createdAt)
+						err := stmt.Scan(&uuid, &macAddr, &ipmiIP, &status, &cpu, &memory, &detail, &createdAt)
 						if err != nil {
 							logger.Logger.Println(err)
 						}
 
-						node := types.Node{UUID: uuid, MacAddr: macAddr, IpmiIP: ipmiIp, Status: status, Cpu: cpu, Memory: memory, Detail: detail, CreatedAt: createdAt}
+						node := types.Node{UUID: uuid, MacAddr: macAddr, IpmiIP: ipmiIP, Status: status, CPU: cpu, Memory: memory, Detail: detail, CreatedAt: createdAt}
 
 						logger.Logger.Println(node)
 						nodes = append(nodes, node)

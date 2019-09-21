@@ -4,13 +4,13 @@ import "time"
 
 // Node : Struct of node
 type Node struct {
-	UUID      string `json:"uuid"`
-	MacAddr   string `json:"mac_addr"`
-	IpmiIP    string `json:"ipmi_ip"`
-	Status    string `json:"status"`
-	Cpu       int `json:"cpu"`
-	Memory    int `json:"memory"`
-	Detail    string `json:"detail"`
+	UUID      string    `json:"uuid"`
+	MacAddr   string    `json:"mac_addr"`
+	IpmiIP    string    `json:"ipmi_ip"`
+	Status    string    `json:"status"`
+	CPU       int       `json:"cpu"`
+	Memory    int       `json:"memory"`
+	Detail    string    `json:"detail"`
 	CreatedAt time.Time `json:"created_at"`
 }
 
