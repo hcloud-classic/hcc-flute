@@ -48,18 +48,18 @@ goreport: goreport_dep ## Make goreport
 	@git --git-dir=$(PWD)/hcloud-badge/.git fetch --all
 	@git --git-dir=$(PWD)/hcloud-badge/.git checkout feature/dev
 	@git --git-dir=$(PWD)/hcloud-badge/.git pull origin feature/dev
-	@./hcloud-badge/hcloud_badge.sh $(PROJECT_NAME)
+	@./hcloud-badge/hcloud_badge.sh ${PROJECT_NAME}
 
 build: ## Build the binary file
-	@$(GOROOT)/bin/go build -o $(PROJECT_NAME) main.go
+	@$(GOROOT)/bin/go build -o ${PROJECT_NAME} main.go
 
 docker: ## Build docker image and push it to private docker registry
-	@sudo docker build -t $(PROJECT_NAME) .
-	@sudo docker tag ${ROOT_PROJECT_NAME}_$(PROJECT_NAME):latest 192.168.110.250:5000/$(PROJECT_NAME):latest
-	@sudo docker push 192.168.110.250:5000/$(PROJECT_NAME):latest
+	@sudo docker build -t ${PROJECT_NAME} .
+	@sudo docker tag ${ROOT_PROJECT_NAME}_${PROJECT_NAME}:latest 192.168.110.250:5000/${PROJECT_NAME}:latest
+	@sudo docker push 192.168.110.250:5000/${PROJECT_NAME}:latest
 
 clean: ## Remove previous build
-	@rm -f $(PROJECT_NAME)
+	@rm -f ${PROJECT_NAME}
 
 help: ## Display this help screen
 	@grep -h -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
