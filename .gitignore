@@ -1,7 +1,7 @@
 flute
 coverage.out
 goreport_grade
-
 .idea
-
+/vendor
+/_venodr-*
 nohup.out
