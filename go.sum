@@ -2,6 +2,8 @@ github.com/Terry-Mao/goconf v0.0.0-20161115082538-13cb73d70c44 h1:oyRla0cRmia52T
 github.com/Terry-Mao/goconf v0.0.0-20161115082538-13cb73d70c44/go.mod h1:pLupJNRivwIsgwXOsRfbZyfXLMW9X2Cgp1yshhvG/8A=
 github.com/go-sql-driver/mysql v1.4.1 h1:g24URVg0OFbNUTx9qqY1IRZ9D9z3iPyi5zKhQZpNwpA=
 github.com/go-sql-driver/mysql v1.4.1/go.mod h1:zAC/RDZ24gD3HViQzih4MyKcchzm+sOG5ZlKdlhCg5w=
+github.com/gojp/goreportcard v0.0.0-20190917085612-9e71b9371cfd h1:Fa7HyzY43eJgRPZXAWo67CCAQoonRg1XNS9gjDWFHaQ=
+github.com/gojp/goreportcard v0.0.0-20190917085612-9e71b9371cfd/go.mod h1:/DA2Xpp+OaR3EHafQSnT9SKOfbG2NPQR/qp6Qr8AgIw=
 github.com/golang/protobuf v1.3.1/go.mod h1:6lQm79b+lXiMfvg/cZm0SGofjICqVBUtrP5yJMmIC1U=
 github.com/graphql-go/graphql v0.7.8 h1:769CR/2JNAhLG9+aa8pfLkKdR0H+r5lsQqling5WwpU=
 github.com/graphql-go/graphql v0.7.8/go.mod h1:k6yrAYQaSP59DC5UVxbgxESlmVyojThKdORUqGDGmrI=
