@@ -11,8 +11,7 @@ func Parser() {
 	var config = fluteConfig{}
 	var err error
 
-	if err = conf.Parse(configLocation)
-	err != nil {
+	if err = conf.Parse(configLocation); err != nil {
 		logger.Logger.Panicln(err)
 	}
 

@@ -1,11 +1,11 @@
 package graphql
 
 import (
+	"github.com/graphql-go/graphql"
 	"hcc/flute/ipmi"
 	"hcc/flute/logger"
 	"hcc/flute/mysql"
 	"hcc/flute/types"
-	"github.com/graphql-go/graphql"
 )
 
 var mutationTypes = graphql.NewObject(graphql.ObjectConfig{
@@ -75,7 +75,7 @@ var mutationTypes = graphql.NewObject(graphql.ObjectConfig{
 
 					////////////////////////////////////////////////////////
 					// Get node info from RestfulAPI by IPMI
-					node := types.Node {
+					node := types.Node{
 						UUID:    uuid,
 						MacAddr: mac,
 						IpmiIP:  ipmiIP,
@@ -405,9 +405,9 @@ var mutationTypes = graphql.NewObject(graphql.ObjectConfig{
 						return nil, nil
 					}
 
-/////////////////////////////////////////////////////////////////////////////////////////////////
-///// Power State On ///////////////////////////////////////////////////
-////////////////////////////////////////////////////////////
+					/////////////////////////////////////////////////////////////////////////////////////////////////
+					///// Power State On ///////////////////////////////////////////////////
+					////////////////////////////////////////////////////////////
 
 					return nil, nil
 				}

@@ -1,8 +1,8 @@
 package uuidgen
 
 import (
-	"hcc/flute/logger"
 	"github.com/nu7hatch/gouuid"
+	"hcc/flute/logger"
 )
 
 // Uuidgen : Generate uuid
