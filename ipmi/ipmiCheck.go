@@ -78,14 +78,12 @@ func UpdateAllNodes() (interface{}, error) {
 			logger.Logger.Println(err)
 			return nil, nil
 		}
-		println(processors)
 
 		cores, err := GetProcessorsCores(ipmiIP, serialNo, processors)
 		if err != nil {
 			logger.Logger.Println(err)
 			return nil, nil
 		}
-		println(cores)
 
 		memory, err := GetTotalSystemMemory(ipmiIP, serialNo)
 		if err != nil {
