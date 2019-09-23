@@ -10,13 +10,14 @@ import (
 	"io/ioutil"
 	"net/http"
 	"strconv"
+	"time"
 )
 
 // GetSerialNo : Get serial number from IPMI node
 func GetSerialNo(ipmiIP string) (string, error) {
 	http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
 
-	client := &http.Client{}
+	client := &http.Client{Timeout: 3 * time.Second}
 	req, err := http.NewRequest("GET", "https://"+ipmiIP+"/redfish/v1/Systems/", nil)
 	if err != nil {
 		return "", err
@@ -58,7 +59,7 @@ func GetSerialNo(ipmiIP string) (string, error) {
 func GetUUID(ipmiIP string, serialNo string) (string, error) {
 	http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
 
-	client := &http.Client{}
+	client := &http.Client{Timeout: 3 * time.Second}
 	req, err := http.NewRequest("GET", "https://"+ipmiIP+"/redfish/v1/Systems/"+serialNo, nil)
 	if err != nil {
 		return "", err
@@ -100,7 +101,7 @@ func GetUUID(ipmiIP string, serialNo string) (string, error) {
 func GetPowerState(ipmiIP string, serialNo string) (string, error) {
 	http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
 
-	client := &http.Client{}
+	client := &http.Client{Timeout: 3 * time.Second}
 	req, err := http.NewRequest("GET", "https://"+ipmiIP+"/redfish/v1/Systems/"+serialNo, nil)
 	if err != nil {
 		return "", err
@@ -142,7 +143,7 @@ func GetPowerState(ipmiIP string, serialNo string) (string, error) {
 func GetProcessors(ipmiIP string, serialNo string) (int, error) {
 	http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
 
-	client := &http.Client{}
+	client := &http.Client{Timeout: 3 * time.Second}
 	req, err := http.NewRequest("GET", "https://"+ipmiIP+"/redfish/v1/Systems/"+serialNo+"/Processors", nil)
 	if err != nil {
 		return 0, err
@@ -184,7 +185,7 @@ func GetProcessors(ipmiIP string, serialNo string) (int, error) {
 func GetProcessorsCores(ipmiIP string, serialNo string, processors int) (int, error) {
 	http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
 
-	client := &http.Client{}
+	client := &http.Client{Timeout: 3 * time.Second}
 	coreSum := 0
 
 	for i := 1; i <= processors; i++ {
@@ -228,7 +229,7 @@ func GetProcessorsCores(ipmiIP string, serialNo string, processors int) (int, er
 func GetProcessorsThreads(ipmiIP string, serialNo string, processors int) (int, error) {
 	http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
 
-	client := &http.Client{}
+	client := &http.Client{Timeout: 3 * time.Second}
 	threadSum := 0
 
 	for i := 1; i <= processors; i++ {
@@ -272,7 +273,7 @@ func GetProcessorsThreads(ipmiIP string, serialNo string, processors int) (int, 
 func GetTotalSystemMemory(ipmiIP string, serialNo string) (int, error) {
 	http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
 
-	client := &http.Client{}
+	client := &http.Client{Timeout: 3 * time.Second}
 	req, err := http.NewRequest("GET", "https://"+ipmiIP+"/redfish/v1/Systems/"+serialNo, nil)
 	if err != nil {
 		return 0, err
@@ -315,7 +316,7 @@ func GetTotalSystemMemory(ipmiIP string, serialNo string) (int, error) {
 func ChangePowerState(ipmiIP string, serialNo string, state string) (string, error) {
 	http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
 
-	client := &http.Client{}
+	client := &http.Client{Timeout: 3 * time.Second}
 
 	resetType := ipmiResetType{state}
 	jsonBytes, err := json.Marshal(resetType)
@@ -364,7 +365,7 @@ func ChangePowerState(ipmiIP string, serialNo string, state string) (string, err
 func GetBMCNICMac(ipmiIP string) (string, error) {
 	http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
 
-	client := &http.Client{}
+	client := &http.Client{Timeout: 3 * time.Second}
 	req, err := http.NewRequest("GET", "https://"+ipmiIP+"/redfish/v1/Managers/BMC/EthernetInterfaces/3", nil)
 	if err != nil {
 		return "", err
