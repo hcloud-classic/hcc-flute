@@ -25,6 +25,7 @@ database db_name
 port 8888
 
 [ipmi]
+debug off
 username user
 password pass
 check_all_interval_ms 10000
