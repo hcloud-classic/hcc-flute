@@ -13,7 +13,7 @@ var mutationTypes = graphql.NewObject(graphql.ObjectConfig{
 	Fields: graphql.Fields{
 		////////////////////////////// node ///////////////////////////////
 		/* Create new node
-			http://localhost:7000/graphql?query=mutation+_{create_node(ipmi_ip:"172.31.0.1",detail:"Compute1"){uuid,mac_addr,ipmi_ip,status,cpu,memory,detail,created_at}}
+		http://localhost:7000/graphql?query=mutation+_{create_node(ipmi_ip:"172.31.0.1",detail:"Compute1"){uuid,mac_addr,ipmi_ip,status,cpu,memory,detail,created_at}}
 		*/
 		"create_node": &graphql.Field{
 			Type:        nodeType,
@@ -200,7 +200,7 @@ var mutationTypes = graphql.NewObject(graphql.ObjectConfig{
 		//},
 
 		/* Update all infos of all nodes
-			http://localhost:7000/graphql?query=mutation+_{update_all_nodes(){uuid,mac_addr,ipmi_ip,status,cpu,memory,detail,created_at}}
+		http://localhost:7000/graphql?query=mutation+_{update_all_nodes(){uuid,mac_addr,ipmi_ip,status,cpu,memory,detail,created_at}}
 		*/
 		"update_all_nodes": &graphql.Field{
 			Type:        nodeType,
@@ -213,7 +213,7 @@ var mutationTypes = graphql.NewObject(graphql.ObjectConfig{
 		},
 
 		/* Update status of the node
-			http://localhost:7000/graphql?query=mutation+_{update_status_node(uuid:"d4f3a900-b674-11e8-906e-000ffee02d5c"){status}}
+		http://localhost:7000/graphql?query=mutation+_{update_status_node(uuid:"d4f3a900-b674-11e8-906e-000ffee02d5c"){status}}
 		*/
 		"update_status_node": &graphql.Field{
 			Type:        nodeType,
@@ -251,8 +251,8 @@ var mutationTypes = graphql.NewObject(graphql.ObjectConfig{
 					}
 
 					node := types.Node{
-						UUID:    uuid,
-						Status:  powerState,
+						UUID:   uuid,
+						Status: powerState,
 					}
 
 					sql = "update node set status = ? where uuid = ?"
@@ -279,7 +279,7 @@ var mutationTypes = graphql.NewObject(graphql.ObjectConfig{
 		},
 
 		/* Update status of all nodes
-			http://localhost:7000/graphql?query=mutation+_{update_status_nodes(){status}}
+		http://localhost:7000/graphql?query=mutation+_{update_status_nodes(){status}}
 		*/
 		"update_status_nodes": &graphql.Field{
 			Type:        nodeType,
@@ -292,7 +292,7 @@ var mutationTypes = graphql.NewObject(graphql.ObjectConfig{
 		},
 
 		/* On node
-			http://localhost:7000/graphql?query=mutation+_{on_node(uuid:"d4f3a900-b674-11e8-906e-000ffee02d5c")}
+		http://localhost:7000/graphql?query=mutation+_{on_node(uuid:"d4f3a900-b674-11e8-906e-000ffee02d5c")}
 		*/
 		"on_node": &graphql.Field{
 			Type:        graphql.String,
@@ -342,8 +342,8 @@ var mutationTypes = graphql.NewObject(graphql.ObjectConfig{
 		},
 
 		/* Off node
-			http://localhost:7000/graphql?query=mutation+_{off_node(uuid:"d4f3a900-b674-11e8-906e-000ffee02d5c")}
-			http://localhost:7000/graphql?query=mutation+_{off_node(uuid:"d4f3a900-b674-11e8-906e-000ffee02d5c",force_off:true)}
+		http://localhost:7000/graphql?query=mutation+_{off_node(uuid:"d4f3a900-b674-11e8-906e-000ffee02d5c")}
+		http://localhost:7000/graphql?query=mutation+_{off_node(uuid:"d4f3a900-b674-11e8-906e-000ffee02d5c",force_off:true)}
 		*/
 		"off_node": &graphql.Field{
 			Type:        graphql.String,
@@ -353,7 +353,7 @@ var mutationTypes = graphql.NewObject(graphql.ObjectConfig{
 					Type: graphql.String,
 				},
 				"force_off": &graphql.ArgumentConfig{
-					Type:         graphql.Boolean,
+					Type: graphql.Boolean,
 				},
 			},
 			Resolve: func(params graphql.ResolveParams) (interface{}, error) {

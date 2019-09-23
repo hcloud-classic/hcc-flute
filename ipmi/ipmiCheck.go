@@ -16,23 +16,23 @@ func delayMillisecond(n time.Duration) {
 	time.Sleep(n * time.Millisecond)
 }
 
-func checkAllLock()  {
+func checkAllLock() {
 	checkAllLocked = true
 }
 
-func checkAllUnlock()  {
+func checkAllUnlock() {
 	checkAllLocked = false
 }
 
-func checkStatusLock()  {
+func checkStatusLock() {
 	checkStatusLocked = true
 }
 
-func checkStatusUnlock()  {
+func checkStatusUnlock() {
 	checkStatusLocked = false
 }
 
-func UpdateAllNodes()(interface{}, error) {
+func UpdateAllNodes() (interface{}, error) {
 	var nodes []types.Node
 	var uuid string
 	var ipmiIP string
@@ -124,7 +124,7 @@ func UpdateAllNodes()(interface{}, error) {
 	return nodes, nil
 }
 
-func UpdateStatusNodes()(interface{}, error) {
+func UpdateStatusNodes() (interface{}, error) {
 	var nodes []types.Node
 	var uuid string
 	var ipmiIP string
@@ -159,7 +159,7 @@ func UpdateStatusNodes()(interface{}, error) {
 		}
 
 		node := types.Node{
-			UUID: uuid,
+			UUID:   uuid,
 			Status: powerState,
 		}
 
@@ -192,7 +192,7 @@ func queueCheckAll() {
 			logger.Logger.Println("queueCheckAll(): Rerun CheckAll() after " + strconv.Itoa(int(config.Ipmi.CheckAllIntervalMs)) + "ms")
 		}
 		delayMillisecond(time.Duration(config.Ipmi.CheckAllIntervalMs))
-		CheckAll();
+		CheckAll()
 	}()
 }
 
@@ -202,7 +202,7 @@ func queueCheckStatus() {
 			logger.Logger.Println("queueCheckStatus(): Rerun CheckStatus() after " + strconv.Itoa(int(config.Ipmi.CheckStatusIntervalMs)) + "ms")
 		}
 		delayMillisecond(time.Duration(config.Ipmi.CheckStatusIntervalMs))
-		CheckStatus();
+		CheckStatus()
 	}()
 }
 
