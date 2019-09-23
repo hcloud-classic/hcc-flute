@@ -14,7 +14,7 @@ var queryTypes = graphql.NewObject(
 		Fields: graphql.Fields{
 			////////////////////////////// Node ///////////////////////////////
 			/* Get (read) single node by uuid
-			   http://localhost:7000/graphql?query={node(uuid:"[node_uuid]"){uuid,mac_addr,ipmi_ip,status,cpu,memory,detail,created_at}}
+			   http://localhost:7000/graphql?query={node(uuid:"d4f3a900-b674-11e8-906e-000ffee02d5c"){uuid,mac_addr,ipmi_ip,status,cpu,memory,detail,created_at}}
 			*/
 			"node": &graphql.Field{
 				Type:        nodeType,
