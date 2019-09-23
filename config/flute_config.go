@@ -28,7 +28,8 @@ port 8888
 debug off
 username user
 password pass
+request_timeout_ms 5000
 check_all_interval_ms 10000
-check_status_interval_ms 1000
+check_status_interval_ms 5000
 ##### CONFIG END #####
 -----------------------------------*/

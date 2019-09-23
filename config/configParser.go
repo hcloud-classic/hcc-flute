@@ -77,6 +77,11 @@ func parseIpmi() {
 		logger.Logger.Panicln(err)
 	}
 
+	Ipmi.RequestTimeoutMs, err = config.IpmiConfig.Int("request_timeout_ms")
+	if err != nil {
+		logger.Logger.Panicln(err)
+	}
+
 	Ipmi.CheckAllIntervalMs, err = config.IpmiConfig.Int("check_all_interval_ms")
 	if err != nil {
 		logger.Logger.Panicln(err)
