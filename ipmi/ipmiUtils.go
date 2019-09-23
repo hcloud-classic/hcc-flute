@@ -27,7 +27,9 @@ func GetSerialNo(ipmiIP string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	defer resp.Body.Close()
+	defer func() {
+		_ = resp.Body.Close()
+	}()
 
 	if resp.StatusCode >= 200 && resp.StatusCode <= 299 {
 		// Check response
@@ -67,7 +69,9 @@ func GetUUID(ipmiIP string, serialNo string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	defer resp.Body.Close()
+	defer func() {
+		_ = resp.Body.Close()
+	}()
 
 	if resp.StatusCode >= 200 && resp.StatusCode <= 299 {
 		// Check response
@@ -107,7 +111,9 @@ func GetPowerState(ipmiIP string, serialNo string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	defer resp.Body.Close()
+	defer func() {
+		_ = resp.Body.Close()
+	}()
 
 	if resp.StatusCode >= 200 && resp.StatusCode <= 299 {
 		// Check response
@@ -147,7 +153,9 @@ func GetProcessors(ipmiIP string, serialNo string) (int, error) {
 	if err != nil {
 		return 0, err
 	}
-	defer resp.Body.Close()
+	defer func() {
+		_ = resp.Body.Close()
+	}()
 
 	if resp.StatusCode >= 200 && resp.StatusCode <= 299 {
 		// Check response
@@ -180,7 +188,8 @@ func GetProcessorsCores(ipmiIP string, serialNo string, processors int) (int, er
 	client := &http.Client{}
 	coreSum := 0
 
-	for i := 1; i <= processors; i++ {
+	i := 1
+	for i <= processors {
 		req, err := http.NewRequest("GET", "https://"+ipmiIP+"/redfish/v1/Systems/"+serialNo+"/Processors/CPU"+strconv.Itoa(i), nil)
 		if err != nil {
 			return 0, err
@@ -191,7 +200,6 @@ func GetProcessorsCores(ipmiIP string, serialNo string, processors int) (int, er
 		if err != nil {
 			return 0, err
 		}
-		defer resp.Body.Close()
 
 		if resp.StatusCode >= 200 && resp.StatusCode <= 299 {
 			// Check response
@@ -209,9 +217,11 @@ func GetProcessorsCores(ipmiIP string, serialNo string, processors int) (int, er
 
 				coreSum += totalCores
 			}
+			_ = resp.Body.Close()
 
 			return 0, err
 		}
+		_ = resp.Body.Close()
 
 		return 0, errors.New("http response returned error code")
 	}
@@ -226,7 +236,8 @@ func GetProcessorsThreads(ipmiIP string, serialNo string, processors int) (int, 
 	client := &http.Client{}
 	threadSum := 0
 
-	for i := 1; i <= processors; i++ {
+	i := 1
+	for i <= processors {
 		req, err := http.NewRequest("GET", "https://"+ipmiIP+"/redfish/v1/Systems/"+serialNo+"/Processors/CPU"+strconv.Itoa(i), nil)
 		if err != nil {
 			return 0, err
@@ -237,7 +248,6 @@ func GetProcessorsThreads(ipmiIP string, serialNo string, processors int) (int, 
 		if err != nil {
 			return 0, err
 		}
-		defer resp.Body.Close()
 
 		if resp.StatusCode >= 200 && resp.StatusCode <= 299 {
 			// Check response
@@ -255,9 +265,11 @@ func GetProcessorsThreads(ipmiIP string, serialNo string, processors int) (int, 
 
 				threadSum += totalThreads
 			}
+			_ = resp.Body.Close()
 
 			return 0, err
 		}
+		_ = resp.Body.Close()
 
 		return 0, errors.New("http response returned error code")
 	}
@@ -280,7 +292,9 @@ func GetTotalSystemMemory(ipmiIP string, serialNo string) (int, error) {
 	if err != nil {
 		return 0, err
 	}
-	defer resp.Body.Close()
+	defer func() {
+		_ = resp.Body.Close()
+	}()
 
 	if resp.StatusCode >= 200 && resp.StatusCode <= 299 {
 		// Check response
@@ -306,57 +320,6 @@ func GetTotalSystemMemory(ipmiIP string, serialNo string) (int, error) {
 
 }
 
-// GetInfo : Get each system information from IPMI node
-func GetInfo(ipmiIP string) {
-	serialNo, err := GetSerialNo(ipmiIP)
-	if err != nil {
-		logger.Logger.Fatal(err)
-	}
-	logger.Logger.Println("SerialNo: " + serialNo)
-
-	uuid, err := GetUUID(ipmiIP, serialNo)
-	if err != nil {
-		logger.Logger.Fatal(err)
-	}
-	logger.Logger.Println("UUID: " + uuid)
-
-	powerState, err := GetPowerState(ipmiIP, serialNo)
-	if err != nil {
-		logger.Logger.Fatal(err)
-	}
-	logger.Logger.Println("Status: " + powerState)
-
-	processors, err := GetProcessors(ipmiIP, serialNo)
-	if err != nil {
-		logger.Logger.Fatal(err)
-	}
-	logger.Logger.Println("Processors: " + strconv.Itoa(processors))
-
-	cores, err := GetProcessorsCores(ipmiIP, serialNo, processors)
-	if err != nil {
-		logger.Logger.Fatal(err)
-	}
-	logger.Logger.Println("Cores: " + strconv.Itoa(cores))
-
-	threads, err := GetProcessorsThreads(ipmiIP, serialNo, processors)
-	if err != nil {
-		logger.Logger.Fatal(err)
-	}
-	logger.Logger.Println("Threads: " + strconv.Itoa(threads))
-
-	memory, err := GetTotalSystemMemory(ipmiIP, serialNo)
-	if err != nil {
-		logger.Logger.Fatal(err)
-	}
-	logger.Logger.Println("Memory: " + strconv.Itoa(memory) + "GiB")
-
-	mac, err := GetBMCNICMac(ipmiIP)
-	if err != nil {
-		logger.Logger.Fatal(err)
-	}
-	logger.Logger.Println("MAC Address: " + mac)
-}
-
 // ChangePowerState : Change power status for selected IPMI node
 func ChangePowerState(ipmiIP string, serialNo string, state string) (string, error) {
 	http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
@@ -380,7 +343,9 @@ func ChangePowerState(ipmiIP string, serialNo string, state string) (string, err
 	if err != nil {
 		return "", err
 	}
-	defer resp.Body.Close()
+	defer func() {
+		_ = resp.Body.Close()
+	}()
 
 	if resp.StatusCode >= 200 && resp.StatusCode <= 299 {
 		// Check response
@@ -419,7 +384,9 @@ func GetBMCNICMac(ipmiIP string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	defer resp.Body.Close()
+	defer func() {
+		_ = resp.Body.Close()
+	}()
 
 	if resp.StatusCode >= 200 && resp.StatusCode <= 299 {
 		// Check response

@@ -18,7 +18,9 @@ func main() {
 	if !logger.Prepare() {
 		return
 	}
-	defer logger.FpLog.Close()
+	defer func() {
+		_ = logger.FpLog.Close()
+	}()
 
 	config.Parser()
 
@@ -26,9 +28,11 @@ func main() {
 	if err != nil {
 		return
 	}
-	defer mysql.Db.Close()
+	defer func() {
+		_ = mysql.Db.Close()
+	}()
 
-	http.Handle("/graphql", graphql.GraphqlHandler)
+	http.Handle("/graphql", graphql.Handler)
 
 	logger.Logger.Println("Server is running on port " + strconv.Itoa(int(config.HTTP.Port)))
 	err = http.ListenAndServe(":"+strconv.Itoa(int(config.HTTP.Port)), nil)

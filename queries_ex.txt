@@ -58,4 +58,17 @@ mutation _ {
   }
 }
 
-// test
+// on
+mutation _ {
+  on_node(uuid: "d4f3a900-b674-11e8-906e-000ffee02d5c")
+}
+
+// off
+mutation _ {
+  off_node(uuid: "d4f3a900-b674-11e8-906e-000ffee02d5c")
+}
+
+// force off
+mutation _ {
+  off_node(uuid: "d4f3a900-b674-11e8-906e-000ffee02d5c", force_off:true)
+}
