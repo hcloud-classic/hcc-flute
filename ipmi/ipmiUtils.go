@@ -175,7 +175,6 @@ func GetProcessors(ipmiIP string, serialNo string) (int, error) {
 		}
 
 		return 0, err
-
 	}
 
 	return 0, errors.New("http response returned error code")
@@ -188,8 +187,7 @@ func GetProcessorsCores(ipmiIP string, serialNo string, processors int) (int, er
 	client := &http.Client{}
 	coreSum := 0
 
-	i := 1
-	for i <= processors {
+	for i := 1; i <= processors; i++ {
 		req, err := http.NewRequest("GET", "https://"+ipmiIP+"/redfish/v1/Systems/"+serialNo+"/Processors/CPU"+strconv.Itoa(i), nil)
 		if err != nil {
 			return 0, err
@@ -217,13 +215,10 @@ func GetProcessorsCores(ipmiIP string, serialNo string, processors int) (int, er
 
 				coreSum += totalCores
 			}
-			_ = resp.Body.Close()
-
-			return 0, err
+		} else {
+			return 0, errors.New("http response returned error code")
 		}
 		_ = resp.Body.Close()
-
-		return 0, errors.New("http response returned error code")
 	}
 
 	return coreSum, nil
@@ -236,8 +231,7 @@ func GetProcessorsThreads(ipmiIP string, serialNo string, processors int) (int, 
 	client := &http.Client{}
 	threadSum := 0
 
-	i := 1
-	for i <= processors {
+	for i := 1; i <= processors; i++ {
 		req, err := http.NewRequest("GET", "https://"+ipmiIP+"/redfish/v1/Systems/"+serialNo+"/Processors/CPU"+strconv.Itoa(i), nil)
 		if err != nil {
 			return 0, err
@@ -265,13 +259,10 @@ func GetProcessorsThreads(ipmiIP string, serialNo string, processors int) (int, 
 
 				threadSum += totalThreads
 			}
-			_ = resp.Body.Close()
-
-			return 0, err
+		} else {
+			return 0, errors.New("http response returned error code")
 		}
 		_ = resp.Body.Close()
-
-		return 0, errors.New("http response returned error code")
 	}
 
 	return threadSum, nil
