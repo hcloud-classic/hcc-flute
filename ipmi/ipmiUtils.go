@@ -5,6 +5,7 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"errors"
+	"hcc/flute/config"
 	"hcc/flute/logger"
 	"io/ioutil"
 	"net/http"
@@ -20,7 +21,7 @@ func GetSerialNo(ipmiIP string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	req.SetBasicAuth(username, password)
+	req.SetBasicAuth(config.Ipmi.Username, config.Ipmi.Password)
 	resp, err := client.Do(req)
 
 	if err != nil {
@@ -60,7 +61,7 @@ func GetUUID(ipmiIP string, serialNo string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	req.SetBasicAuth(username, password)
+	req.SetBasicAuth(config.Ipmi.Username, config.Ipmi.Password)
 	resp, err := client.Do(req)
 
 	if err != nil {
@@ -100,7 +101,7 @@ func GetPowerState(ipmiIP string, serialNo string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	req.SetBasicAuth(username, password)
+	req.SetBasicAuth(config.Ipmi.Username, config.Ipmi.Password)
 	resp, err := client.Do(req)
 
 	if err != nil {
@@ -140,7 +141,7 @@ func GetProcessors(ipmiIP string, serialNo string) (int, error) {
 	if err != nil {
 		return 0, err
 	}
-	req.SetBasicAuth(username, password)
+	req.SetBasicAuth(config.Ipmi.Username, config.Ipmi.Password)
 	resp, err := client.Do(req)
 
 	if err != nil {
@@ -184,7 +185,7 @@ func GetProcessorsCores(ipmiIP string, serialNo string, processors int) (int, er
 		if err != nil {
 			return 0, err
 		}
-		req.SetBasicAuth(username, password)
+		req.SetBasicAuth(config.Ipmi.Username, config.Ipmi.Password)
 		resp, err := client.Do(req)
 
 		if err != nil {
@@ -230,7 +231,7 @@ func GetProcessorsThreads(ipmiIP string, serialNo string, processors int) (int, 
 		if err != nil {
 			return 0, err
 		}
-		req.SetBasicAuth(username, password)
+		req.SetBasicAuth(config.Ipmi.Username, config.Ipmi.Password)
 		resp, err := client.Do(req)
 
 		if err != nil {
@@ -273,7 +274,7 @@ func GetTotalSystemMemory(ipmiIP string, serialNo string) (int, error) {
 	if err != nil {
 		return 0, err
 	}
-	req.SetBasicAuth(username, password)
+	req.SetBasicAuth(config.Ipmi.Username, config.Ipmi.Password)
 	resp, err := client.Do(req)
 
 	if err != nil {
@@ -372,7 +373,7 @@ func ChangePowerState(ipmiIP string, serialNo string, state string) (string, err
 	if err != nil {
 		return "", err
 	}
-	req.SetBasicAuth(username, password)
+	req.SetBasicAuth(config.Ipmi.Username, config.Ipmi.Password)
 
 	resp, err := client.Do(req)
 
@@ -412,7 +413,7 @@ func GetBMCNICMac(ipmiIP string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	req.SetBasicAuth(username, password)
+	req.SetBasicAuth(config.Ipmi.Username, config.Ipmi.Password)
 	resp, err := client.Do(req)
 
 	if err != nil {

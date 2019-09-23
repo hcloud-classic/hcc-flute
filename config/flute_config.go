@@ -7,6 +7,7 @@ var configLocation = "/etc/flute/flute.conf"
 type fluteConfig struct {
 	MysqlConfig *goconf.Section
 	HTTPConfig  *goconf.Section
+	IpmiConfig  *goconf.Section
 }
 
 /*-----------------------------------
@@ -22,5 +23,9 @@ database db_name
 
 [http]
 port 8888
+
+[ipmi]
+username user
+password pass
 ##### CONFIG END #####
 -----------------------------------*/
