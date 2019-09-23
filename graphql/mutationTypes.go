@@ -13,7 +13,7 @@ var mutationTypes = graphql.NewObject(graphql.ObjectConfig{
 	Fields: graphql.Fields{
 		////////////////////////////// node ///////////////////////////////
 		/* Create new node
-		http://localhost:7000/graphql?query=mutation+_{create_node(ipmi_ip:"172.31.0.1",detail:"Compute1"){uuid,mac_addr,ipmi_ip,status,cpu,memory,detail,created_at}}
+			http://localhost:7000/graphql?query=mutation+_{create_node(ipmi_ip:"172.31.0.1",detail:"Compute1"){uuid,mac_addr,ipmi_ip,status,cpu,memory,detail,created_at}}
 		*/
 		"create_node": &graphql.Field{
 			Type:        nodeType,
@@ -208,91 +208,7 @@ var mutationTypes = graphql.NewObject(graphql.ObjectConfig{
 			Resolve: func(params graphql.ResolveParams) (interface{}, error) {
 				logger.Logger.Println("Resolving: update_all_nodes")
 
-				var nodes []types.Node
-				var uuid string
-				var ipmiIP string
-
-				sql := "select uuid, ipmi_ip from node"
-				stmt, err := mysql.Db.Query(sql)
-				if err != nil {
-					logger.Logger.Println(err)
-					return nil, nil
-				}
-				defer func() {
-					_ = stmt.Close()
-				}()
-
-				for stmt.Next() {
-					err := stmt.Scan(&uuid, &ipmiIP)
-					if err != nil {
-						logger.Logger.Println(err)
-						return nil, nil
-					}
-
-					serialNo, err := ipmi.GetSerialNo(ipmiIP)
-					if err != nil {
-						logger.Logger.Println(err)
-						return nil, nil
-					}
-
-					mac, err := ipmi.GetBMCNICMac(ipmiIP)
-					if err != nil {
-						logger.Logger.Println(err)
-						return nil, nil
-					}
-
-					powerState, err := ipmi.GetPowerState(ipmiIP, serialNo)
-					if err != nil {
-						logger.Logger.Println(err)
-						return nil, nil
-					}
-
-					processors, err := ipmi.GetProcessors(ipmiIP, serialNo)
-					if err != nil {
-						logger.Logger.Println(err)
-						return nil, nil
-					}
-
-					cores, err := ipmi.GetProcessorsCores(ipmiIP, serialNo, processors)
-					if err != nil {
-						logger.Logger.Println(err)
-						return nil, nil
-					}
-
-					memory, err := ipmi.GetTotalSystemMemory(ipmiIP, serialNo)
-					if err != nil {
-						logger.Logger.Println(err)
-						return nil, nil
-					}
-
-					node := types.Node{
-						UUID:    uuid,
-						MacAddr: mac,
-						IpmiIP:  ipmiIP,
-						Status:  powerState,
-						CPU:     cores,
-						Memory:  memory,
-					}
-
-					sql := "update node set mac_addr = ?, status = ?, cpu = ?, memory = ? where uuid = ?"
-					stmt, err := mysql.Db.Prepare(sql)
-					if err != nil {
-						logger.Logger.Println(err.Error())
-						return nil, nil
-					}
-
-					result, err2 := stmt.Exec(node.MacAddr, node.Status, node.CPU, node.Memory, node.UUID)
-					if err2 != nil {
-						logger.Logger.Println(err2)
-						return nil, nil
-					}
-					_ = stmt.Close()
-					
-					logger.Logger.Println(result.LastInsertId())
-					nodes = append(nodes, node)
-				}
-
-				return nodes, nil
+				return ipmi.UpdateAllNodes()
 			},
 		},
 
@@ -363,7 +279,7 @@ var mutationTypes = graphql.NewObject(graphql.ObjectConfig{
 		},
 
 		/* Update status of all nodes
-		http://localhost:7000/graphql?query=mutation+_{update_status_nodes(){status}}
+			http://localhost:7000/graphql?query=mutation+_{update_status_nodes(){status}}
 		*/
 		"update_status_nodes": &graphql.Field{
 			Type:        nodeType,
@@ -371,63 +287,7 @@ var mutationTypes = graphql.NewObject(graphql.ObjectConfig{
 			Resolve: func(params graphql.ResolveParams) (interface{}, error) {
 				logger.Logger.Println("Resolving: update_status_nodes")
 
-				var nodes []types.Node
-				var uuid string
-				var ipmiIP string
-
-				sql := "select uuid, ipmi_ip from node"
-				stmt, err := mysql.Db.Query(sql)
-				if err != nil {
-					logger.Logger.Println(err)
-					return nil, nil
-				}
-				defer func() {
-					_ = stmt.Close()
-				}()
-
-				for stmt.Next() {
-					err := stmt.Scan(&uuid, &ipmiIP)
-					if err != nil {
-						logger.Logger.Println(err)
-						return nil, nil
-					}
-
-					serialNo, err := ipmi.GetSerialNo(ipmiIP)
-					if err != nil {
-						logger.Logger.Println(err)
-						return nil, nil
-					}
-
-					powerState, err := ipmi.GetPowerState(ipmiIP, serialNo)
-					if err != nil {
-						logger.Logger.Println(err)
-						return nil, nil
-					}
-
-					node := types.Node{
-						UUID: uuid,
-						Status: powerState,
-					}
-
-					sql = "update node set status = ? where uuid = ?"
-					stmt, err := mysql.Db.Prepare(sql)
-					if err != nil {
-						logger.Logger.Println(err.Error())
-						return nil, nil
-					}
-					
-					result, err2 := stmt.Exec(node.Status, node.UUID)
-					if err2 != nil {
-						logger.Logger.Println(err2)
-						return nil, nil
-					}
-					_ = stmt.Close()
-					
-					logger.Logger.Println(result.LastInsertId())
-					nodes = append(nodes, node)
-				}
-
-				return nodes, nil
+				return ipmi.UpdateStatusNodes()
 			},
 		},
 
