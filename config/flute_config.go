@@ -27,5 +27,7 @@ port 8888
 [ipmi]
 username user
 password pass
+check_all_interval_ms 10000
+check_status_interval_ms 1000
 ##### CONFIG END #####
 -----------------------------------*/
