@@ -32,6 +32,7 @@ func checkStatusUnlock() {
 	checkStatusLocked = false
 }
 
+// UpdateAllNodes : Get all infos from IPMI nodes and update database
 func UpdateAllNodes() (interface{}, error) {
 	var nodes []types.Node
 	var uuid string
@@ -124,6 +125,7 @@ func UpdateAllNodes() (interface{}, error) {
 	return nodes, nil
 }
 
+// UpdateStatusNodes : Get status from IPMI nodes and update database
 func UpdateStatusNodes() (interface{}, error) {
 	var nodes []types.Node
 	var uuid string
@@ -206,6 +208,7 @@ func queueCheckStatus() {
 	}()
 }
 
+// CheckAll : Check all IPMI infos by 'check_all_interval_ms' config option
 func CheckAll() {
 	if checkAllLocked {
 		if config.Ipmi.Debug == "on" {
@@ -227,6 +230,7 @@ func CheckAll() {
 	queueCheckAll()
 }
 
+// CheckStatus : Check power status of IPMI nodes by 'check_status_interval_ms' config option
 func CheckStatus() {
 	if checkStatusLocked {
 		if config.Ipmi.Debug == "on" {
