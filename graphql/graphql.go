@@ -25,5 +25,5 @@ var Schema, _ = graphql.NewSchema(
 var Handler = handler.New(&handler.Config{
 	Schema:   &Schema,
 	Pretty:   true,
-	GraphiQL: false,
+	GraphiQL: true,
 })
