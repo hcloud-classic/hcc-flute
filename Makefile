@@ -1,13 +1,15 @@
-PROJECT_NAME := "GraphQL_Cello"
-PKG_LIST := $(shell go list ${PROJECT_NAME}/...)
+ROOT_PROJECT_NAME := "hcc"
+PROJECT_NAME := "flute"
+PKG_LIST := $(shell go list ${ROOT_PROJECT_NAME}/${PROJECT_NAME}/...)
 
-.PHONY: all dep build docker clean gofmt goreport goreport_deb test coverage coverhtml lint
+.PHONY: all build docker clean gofmt goreport goreport_deb test coverage coverhtml lint
 
-all: dep build
+all: build
 
 copy_dir: ## Copy project folder to GOPATH
-	@rm -rf $(GOPATH)/src/${PROJECT_NAME}
-	@cp -Rp `pwd` $(GOPATH)/src/${PROJECT_NAME}
+	@mkdir -p $(GOPATH)/src/${ROOT_PROJECT_NAME}
+	@rm -rf $(GOPATH)/src/${ROOT_PROJECT_NAME}/${PROJECT_NAME}
+	@cp -Rp `pwd` $(GOPATH)/src/${ROOT_PROJECT_NAME}/${PROJECT_NAME}
 
 lint_dep: ## Get the dependencies for golint
 	@$(GOROOT)/bin/go get -u golang.org/x/lint/golint
@@ -29,42 +31,35 @@ coverage: ## Generate global code coverage report
 coverhtml: coverage ## Generate global code coverage report in HTML
 	@$(GOROOT)/bin/go tool cover -html=coverage.out
 
-dep: ## Get the dependencies for build
-	@$(GOROOT)/bin/go get -u github.com/nu7hatch/gouuid
-	@$(GOROOT)/bin/go get -u github.com/go-sql-driver/mysql
-	@$(GOROOT)/bin/go get -u github.com/graphql-go/graphql
-	@$(GOROOT)/bin/go get -u github.com/graphql-go/handler
-
 gofmt: ## Run gofmt for go files
 	@find -name '*.go' -exec $(GOROOT)/bin/gofmt -s -w {} \;
 
 goreport_dep: ## Get the dependencies for goreport
+	@wget https://raw.githubusercontent.com/alecthomas/gometalinter/master/scripts/install.sh
+	@chmod +x install.sh
+	@./install.sh -b $(GOPATH)/bin
 	@$(GOROOT)/bin/go get -u github.com/gojp/goreportcard/cmd/goreportcard-cli
 	@$(GOROOT)/bin/go install github.com/gojp/goreportcard/cmd/goreportcard-cli
-	@$(GOROOT)/bin/go get -u github.com/alecthomas/gometalinter
-	@$(GOROOT)/bin/go install github.com/alecthomas/gometalinter
-	@$(GOROOT)/bin/go get -u github.com/fzipp/gocyclo
-	@$(GOROOT)/bin/go install github.com/fzipp/gocyclo
-	@$(GOROOT)/bin/go get -u github.com/gordonklaus/ineffassign
-	@$(GOROOT)/bin/go install github.com/gordonklaus/ineffassign
-	@$(GOROOT)/bin/go get -u github.com/client9/misspell/cmd/misspell
-	@$(GOROOT)/bin/go install github.com/client9/misspell/cmd/misspell
+	@rm -f install.sh
 
 goreport: goreport_dep ## Make goreport
 	@git submodule sync --recursive
 	@git submodule update --init --recursive
-	@./graphql_cello_badge/update_goreport_grade.sh
+	@git --git-dir=$(PWD)/hcloud-badge/.git fetch --all
+	@git --git-dir=$(PWD)/hcloud-badge/.git checkout feature/dev
+	@git --git-dir=$(PWD)/hcloud-badge/.git pull origin feature/dev
+	@./hcloud-badge/hcloud_badge.sh ${PROJECT_NAME}
 
 build: ## Build the binary file
-	@$(GOROOT)/bin/go build -o $(PROJECT_NAME) main.go
+	@$(GOROOT)/bin/go build -o ${PROJECT_NAME} main.go
 
 docker: ## Build docker image and push it to private docker registry
-	@sudo docker build -t graphql_cello .
-	@sudo docker tag graphql_cello:latest 192.168.110.230:5000/graphql_cello:latest
-	@sudo docker push 192.168.110.230:5000/graphql_cello:latest
+	@sudo docker build -t ${PROJECT_NAME} .
+	@sudo docker tag ${ROOT_PROJECT_NAME}_${PROJECT_NAME}:latest 192.168.110.250:5000/${PROJECT_NAME}:latest
+	@sudo docker push 192.168.110.250:5000/${PROJECT_NAME}:latest
 
 clean: ## Remove previous build
-	@rm -f $(PROJECT_NAME)
+	@rm -f ${PROJECT_NAME}
 
 help: ## Display this help screen
 	@grep -h -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'

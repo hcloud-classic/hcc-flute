@@ -1,15 +1,15 @@
-package cellouuidgen
+package uuidgen
 
 import (
-	"GraphQL_Cello/cellologger"
 	"github.com/nu7hatch/gouuid"
+	"hcc/flute/logger"
 )
 
 // Uuidgen : Generate uuid
 func Uuidgen() (string, error) {
 	out, err := uuid.NewV4()
 	if err != nil {
-		cellologger.Logger.Println(err)
+		logger.Logger.Println(err)
 		return "", err
 	}
 

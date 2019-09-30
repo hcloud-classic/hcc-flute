@@ -2,12 +2,12 @@
 FROM ubuntu:latest
 MAINTAINER ish <ish@innogrid.com>
 
-RUN mkdir -p /GraphQL_flute/
-WORKDIR /GraphQL_flute/
+RUN mkdir -p /flute/
+WORKDIR /flute/
 
-ADD GraphQL_flute /GraphQL_flute/
-RUN chmod 755 /GraphQL_flute/GraphQL_flute
+ADD flute /flute/
+RUN chmod 755 /flute/flute
 
-EXPOSE 8001
+EXPOSE 7000
 
-CMD ["/GraphQL_flute/GraphQL_flute"]
+CMD ["/flute/flute"]

@@ -1,35 +1,48 @@
 package main
 
 import (
-	"GraphQL_flute/flutecheckroot"
-	"GraphQL_flute/fluteconfig"
-	"GraphQL_flute/flutegraphql"
-	"GraphQL_flute/flutelogger"
-	"GraphQL_flute/flutemysql"
+	"hcc/flute/checkroot"
+	"hcc/flute/config"
+	"hcc/flute/graphql"
+	"hcc/flute/ipmi"
+	"hcc/flute/logger"
+	"hcc/flute/mysql"
 	"net/http"
+	"strconv"
 )
 
 func main() {
-	if !flutecheckroot.CheckRoot() {
+	if !checkroot.CheckRoot() {
 		return
 	}
 
-	if !flutelogger.Prepare() {
+	if !logger.Prepare() {
 		return
 	}
-	defer flutelogger.FpLog.Close()
+	defer func() {
+		_ = logger.FpLog.Close()
+	}()
 
-	err := flutemysql.Prepare()
+	config.Parser()
+
+	err := mysql.Prepare()
 	if err != nil {
 		return
 	}
-	defer flutemysql.Db.Close()
+	defer func() {
+		_ = mysql.Db.Close()
+	}()
 
-	http.Handle("/graphql", flutegraphql.GraphqlHandler)
+	logger.Logger.Println("Starting ipmi.CheckAll(). Interval is " + strconv.Itoa(int(config.Ipmi.CheckAllIntervalMs)) + "ms")
+	ipmi.CheckAll()
+	logger.Logger.Println("Starting ipmi.CheckStatus(). Interval is " + strconv.Itoa(int(config.Ipmi.CheckStatusIntervalMs)) + "ms")
+	ipmi.CheckStatus()
 
-	flutelogger.Logger.Println("Server is running on port " + fluteconfig.HTTPPort)
-	err = http.ListenAndServe(":"+fluteconfig.HTTPPort, nil)
+	http.Handle("/graphql", graphql.Handler)
+
+	logger.Logger.Println("Server is running on port " + strconv.Itoa(int(config.HTTP.Port)))
+	err = http.ListenAndServe(":"+strconv.Itoa(int(config.HTTP.Port)), nil)
 	if err != nil {
-		flutelogger.Logger.Println("Failed to prepare http server!")
+		logger.Logger.Println("Failed to prepare http server!")
 	}
 }

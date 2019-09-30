@@ -1,7 +1,7 @@
-package cellologger
+package logger
 
 import (
-	"GraphQL_Cello/cellocheckroot"
+	"hcc/flute/checkroot"
 	"testing"
 )
 
@@ -13,7 +13,7 @@ func Test_CreateDirIfNotExist(t *testing.T) {
 }
 
 func Test_Logger_Prepare(t *testing.T) {
-	if !cellocheckroot.CheckRoot() {
+	if !checkroot.CheckRoot() {
 		t.Fatal("Failed to get root permission!")
 	}
 

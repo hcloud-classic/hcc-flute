@@ -1,4 +1,4 @@
-package cellographql
+package graphql
 
 import (
 	"github.com/graphql-go/graphql"
@@ -13,16 +13,16 @@ var Schema, _ = graphql.NewSchema(
 	},
 )
 
-// GraphqlHandler : GraphQL schema handler
+// Handler : GraphQL schema handler
 //
-// Handler config options
+// Config options of handler
 //
 // Schema : GraphQL schema definition variable name
 //
 // Pretty : Show sorted json code in GraphiQL
 //
 // GraphiQL : Show GraphQL GUI request form in web browser
-var GraphqlHandler = handler.New(&handler.Config{
+var Handler = handler.New(&handler.Config{
 	Schema:   &Schema,
 	Pretty:   true,
 	GraphiQL: true,

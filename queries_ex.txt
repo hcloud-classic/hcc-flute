@@ -1,48 +1,36 @@
-//// volume
-// list
-query List_Volume {
-  list_volume {
-    uuid
-    size
-    type
-    server_uuid
-  }
-}
+//// node
+// list_node : Get (read) node list
+http://localhost:7000/graphql?query={list_node{uuid,mac_addr,ipmi_ip,status,cpu,memory,detail,created_at}}
 
-// read
-query Select_Volume {
-  volume(uuid: "7284772e-3811-4030-a311-2da8ff705850") {
-    uuid
-    size
-    type
-    server_uuid
-  }
-}
+// node : Get a node by uuid
+http://localhost:7000/graphql?query={node(uuid:"d4f3a900-b674-11e8-906e-000ffee02d5c"){uuid,mac_addr,ipmi_ip,status,cpu,memory,detail,created_at}}
 
-// create
-mutation Create_Volume {
-  create_volume(size: 1024000, type: "ext4", server_uuid: "7284772e-3811-4030-a311-2da8ff705850") {
-    size
-    type
-    server_uuid
-  }
-}
+// create : Create new node
+http://localhost:7000/graphql?query=mutation+_{create_node(ipmi_ip:"172.31.0.1",detail:"Compute1"){uuid,mac_addr,ipmi_ip,status,cpu,memory,detail,created_at}}
 
-// update
-mutation Update_Volume {
-  update_volume(uuid: "1dad3b09-acaf-44fe-9fdd-5d3a1323e5a2", size: 1024, type: "zfs", server_uuid: "7284772e-3811-4030-a311-2da8ff705850") {
-    uuid
-    size
-    type
-    server_uuid
-  }
-}
+// update_all_nodes : Update all infos of all nodes
+http://localhost:7000/graphql?query=mutation+_{update_all_nodes(){uuid,mac_addr,ipmi_ip,status,cpu,memory,detail,created_at}}
+
+// update_status_node : Update status of the node
+http://localhost:7000/graphql?query=mutation+_{update_status_node(uuid:"d4f3a900-b674-11e8-906e-000ffee02d5c"){status}}
+
+// update_status_nodes : Update status of all nodes
+http://localhost:7000/graphql?query=mutation+_{update_status_nodes(){status}}
 
 // delete
-mutation _ {
-  delete_volume(uuid: "05333605-561d-4e8c-b566-07c92d915657") {
-    uuid
-  }
-}
 
-// test
+
+// on_node : On node
+http://localhost:7000/graphql?query=mutation+_{on_node(uuid:"d4f3a900-b674-11e8-906e-000ffee02d5c")}
+
+// off_node : Off node
+http://localhost:7000/graphql?query=mutation+_{off_node(uuid:"d4f3a900-b674-11e8-906e-000ffee02d5c")}
+http://localhost:7000/graphql?query=mutation+_{off_node(uuid:"d4f3a900-b674-11e8-906e-000ffee02d5c",force_off:true)}
+
+//// Ipmi
+// ipmi : Get a ipmi by uuid
+http://localhost:8001/graphql?query={ipmi(uuid:"[ipmi_uuid]]"){uuid}}
+
+// list_ipmi : Get (read) ipmi list
+http://localhost:8001/graphql?query={list_ipmi{uuid}}
+

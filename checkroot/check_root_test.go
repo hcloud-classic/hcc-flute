@@ -1,4 +1,4 @@
-package cellocheckroot
+package checkroot
 
 import "testing"
 

@@ -1,7 +1,8 @@
-GraphQL_Cello
+flute
 coverage.out
 goreport_grade
-
-.idea
-
+.idea/
+.vscode/
+/vendor
+/_venodr-*
 nohup.out

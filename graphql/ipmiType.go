@@ -1,21 +1,18 @@
-package cellographql
+package graphql
 
 import "github.com/graphql-go/graphql"
 
-var volumeType = graphql.NewObject(
+var ipmiType = graphql.NewObject(
 	graphql.ObjectConfig{
-		Name: "Volume",
+		Name: "Ipmi",
 		Fields: graphql.Fields{
 			"uuid": &graphql.Field{
 				Type: graphql.String,
 			},
-			"size": &graphql.Field{
-				Type: graphql.Int,
-			},
-			"type": &graphql.Field{
+			"node_ip": &graphql.Field{
 				Type: graphql.String,
 			},
-			"server_uuid": &graphql.Field{
+			"node_uuid": &graphql.Field{
 				Type: graphql.String,
 			},
 		},
