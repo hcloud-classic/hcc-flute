@@ -26,10 +26,14 @@ port 8888
 
 [ipmi]
 debug off
+bmc_ip_list 172.31.0.1,172.31.0.2,172.31.0.3,172.31.0.4
 username user
 password pass
 request_timeout_ms 5000
 check_all_interval_ms 10000
 check_status_interval_ms 5000
+check_nodes_detail_interval_ms 15000
+baseboard_nic_no_pxe 2
+baseboard_nic_no_bmc 3
 ##### CONFIG END #####
 -----------------------------------*/

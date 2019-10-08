@@ -33,10 +33,14 @@ func main() {
 		_ = mysql.Db.Close()
 	}()
 
+	ipmi.BMCIPParser()
+
 	logger.Logger.Println("Starting ipmi.CheckAll(). Interval is " + strconv.Itoa(int(config.Ipmi.CheckAllIntervalMs)) + "ms")
 	ipmi.CheckAll()
 	logger.Logger.Println("Starting ipmi.CheckStatus(). Interval is " + strconv.Itoa(int(config.Ipmi.CheckStatusIntervalMs)) + "ms")
 	ipmi.CheckStatus()
+	logger.Logger.Println("Starting ipmi.CheckNodesDetail(). Interval is " + strconv.Itoa(int(config.Ipmi.CheckNodesDetailIntervalMs)) + "ms")
+	ipmi.CheckNodesDetail()
 
 	http.Handle("/graphql", graphql.Handler)
 

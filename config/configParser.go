@@ -3,6 +3,7 @@ package config
 import (
 	"github.com/Terry-Mao/goconf"
 	"hcc/flute/logger"
+	"strings"
 )
 
 var conf = goconf.New()
@@ -67,6 +68,12 @@ func parseIpmi() {
 		logger.Logger.Panicln(err)
 	}
 
+	Ipmi.BMCIPList, err = config.IpmiConfig.String("bmc_ip_list")
+	if err != nil {
+		logger.Logger.Panicln(err)
+	}
+	Ipmi.BMCIPListArray = strings.Split(Ipmi.BMCIPList, ",")
+
 	Ipmi.Username, err = config.IpmiConfig.String("username")
 	if err != nil {
 		logger.Logger.Panicln(err)
@@ -88,6 +95,21 @@ func parseIpmi() {
 	}
 
 	Ipmi.CheckStatusIntervalMs, err = config.IpmiConfig.Int("check_status_interval_ms")
+	if err != nil {
+		logger.Logger.Panicln(err)
+	}
+
+	Ipmi.CheckNodesDetailIntervalMs, err = config.IpmiConfig.Int("check_nodes_detail_interval_ms")
+	if err != nil {
+		logger.Logger.Panicln(err)
+	}
+
+	Ipmi.BaseboardNICNoPXE, err = config.IpmiConfig.Int("baseboard_nic_no_pxe")
+	if err != nil {
+		logger.Logger.Panicln(err)
+	}
+
+	Ipmi.BaseboardNICNoBMC, err = config.IpmiConfig.Int("baseboard_nic_no_bmc")
 	if err != nil {
 		logger.Logger.Panicln(err)
 	}

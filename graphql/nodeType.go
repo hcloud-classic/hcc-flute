@@ -9,26 +9,32 @@ var nodeType = graphql.NewObject(
 			"uuid": &graphql.Field{
 				Type: graphql.String,
 			},
-			"mac_addr": &graphql.Field{
+			"bmc_mac_addr": &graphql.Field{
 				Type: graphql.String,
 			},
-			"ipmi_ip": &graphql.Field{
+			"bmc_ip": &graphql.Field{
+				Type: graphql.String,
+			},
+			"pxe_mac_addr": &graphql.Field{
 				Type: graphql.String,
 			},
 			"status": &graphql.Field{
 				Type: graphql.String,
 			},
-			"cpu": &graphql.Field{
+			"cpu_cores": &graphql.Field{
 				Type: graphql.Int,
 			},
 			"memory": &graphql.Field{
 				Type: graphql.Int,
 			},
-			"detail": &graphql.Field{
+			"desc": &graphql.Field{
 				Type: graphql.String,
 			},
 			"created_at": &graphql.Field{
 				Type: graphql.DateTime,
+			},
+			"active": &graphql.Field{
+				Type: graphql.Int,
 			},
 		},
 	},
