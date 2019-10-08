@@ -31,6 +31,11 @@ var mutationTypes = graphql.NewObject(graphql.ObjectConfig{
 				logger.Logger.Println("Resolving: create_node")
 
 				bmcIP, bmcIPOk := params.Args["bmc_ip"].(string)
+				desc, descOk := params.Args["desc"].(string)
+
+				if !descOk {
+					desc = ""
+				}
 
 				if bmcIPOk {
 					serialNo, err := ipmi.GetSerialNo(bmcIP)
@@ -89,7 +94,7 @@ var mutationTypes = graphql.NewObject(graphql.ObjectConfig{
 						Status:     powerState,
 						CPUCores:   cpuCores,
 						Memory:     memory,
-						Desc:       params.Args["desc"].(string),
+						Desc:       desc,
 					}
 
 					sql := "insert into node(uuid, bmc_mac_addr, bmc_ip, pxe_mac_addr, status, cpu_cores, memory, `desc`, created_at) values (?, ?, ?, ?, ?, ?, ?, ?, now())"
