@@ -2,6 +2,7 @@ package graphql
 
 import (
 	"github.com/graphql-go/graphql"
+	"hcc/flute/config"
 	"hcc/flute/ipmi"
 	"hcc/flute/logger"
 	"hcc/flute/mysql"
@@ -13,78 +14,85 @@ var mutationTypes = graphql.NewObject(graphql.ObjectConfig{
 	Fields: graphql.Fields{
 		////////////////////////////// node ///////////////////////////////
 		/* Create new node
-		http://localhost:7000/graphql?query=mutation+_{create_node(ipmi_ip:"172.31.0.1",detail:"Compute1"){uuid,mac_addr,ipmi_ip,status,cpu,memory,detail,created_at}}
+		http://192.168.110.240:7000/graphql?query=mutation+_{create_node(bmc_ip:"172.31.0.1",desc:"Compute1"){uuid,bmc_mac_addr,bmc_ip,status,cpu_cores,memory,desc,created_at}}
 		*/
 		"create_node": &graphql.Field{
 			Type:        nodeType,
 			Description: "Create new node",
 			Args: graphql.FieldConfigArgument{
-				"ipmi_ip": &graphql.ArgumentConfig{
+				"bmc_ip": &graphql.ArgumentConfig{
 					Type: graphql.String,
 				},
-				"detail": &graphql.ArgumentConfig{
+				"desc": &graphql.ArgumentConfig{
 					Type: graphql.String,
 				},
 			},
 			Resolve: func(params graphql.ResolveParams) (interface{}, error) {
 				logger.Logger.Println("Resolving: create_node")
 
-				ipmiIP, uuidOk := params.Args["ipmi_ip"].(string)
+				bmcIP, bmcIPOk := params.Args["bmc_ip"].(string)
 
-				if uuidOk {
-					serialNo, err := ipmi.GetSerialNo(ipmiIP)
+				if bmcIPOk {
+					serialNo, err := ipmi.GetSerialNo(bmcIP)
 					if err != nil {
 						logger.Logger.Println(err)
 						return nil, nil
 					}
 
-					uuid, err := ipmi.GetUUID(ipmiIP, serialNo)
+					uuid, err := ipmi.GetUUID(bmcIP, serialNo)
 					if err != nil {
 						logger.Logger.Println(err)
 						return nil, nil
 					}
 
-					mac, err := ipmi.GetBMCNICMac(ipmiIP)
+					BMCmac, err := ipmi.GetNICMac(bmcIP, int(config.Ipmi.BaseboardNICNoBMC), true)
 					if err != nil {
 						logger.Logger.Println(err)
 						return nil, nil
 					}
 
-					powerState, err := ipmi.GetPowerState(ipmiIP, serialNo)
+					PXEmac, err := ipmi.GetNICMac(bmcIP, int(config.Ipmi.BaseboardNICNoPXE), false)
 					if err != nil {
 						logger.Logger.Println(err)
 						return nil, nil
 					}
 
-					processors, err := ipmi.GetProcessors(ipmiIP, serialNo)
+					powerState, err := ipmi.GetPowerState(bmcIP, serialNo)
 					if err != nil {
 						logger.Logger.Println(err)
 						return nil, nil
 					}
 
-					cores, err := ipmi.GetProcessorsCores(ipmiIP, serialNo, processors)
+					processors, err := ipmi.GetProcessors(bmcIP, serialNo)
 					if err != nil {
 						logger.Logger.Println(err)
 						return nil, nil
 					}
 
-					memory, err := ipmi.GetTotalSystemMemory(ipmiIP, serialNo)
+					cpuCores, err := ipmi.GetProcessorsCores(bmcIP, serialNo, processors)
+					if err != nil {
+						logger.Logger.Println(err)
+						return nil, nil
+					}
+
+					memory, err := ipmi.GetTotalSystemMemory(bmcIP, serialNo)
 					if err != nil {
 						logger.Logger.Println(err)
 						return nil, nil
 					}
 
 					node := types.Node{
-						UUID:    uuid,
-						MacAddr: mac,
-						IpmiIP:  ipmiIP,
-						Status:  powerState,
-						CPU:     cores,
-						Memory:  memory,
-						Detail:  params.Args["detail"].(string),
+						UUID:       uuid,
+						BmcMacAddr: BMCmac,
+						BmcIP:      bmcIP,
+						PXEMacAddr: PXEmac,
+						Status:     powerState,
+						CPUCores:   cpuCores,
+						Memory:     memory,
+						Desc:       params.Args["desc"].(string),
 					}
 
-					sql := "insert into node(uuid, mac_addr, ipmi_ip, status, cpu, memory, detail, created_at) values (?, ?, ?, ?, ?, ?, ?, now())"
+					sql := "insert into node(uuid, bmc_mac_addr, bmc_ip, pxe_mac_addr, status, cpu_cores, memory, `desc`, created_at) values (?, ?, ?, ?, ?, ?, ?, ?, now())"
 					stmt, err := mysql.Db.Prepare(sql)
 					if err != nil {
 						logger.Logger.Println(err.Error())
@@ -93,7 +101,7 @@ var mutationTypes = graphql.NewObject(graphql.ObjectConfig{
 					defer func() {
 						_ = stmt.Close()
 					}()
-					result, err2 := stmt.Exec(node.UUID, node.MacAddr, node.IpmiIP, node.Status, node.CPU, node.Memory, node.Detail)
+					result, err2 := stmt.Exec(node.UUID, node.BmcMacAddr, node.BmcIP, node.PXEMacAddr, node.Status, node.CPUCores, node.Memory, node.Desc)
 					if err2 != nil {
 						logger.Logger.Println(err2)
 						return nil, nil
@@ -106,101 +114,59 @@ var mutationTypes = graphql.NewObject(graphql.ObjectConfig{
 				return nil, nil
 			},
 		},
-		//
-		///* Update volume by uuid
-		//   http://localhost:8001/graphql?query=mutation+_{update_volume(uuid:"[volume_uuid]",size:10240,type:"ext4",server_uuid:"[server_uuid]"){uuid,size,type,server_uuid}}
-		//*/
-		//"update_volume": &graphql.Field{
-		//	Type:        volumeType,
-		//	Description: "Update volume by uuid",
-		//	Args: graphql.FieldConfigArgument{
-		//		"uuid": &graphql.ArgumentConfig{
-		//			Type: graphql.NewNonNull(graphql.String),
-		//		},
-		//		"size": &graphql.ArgumentConfig{
-		//			Type: graphql.Int,
-		//		},
-		//		"type": &graphql.ArgumentConfig{
-		//			Type: graphql.String,
-		//		},
-		//		"server_uuid": &graphql.ArgumentConfig{
-		//			Type: graphql.String,
-		//		},
-		//	},
-		//	Resolve: func(params graphql.ResolveParams) (interface{}, error) {
-		//		logger.Logger.Println("Resolving: update_volume")
-		//
-		//		requestedUUID, _ := params.Args["uuid"].(string)
-		//		size, sizeOk := params.Args["size"].(int)
-		//		_type, _typeOk := params.Args["type"].(string)
-		//		serverUUID, serverUUIDOk := params.Args["server_uuid"].(string)
-		//
-		//		volume := new(types.Volume)
-		//
-		//		if sizeOk && _typeOk && serverUUIDOk {
-		//			volume.UUID = requestedUUID
-		//			volume.Size = size
-		//			volume.Type = _type
-		//			volume.ServerUUID = serverUUID
-		//
-		//			sql := "update volume set size = ?, type = ?, server_uuid = ? where uuid = ?"
-		//			stmt, err := mysql.Db.Prepare(sql)
-		//			if err != nil {
-		//				logger.Logger.Println(err.Error())
-		//				return nil, nil
-		//			}
-		//			defer stmt.Close()
-		//			result, err2 := stmt.Exec(volume.Size, volume.Type, volume.ServerUUID, volume.UUID)
-		//			if err2 != nil {
-		//				logger.Logger.Println(err2)
-		//				return nil, nil
-		//			}
-		//			logger.Logger.Println(result.LastInsertId())
-		//
-		//			return volume, nil
-		//		}
-		//		return nil, nil
-		//	},
-		//},
-		//
-		///* Delete volume by id
-		//   http://localhost:8001/graphql?query=mutation+_{delete_volume(id:"test1"){id}}
-		//*/
-		//"delete_volume": &graphql.Field{
-		//	Type:        volumeType,
-		//	Description: "Delete volume by uuid",
-		//	Args: graphql.FieldConfigArgument{
-		//		"uuid": &graphql.ArgumentConfig{
-		//			Type: graphql.NewNonNull(graphql.String),
-		//		},
-		//	},
-		//	Resolve: func(params graphql.ResolveParams) (interface{}, error) {
-		//		logger.Logger.Println("Resolving: delete_volume")
-		//
-		//		requestedUUID, ok := params.Args["uuid"].(string)
-		//		if ok {
-		//			sql := "delete from volume where uuid = ?"
-		//			stmt, err := mysql.Db.Prepare(sql)
-		//			if err != nil {
-		//				logger.Logger.Println(err.Error())
-		//				return nil, nil
-		//			}
-		//			defer stmt.Close()
-		//			result, err2 := stmt.Exec(requestedUUID)
-		//			if err2 != nil {
-		//				logger.Logger.Println(err2)
-		//				return nil, nil
-		//			}
-		//			logger.Logger.Println(result.RowsAffected())
-		//
-		//			return requestedUUID, nil
-		//		}
-		//		return nil, nil
-		//	},
-		//},
 
-		/* Update all infos of all nodes
-		http://localhost:7000/graphql?query=mutation+_{update_all_nodes(){uuid,mac_addr,ipmi_ip,status,cpu,memory,detail,created_at}}
+		/* Update node desc
+		http://192.168.110.240:7000/graphql?query=mutation+_{update_node_desc(uuid:"d4f3a900-b674-11e8-906e-000ffee02d5c",desc:"Compute2"){uuid,desc}}
+		*/
+		"update_node_desc": &graphql.Field{
+			Type:        nodeType,
+			Description: "Update node desc",
+			Args: graphql.FieldConfigArgument{
+				"uuid": &graphql.ArgumentConfig{
+					Type: graphql.String,
+				},
+				"desc": &graphql.ArgumentConfig{
+					Type: graphql.String,
+				},
+			},
+			Resolve: func(params graphql.ResolveParams) (interface{}, error) {
+				logger.Logger.Println("Resolving: update_node_desc")
+
+				uuid, uuidOk := params.Args["uuid"].(string)
+				desc, descOk := params.Args["desc"].(string)
+
+				if uuidOk && descOk {
+
+					node := types.Node{
+						UUID: uuid,
+						Desc: desc,
+					}
+
+					sql := "update node set `desc` = ? where uuid = ?"
+					stmt, err := mysql.Db.Prepare(sql)
+					if err != nil {
+						logger.Logger.Println(err.Error())
+						return nil, nil
+					}
+					defer func() {
+						_ = stmt.Close()
+					}()
+					result, err2 := stmt.Exec(node.Desc, node.UUID)
+					if err2 != nil {
+						logger.Logger.Println(err2)
+						return nil, nil
+					}
+					logger.Logger.Println(result.LastInsertId())
+
+					return node, nil
+				}
+
+				return nil, nil
+			},
+		},
+
+		/* Update all infos of all nodes (except power state)
+		http://192.168.110.240:7000/graphql?query=mutation+_{update_all_nodes(){uuid,bmc_mac_addr,bmc_ip,status,cpu_cores,memory,desc,created_at}}
 		*/
 		"update_all_nodes": &graphql.Field{
 			Type:        nodeType,
@@ -213,7 +179,7 @@ var mutationTypes = graphql.NewObject(graphql.ObjectConfig{
 		},
 
 		/* Update status of the node
-		http://localhost:7000/graphql?query=mutation+_{update_status_node(uuid:"d4f3a900-b674-11e8-906e-000ffee02d5c"){status}}
+		http://192.168.110.240:7000/graphql?query=mutation+_{update_status_node(uuid:"d4f3a900-b674-11e8-906e-000ffee02d5c"){status}}
 		*/
 		"update_status_node": &graphql.Field{
 			Type:        nodeType,
@@ -229,22 +195,22 @@ var mutationTypes = graphql.NewObject(graphql.ObjectConfig{
 				uuid, uuidOk := params.Args["uuid"].(string)
 
 				if uuidOk {
-					var ipmiIP string
+					var bmcIP string
 
-					sql := "select ipmi_ip from node where uuid = ?"
-					err := mysql.Db.QueryRow(sql, uuid).Scan(&ipmiIP)
+					sql := "select bmc_ip from node where uuid = ?"
+					err := mysql.Db.QueryRow(sql, uuid).Scan(&bmcIP)
 					if err != nil {
 						logger.Logger.Println(err)
 						return nil, nil
 					}
 
-					serialNo, err := ipmi.GetSerialNo(ipmiIP)
+					serialNo, err := ipmi.GetSerialNo(bmcIP)
 					if err != nil {
 						logger.Logger.Println(err)
 						return nil, nil
 					}
 
-					powerState, err := ipmi.GetPowerState(ipmiIP, serialNo)
+					powerState, err := ipmi.GetPowerState(bmcIP, serialNo)
 					if err != nil {
 						logger.Logger.Println(err)
 						return nil, nil
@@ -279,7 +245,7 @@ var mutationTypes = graphql.NewObject(graphql.ObjectConfig{
 		},
 
 		/* Update status of all nodes
-		http://localhost:7000/graphql?query=mutation+_{update_status_nodes(){status}}
+		http://192.168.110.240:7000/graphql?query=mutation+_{update_status_nodes(){status}}
 		*/
 		"update_status_nodes": &graphql.Field{
 			Type:        nodeType,
@@ -292,7 +258,7 @@ var mutationTypes = graphql.NewObject(graphql.ObjectConfig{
 		},
 
 		/* On node
-		http://localhost:7000/graphql?query=mutation+_{on_node(uuid:"d4f3a900-b674-11e8-906e-000ffee02d5c")}
+		http://192.168.110.240:7000/graphql?query=mutation+_{on_node(uuid:"d4f3a900-b674-11e8-906e-000ffee02d5c")}
 		*/
 		"on_node": &graphql.Field{
 			Type:        graphql.String,
@@ -308,27 +274,27 @@ var mutationTypes = graphql.NewObject(graphql.ObjectConfig{
 				uuid, uuidOk := params.Args["uuid"].(string)
 
 				if uuidOk {
-					var ipmiIP string
+					var bmcIP string
 
-					sql := "select ipmi_ip from node where uuid = ?"
-					err := mysql.Db.QueryRow(sql, uuid).Scan(&ipmiIP)
+					sql := "select bmc_ip from node where uuid = ?"
+					err := mysql.Db.QueryRow(sql, uuid).Scan(&bmcIP)
 					if err != nil {
 						logger.Logger.Println(err)
 						return nil, nil
 					}
 
-					serialNo, err := ipmi.GetSerialNo(ipmiIP)
+					serialNo, err := ipmi.GetSerialNo(bmcIP)
 					if err != nil {
 						logger.Logger.Println(err)
 						return nil, nil
 					}
 
-					state, _ := ipmi.GetPowerState(ipmiIP, serialNo)
+					state, _ := ipmi.GetPowerState(bmcIP, serialNo)
 					if state == "On" {
 						return "Already turned on", nil
 					}
 
-					result, err := ipmi.ChangePowerState(ipmiIP, serialNo, "On")
+					result, err := ipmi.ChangePowerState(bmcIP, serialNo, "On")
 					if err != nil {
 						logger.Logger.Println(err)
 						return nil, nil
@@ -342,8 +308,8 @@ var mutationTypes = graphql.NewObject(graphql.ObjectConfig{
 		},
 
 		/* Off node
-		http://localhost:7000/graphql?query=mutation+_{off_node(uuid:"d4f3a900-b674-11e8-906e-000ffee02d5c")}
-		http://localhost:7000/graphql?query=mutation+_{off_node(uuid:"d4f3a900-b674-11e8-906e-000ffee02d5c",force_off:true)}
+		http://192.168.110.240:7000/graphql?query=mutation+_{off_node(uuid:"d4f3a900-b674-11e8-906e-000ffee02d5c")}
+		http://192.168.110.240:7000/graphql?query=mutation+_{off_node(uuid:"d4f3a900-b674-11e8-906e-000ffee02d5c",force_off:true)}
 		*/
 		"off_node": &graphql.Field{
 			Type:        graphql.String,
@@ -363,22 +329,22 @@ var mutationTypes = graphql.NewObject(graphql.ObjectConfig{
 				forceOff, _ := params.Args["force_off"].(bool)
 
 				if uuidOk {
-					var ipmiIP string
+					var bmcIP string
 
-					sql := "select ipmi_ip from node where uuid = ?"
-					err := mysql.Db.QueryRow(sql, uuid).Scan(&ipmiIP)
+					sql := "select bmc_ip from node where uuid = ?"
+					err := mysql.Db.QueryRow(sql, uuid).Scan(&bmcIP)
 					if err != nil {
 						logger.Logger.Println(err)
 						return nil, nil
 					}
 
-					serialNo, err := ipmi.GetSerialNo(ipmiIP)
+					serialNo, err := ipmi.GetSerialNo(bmcIP)
 					if err != nil {
 						logger.Logger.Println(err)
 						return nil, nil
 					}
 
-					state, _ := ipmi.GetPowerState(ipmiIP, serialNo)
+					state, _ := ipmi.GetPowerState(bmcIP, serialNo)
 					if state == "Off" {
 						return "Already turned off", nil
 					}
@@ -387,7 +353,7 @@ var mutationTypes = graphql.NewObject(graphql.ObjectConfig{
 					if forceOff {
 						changeState = "ForceOff"
 					}
-					result, err := ipmi.ChangePowerState(ipmiIP, serialNo, changeState)
+					result, err := ipmi.ChangePowerState(bmcIP, serialNo, changeState)
 					if err != nil {
 						logger.Logger.Println(err)
 						return nil, nil
@@ -397,6 +363,101 @@ var mutationTypes = graphql.NewObject(graphql.ObjectConfig{
 				}
 
 				return nil, nil
+			},
+		},
+
+		////////////////////////////// node_detail ///////////////////////////////
+		/* Create new node_detail
+		http://192.168.110.240:7000/graphql?query=mutation+_{create_node_detail(node_uuid:"d4f3a900-b674-11e8-906e-000ffee02d5c"){node_uuid,cpu_model,cpu_processors,cpu_threads}}
+		*/
+		"create_node_detail": &graphql.Field{
+			Type:        nodedetailType,
+			Description: "Create new node_detail",
+			Args: graphql.FieldConfigArgument{
+				///////////////////////////////////////////
+				"node_uuid": &graphql.ArgumentConfig{
+					Type: graphql.String,
+				},
+			},
+			Resolve: func(params graphql.ResolveParams) (interface{}, error) {
+				logger.Logger.Println("Resolving: create_node_uuid")
+
+				nodeUUID, nodeUUIDOk := params.Args["node_uuid"].(string)
+
+				if nodeUUIDOk {
+					var bmcIP string
+
+					sql := "select bmc_ip from node where uuid = ?"
+					err := mysql.Db.QueryRow(sql, nodeUUID).Scan(&bmcIP)
+					if err != nil {
+						logger.Logger.Println(err)
+						return nil, nil
+					}
+
+					serialNo, err := ipmi.GetSerialNo(bmcIP)
+					if err != nil {
+						logger.Logger.Println(err)
+						return nil, nil
+					}
+
+					model, err := ipmi.GetProcessorModel(bmcIP, serialNo)
+					if err != nil {
+						logger.Logger.Println(err)
+						return nil, nil
+					}
+
+					processors, err := ipmi.GetProcessors(bmcIP, serialNo)
+					if err != nil {
+						logger.Logger.Println(err)
+						return nil, nil
+					}
+
+					threads, err := ipmi.GetProcessorsThreads(bmcIP, serialNo, processors)
+					if err != nil {
+						logger.Logger.Println(err)
+						return nil, nil
+					}
+
+					nodedetail := types.NodeDetail{
+						NodeUUID:      nodeUUID,
+						CPUModel:      model,
+						CPUProcessors: processors,
+						CPUThreads:    threads,
+					}
+
+					sql = "insert into node_detail(node_uuid, cpu_model, cpu_processors, cpu_threads) values (?, ?, ?, ?)"
+					stmt, err := mysql.Db.Prepare(sql)
+					if err != nil {
+						logger.Logger.Println(err.Error())
+						return nil, nil
+					}
+					defer func() {
+						_ = stmt.Close()
+					}()
+					result, err2 := stmt.Exec(nodedetail.NodeUUID, nodedetail.CPUModel, nodedetail.CPUProcessors, nodedetail.CPUThreads)
+					if err2 != nil {
+						logger.Logger.Println(err2)
+						return nil, nil
+					}
+					logger.Logger.Println(result.LastInsertId())
+
+					return nodedetail, nil
+				}
+
+				return nil, nil
+			},
+		},
+
+		/* Update detail infos of all nodes
+		http://192.168.110.240:7000/graphql?query=mutation+_{update_nodes_detail(){status}}
+		*/
+		"update_nodes_detail": &graphql.Field{
+			Type:        nodedetailType,
+			Description: "Update detail infos of all nodes",
+			Resolve: func(params graphql.ResolveParams) (interface{}, error) {
+				logger.Logger.Println("Resolving: update_nodes_detail")
+
+				return ipmi.UpdateNodesDetail()
 			},
 		},
 	},

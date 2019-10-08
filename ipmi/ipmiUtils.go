@@ -6,19 +6,19 @@ import (
 	"encoding/json"
 	"errors"
 	"hcc/flute/config"
-	"hcc/flute/logger"
 	"io/ioutil"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 )
 
 // GetSerialNo : Get serial number from IPMI node
-func GetSerialNo(ipmiIP string) (string, error) {
+func GetSerialNo(bmcIP string) (string, error) {
 	http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
 
 	client := &http.Client{Timeout: time.Duration(config.Ipmi.RequestTimeoutMs) * time.Millisecond}
-	req, err := http.NewRequest("GET", "https://"+ipmiIP+"/redfish/v1/Systems/", nil)
+	req, err := http.NewRequest("GET", "https://"+bmcIP+"/redfish/v1/Systems/", nil)
 	if err != nil {
 		return "", err
 	}
@@ -41,7 +41,7 @@ func GetSerialNo(ipmiIP string) (string, error) {
 			var ipmiNode ipmiNode
 			err = json.Unmarshal([]byte(str), &ipmiNode)
 			if err != nil {
-				logger.Logger.Fatal(err)
+				return "", err
 			}
 
 			serialNo := ipmiNode.Members[0].OdataID[len("/redfish/v1/Systems/"):]
@@ -56,11 +56,11 @@ func GetSerialNo(ipmiIP string) (string, error) {
 }
 
 // GetUUID : Get UUID from IPMI node
-func GetUUID(ipmiIP string, serialNo string) (string, error) {
+func GetUUID(bmcIP string, serialNo string) (string, error) {
 	http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
 
 	client := &http.Client{Timeout: time.Duration(config.Ipmi.RequestTimeoutMs) * time.Millisecond}
-	req, err := http.NewRequest("GET", "https://"+ipmiIP+"/redfish/v1/Systems/"+serialNo, nil)
+	req, err := http.NewRequest("GET", "https://"+bmcIP+"/redfish/v1/Systems/"+serialNo, nil)
 	if err != nil {
 		return "", err
 	}
@@ -83,7 +83,7 @@ func GetUUID(ipmiIP string, serialNo string) (string, error) {
 			var ipmiNodeInfo ipmiNodeInfo
 			err = json.Unmarshal([]byte(str), &ipmiNodeInfo)
 			if err != nil {
-				logger.Logger.Fatal(err)
+				return "", err
 			}
 
 			uuid := ipmiNodeInfo.UUID
@@ -98,11 +98,11 @@ func GetUUID(ipmiIP string, serialNo string) (string, error) {
 }
 
 // GetPowerState : Get power status from IPMI node
-func GetPowerState(ipmiIP string, serialNo string) (string, error) {
+func GetPowerState(bmcIP string, serialNo string) (string, error) {
 	http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
 
 	client := &http.Client{Timeout: time.Duration(config.Ipmi.RequestTimeoutMs) * time.Millisecond}
-	req, err := http.NewRequest("GET", "https://"+ipmiIP+"/redfish/v1/Systems/"+serialNo, nil)
+	req, err := http.NewRequest("GET", "https://"+bmcIP+"/redfish/v1/Systems/"+serialNo, nil)
 	if err != nil {
 		return "", err
 	}
@@ -125,7 +125,7 @@ func GetPowerState(ipmiIP string, serialNo string) (string, error) {
 			var ipmiNodeInfo ipmiNodeInfo
 			err = json.Unmarshal([]byte(str), &ipmiNodeInfo)
 			if err != nil {
-				logger.Logger.Fatal(err)
+				return "", err
 			}
 
 			powerState := ipmiNodeInfo.PowerState
@@ -140,10 +140,10 @@ func GetPowerState(ipmiIP string, serialNo string) (string, error) {
 }
 
 // GetProcessors : Get count of CPU processors from IPMI node
-func GetProcessors(ipmiIP string, serialNo string) (int, error) {
+func GetProcessors(bmcIP string, serialNo string) (int, error) {
 	http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
 	client := &http.Client{Timeout: time.Duration(config.Ipmi.RequestTimeoutMs) * time.Millisecond}
-	req, err := http.NewRequest("GET", "https://"+ipmiIP+"/redfish/v1/Systems/"+serialNo+"/Processors", nil)
+	req, err := http.NewRequest("GET", "https://"+bmcIP+"/redfish/v1/Systems/"+serialNo+"/Processors", nil)
 	if err != nil {
 		return 0, err
 	}
@@ -166,7 +166,7 @@ func GetProcessors(ipmiIP string, serialNo string) (int, error) {
 			var processors ipmiProcessors
 			err = json.Unmarshal([]byte(str), &processors)
 			if err != nil {
-				logger.Logger.Fatal(err)
+				return 0, err
 			}
 
 			count := len(processors.Members)
@@ -181,14 +181,14 @@ func GetProcessors(ipmiIP string, serialNo string) (int, error) {
 }
 
 // GetProcessorsCores : Get count of cores for selected processor from IPMI node
-func GetProcessorsCores(ipmiIP string, serialNo string, processors int) (int, error) {
+func GetProcessorsCores(bmcIP string, serialNo string, processors int) (int, error) {
 	http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
 
 	client := &http.Client{Timeout: time.Duration(config.Ipmi.RequestTimeoutMs) * time.Millisecond}
 	coreSum := 0
 
 	for i := 1; i <= processors; i++ {
-		req, err := http.NewRequest("GET", "https://"+ipmiIP+"/redfish/v1/Systems/"+serialNo+"/Processors/CPU"+strconv.Itoa(i), nil)
+		req, err := http.NewRequest("GET", "https://"+bmcIP+"/redfish/v1/Systems/"+serialNo+"/Processors/CPU"+strconv.Itoa(i), nil)
 		if err != nil {
 			return 0, err
 		}
@@ -208,7 +208,7 @@ func GetProcessorsCores(ipmiIP string, serialNo string, processors int) (int, er
 				var cpu ipmiCPU
 				err = json.Unmarshal([]byte(str), &cpu)
 				if err != nil {
-					logger.Logger.Fatal(err)
+					return 0, err
 				}
 
 				totalCores := cpu.TotalCores
@@ -225,14 +225,14 @@ func GetProcessorsCores(ipmiIP string, serialNo string, processors int) (int, er
 }
 
 // GetProcessorsThreads : Get count of threads for selected processor from IPMI node
-func GetProcessorsThreads(ipmiIP string, serialNo string, processors int) (int, error) {
+func GetProcessorsThreads(bmcIP string, serialNo string, processors int) (int, error) {
 	http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
 
 	client := &http.Client{Timeout: time.Duration(config.Ipmi.RequestTimeoutMs) * time.Millisecond}
 	threadSum := 0
 
 	for i := 1; i <= processors; i++ {
-		req, err := http.NewRequest("GET", "https://"+ipmiIP+"/redfish/v1/Systems/"+serialNo+"/Processors/CPU"+strconv.Itoa(i), nil)
+		req, err := http.NewRequest("GET", "https://"+bmcIP+"/redfish/v1/Systems/"+serialNo+"/Processors/CPU"+strconv.Itoa(i), nil)
 		if err != nil {
 			return 0, err
 		}
@@ -252,7 +252,7 @@ func GetProcessorsThreads(ipmiIP string, serialNo string, processors int) (int, 
 				var cpu ipmiCPU
 				err = json.Unmarshal([]byte(str), &cpu)
 				if err != nil {
-					logger.Logger.Fatal(err)
+					return 0, err
 				}
 
 				totalThreads := cpu.TotalThreads
@@ -268,12 +268,51 @@ func GetProcessorsThreads(ipmiIP string, serialNo string, processors int) (int, 
 	return threadSum, nil
 }
 
+// GetProcessorModel : Get model of first processor from IPMI node
+func GetProcessorModel(bmcIP string, serialNo string) (string, error) {
+	http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
+	client := &http.Client{Timeout: time.Duration(config.Ipmi.RequestTimeoutMs) * time.Millisecond}
+	req, err := http.NewRequest("GET", "https://"+bmcIP+"/redfish/v1/Systems/"+serialNo+"/Processors/CPU1", nil)
+	if err != nil {
+		return "", err
+	}
+	req.SetBasicAuth(config.Ipmi.Username, config.Ipmi.Password)
+	resp, err := client.Do(req)
+
+	if err != nil {
+		return "", err
+	}
+	defer func() {
+		_ = resp.Body.Close()
+	}()
+
+	if resp.StatusCode >= 200 && resp.StatusCode <= 299 {
+		// Check response
+		respBody, err := ioutil.ReadAll(resp.Body)
+		if err == nil {
+			str := string(respBody)
+
+			var cpu ipmiCPU
+			err = json.Unmarshal([]byte(str), &cpu)
+			if err != nil {
+				return "", err
+			}
+
+			return cpu.ProcessorID.VendorID, nil
+		}
+
+		return "", err
+	}
+
+	return "", errors.New("http response returned error code")
+}
+
 // GetTotalSystemMemory : Get total system memory from IPMI node
-func GetTotalSystemMemory(ipmiIP string, serialNo string) (int, error) {
+func GetTotalSystemMemory(bmcIP string, serialNo string) (int, error) {
 	http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
 
 	client := &http.Client{Timeout: time.Duration(config.Ipmi.RequestTimeoutMs) * time.Millisecond}
-	req, err := http.NewRequest("GET", "https://"+ipmiIP+"/redfish/v1/Systems/"+serialNo, nil)
+	req, err := http.NewRequest("GET", "https://"+bmcIP+"/redfish/v1/Systems/"+serialNo, nil)
 	if err != nil {
 		return 0, err
 	}
@@ -296,7 +335,7 @@ func GetTotalSystemMemory(ipmiIP string, serialNo string) (int, error) {
 			var ipmiNodeInfo ipmiNodeInfo
 			err = json.Unmarshal([]byte(str), &ipmiNodeInfo)
 			if err != nil {
-				logger.Logger.Fatal(err)
+				return 0, err
 			}
 
 			memoryGiB := ipmiNodeInfo.MemorySummary.TotalSystemMemoryGiB
@@ -312,7 +351,7 @@ func GetTotalSystemMemory(ipmiIP string, serialNo string) (int, error) {
 }
 
 // ChangePowerState : Change power status for selected IPMI node
-func ChangePowerState(ipmiIP string, serialNo string, state string) (string, error) {
+func ChangePowerState(bmcIP string, serialNo string, state string) (string, error) {
 	http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
 
 	client := &http.Client{Timeout: time.Duration(config.Ipmi.RequestTimeoutMs) * time.Millisecond}
@@ -320,10 +359,10 @@ func ChangePowerState(ipmiIP string, serialNo string, state string) (string, err
 	resetType := ipmiResetType{state}
 	jsonBytes, err := json.Marshal(resetType)
 	if err != nil {
-		logger.Logger.Fatal(err)
+		return "", err
 	}
 
-	req, err := http.NewRequest("POST", "https://"+ipmiIP+"/redfish/v1/Systems/"+serialNo+"/Actions/ComputerSystem.Reset", bytes.NewBuffer(jsonBytes))
+	req, err := http.NewRequest("POST", "https://"+bmcIP+"/redfish/v1/Systems/"+serialNo+"/Actions/ComputerSystem.Reset", bytes.NewBuffer(jsonBytes))
 	if err != nil {
 		return "", err
 	}
@@ -347,7 +386,7 @@ func ChangePowerState(ipmiIP string, serialNo string, state string) (string, err
 			var processors ipmiProcessors
 			err = json.Unmarshal([]byte(str), &processors)
 			if err != nil {
-				logger.Logger.Fatal(err)
+				return "", err
 			}
 
 			return str, nil
@@ -360,12 +399,12 @@ func ChangePowerState(ipmiIP string, serialNo string, state string) (string, err
 	return "", errors.New("http response returned error code")
 }
 
-// GetBMCNICMac : Get MAC address of BMC interface from IPMI node
-func GetBMCNICMac(ipmiIP string) (string, error) {
+// GetNICMac : Get MAC address of selected NIC from IPMI node
+func GetNICMac(bmcIP string, nicNO int, isBMC bool) (string, error) {
 	http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
 
 	client := &http.Client{Timeout: time.Duration(config.Ipmi.RequestTimeoutMs) * time.Millisecond}
-	req, err := http.NewRequest("GET", "https://"+ipmiIP+"/redfish/v1/Managers/BMC/EthernetInterfaces/3", nil)
+	req, err := http.NewRequest("GET", "https://"+bmcIP+"/redfish/v1/Managers/BMC/EthernetInterfaces/"+strconv.Itoa(nicNO), nil)
 	if err != nil {
 		return "", err
 	}
@@ -385,13 +424,30 @@ func GetBMCNICMac(ipmiIP string) (string, error) {
 		if err == nil {
 			str := string(respBody)
 
-			var bmcNIC ipmiBMCNIC
-			err = json.Unmarshal([]byte(str), &bmcNIC)
+			var nic ipmiNIC
+			err = json.Unmarshal([]byte(str), &nic)
 			if err != nil {
-				logger.Logger.Fatal(err)
+				return "", err
 			}
 
-			macAddress := bmcNIC.MACAddress
+			var macAddress = ""
+			if isBMC {
+				macAddress = nic.MACAddress
+			} else {
+				macParts := strings.Split(nic.MACAddress, "-")
+				if len(macParts) != 6 {
+					return "", errors.New("invalid mac address")
+				}
+
+				lastPart := lastMacOffset(macParts[len(macParts)-1])
+				for i, part := range macParts {
+					if i == len(macParts)-1 {
+						break
+					}
+					macAddress += part + "-"
+				}
+				macAddress += lastPart
+			}
 
 			return macAddress, nil
 		}

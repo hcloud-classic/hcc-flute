@@ -14,7 +14,7 @@ var queryTypes = graphql.NewObject(
 		Fields: graphql.Fields{
 			////////////////////////////// Node ///////////////////////////////
 			/* Get (read) single node by uuid
-			   http://localhost:7000/graphql?query={node(uuid:"d4f3a900-b674-11e8-906e-000ffee02d5c"){uuid,mac_addr,ipmi_ip,status,cpu,memory,detail,created_at}}
+			   http://192.168.110.240:7000/graphql?query={node(uuid:"d4f3a900-b674-11e8-906e-000ffee02d5c"){uuid,mac_addr,ipmi_ip,status,cpu_cores,memory,detail,created_at}}
 			*/
 			"node": &graphql.Field{
 				Type:        nodeType,
@@ -32,28 +32,28 @@ var queryTypes = graphql.NewObject(
 						node := new(types.Node)
 
 						var uuid string
-						var macAddr string
-						var ipmiIP string
+						var BMCmacAddr string
+						var bmcIP string
 						var status string
-						var cpu int
+						var cpuCores int
 						var memory int
 						var detail string
 						var createdAt time.Time
 
 						sql := "select * from node where uuid = ?"
-						err := mysql.Db.QueryRow(sql, requestedUUID).Scan(&uuid, &macAddr, &ipmiIP, &status, &cpu, &memory, &detail, &createdAt)
+						err := mysql.Db.QueryRow(sql, requestedUUID).Scan(&uuid, &BMCmacAddr, &bmcIP, &status, &cpuCores, &memory, &detail, &createdAt)
 						if err != nil {
 							logger.Logger.Println(err)
 							return nil, nil
 						}
 
 						node.UUID = uuid
-						node.MacAddr = macAddr
-						node.IpmiIP = ipmiIP
+						node.BmcMacAddr = BMCmacAddr
+						node.BmcIP = bmcIP
 						node.Status = status
-						node.CPU = cpu
+						node.CPUCores = cpuCores
 						node.Memory = memory
-						node.Detail = detail
+						node.Desc = detail
 						node.CreatedAt = createdAt
 
 						return node, nil
@@ -63,7 +63,7 @@ var queryTypes = graphql.NewObject(
 			},
 
 			/* Get (read) node list
-			   http://localhost:7000/graphql?query={list_node{uuid,mac_addr,ipmi_ip,status,cpu,memory,detail,created_at}}
+			   http://192.168.110.240:7000/graphql?query={list_node{uuid,mac_addr,ipmi_ip,status,cpu_cores,memory,detail,created_at}}
 			*/
 			"list_node": &graphql.Field{
 				Type:        graphql.NewList(nodeType),
@@ -74,14 +74,14 @@ var queryTypes = graphql.NewObject(
 					var nodes []types.Node
 					var uuid string
 					var macAddr string
-					var ipmiIP string
+					var bmcIP string
 					var status string
-					var cpu int
+					var cpuCores int
 					var memory int
 					var detail string
 					var createdAt time.Time
 
-					sql := "select * from node"
+					sql := "select * from node where active = 1"
 					stmt, err := mysql.Db.Query(sql)
 					if err != nil {
 						logger.Logger.Println(err)
@@ -92,12 +92,12 @@ var queryTypes = graphql.NewObject(
 					}()
 
 					for stmt.Next() {
-						err := stmt.Scan(&uuid, &macAddr, &ipmiIP, &status, &cpu, &memory, &detail, &createdAt)
+						err := stmt.Scan(&uuid, &macAddr, &bmcIP, &status, &cpuCores, &memory, &detail, &createdAt)
 						if err != nil {
 							logger.Logger.Println(err)
 						}
 
-						node := types.Node{UUID: uuid, MacAddr: macAddr, IpmiIP: ipmiIP, Status: status, CPU: cpu, Memory: memory, Detail: detail, CreatedAt: createdAt}
+						node := types.Node{UUID: uuid, BmcMacAddr: macAddr, BmcIP: bmcIP, Status: status, CPUCores: cpuCores, Memory: memory, Desc: detail, CreatedAt: createdAt}
 
 						logger.Logger.Println(node)
 						nodes = append(nodes, node)
@@ -107,55 +107,64 @@ var queryTypes = graphql.NewObject(
 				},
 			},
 
-			////////////////////////////// Ipmi ///////////////////////////////
-			/* Get (read) single ipmi by uuid
-			   http://localhost:8001/graphql?query={ipmi(uuid:"[ipmi_uuid]]"){uuid}}
+			////////////////////////////// Node Detail ///////////////////////////////
+			/* Get (read) detail of a node by uuid
+			   http://192.168.110.240:7000/graphql?query={node_detail(node_uuid:"[node_uuid]]"){node_uuid,cpu_model,cpu_processors,cpu_threads}}
 			*/
-			"ipmi": &graphql.Field{
-				Type:        nodeType,
-				Description: "Get a ipmi by uuid",
+			"node_detail": &graphql.Field{
+				Type:        nodedetailType,
+				Description: "Get detail of a node by uuid",
 				Args: graphql.FieldConfigArgument{
-					"uuid": &graphql.ArgumentConfig{
+					"node_uuid": &graphql.ArgumentConfig{
 						Type: graphql.String,
 					},
 				},
 				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-					logger.Logger.Println("Resolving: ipmi")
+					logger.Logger.Println("Resolving: node_detail")
 
-					requestedUUID, ok := p.Args["uuid"].(string)
+					requestedNodeUUID, ok := p.Args["node_uuid"].(string)
 					if ok {
-						ipmi := new(types.Ipmi)
+						nodeDetail := new(types.NodeDetail)
 
-						var uuid string
+						var nodeUUID string
+						var cpuModel string
+						var cpuProcessors int
+						var cpuThreads int
 
-						sql := "select * from ipmi where uuid = ?"
-						err := mysql.Db.QueryRow(sql, requestedUUID).Scan(&uuid)
+						sql := "select * from node_detail where node_uuid = ?"
+						err := mysql.Db.QueryRow(sql, requestedNodeUUID).Scan(&nodeUUID, &cpuModel, &cpuProcessors, &cpuThreads)
 						if err != nil {
 							logger.Logger.Println(err)
 							return nil, nil
 						}
 
-						ipmi.UUID = uuid
+						nodeDetail.NodeUUID = nodeUUID
+						nodeDetail.CPUModel = cpuModel
+						nodeDetail.CPUProcessors = cpuProcessors
+						nodeDetail.CPUThreads = cpuThreads
 
-						return ipmi, nil
+						return nodeDetail, nil
 					}
 					return nil, nil
 				},
 			},
 
-			/* Get (read) ipmi list
-			   http://localhost:8001/graphql?query={list_ipmi{uuid}}
+			/* Get (read) node detail list
+			   http://192.168.110.240:7000/graphql?query={list_node_detail{node_uuid,cpu_model,cpu_processors,cpu_threads}}
 			*/
-			"list_ipmi": &graphql.Field{
-				Type:        graphql.NewList(nodeType),
-				Description: "Get ipmi list",
+			"list_node_detail": &graphql.Field{
+				Type:        graphql.NewList(nodedetailType),
+				Description: "Get node detail list",
 				Resolve: func(params graphql.ResolveParams) (interface{}, error) {
-					logger.Logger.Println("Resolving: list_ipmi")
+					logger.Logger.Println("Resolving: list_node_detail")
 
-					var ipmis []types.Ipmi
-					var uuid string
+					var nodeDetails []types.NodeDetail
+					var nodeUUID string
+					var cpuModel string
+					var cpuProcessors int
+					var cpuThreads int
 
-					sql := "select * from ipmi"
+					sql := "select nd.* from node n, node_detail nd where n.uuid = nd.node_uuid and n.active = 1"
 					stmt, err := mysql.Db.Query(sql)
 					if err != nil {
 						logger.Logger.Println(err)
@@ -166,18 +175,18 @@ var queryTypes = graphql.NewObject(
 					}()
 
 					for stmt.Next() {
-						err := stmt.Scan(&uuid)
+						err := stmt.Scan(&nodeUUID, &cpuModel, &cpuProcessors, &cpuThreads)
 						if err != nil {
 							logger.Logger.Println(err)
 						}
 
-						ipmi := types.Ipmi{UUID: uuid}
+						nodeDetail := types.NodeDetail{NodeUUID: nodeUUID, CPUModel: cpuModel, CPUProcessors: cpuProcessors, CPUThreads: cpuThreads}
 
-						logger.Logger.Println(ipmi)
-						ipmis = append(ipmis, ipmi)
+						logger.Logger.Println(nodeDetail)
+						nodeDetails = append(nodeDetails, nodeDetail)
 					}
 
-					return ipmis, nil
+					return nodeDetails, nil
 				},
 			},
 		},
