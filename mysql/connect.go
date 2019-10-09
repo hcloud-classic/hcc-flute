@@ -23,13 +23,13 @@ func Prepare() error {
 		return err
 	}
 
-	logger.Logger.Println("db is connected")
-
 	err = Db.Ping()
 	if err != nil {
 		logger.Logger.Println(err.Error())
 		return err
 	}
+
+	logger.Logger.Println("db is connected")
 
 	return nil
 }
