@@ -13,12 +13,14 @@ http://192.168.110.240:7000/graphql?query=mutation+_{create_node(bmc_ip:"172.31.
 http://192.168.110.240:7000/graphql?query=mutation+_{update_node_desc(uuid:"d4f3a900-b674-11e8-906e-000ffee02d5c",desc:"Compute2"){uuid,desc}}
 
 // update_all_nodes : Update all infos of all nodes (except power state)
+// !!USE ONLY FOR DEVELOPMENT!!
 http://192.168.110.240:7000/graphql?query=mutation+_{update_all_nodes{uuid,bmc_mac_addr,bmc_ip,pxe_mac_addr,status,cpu_cores,memory,desc,created_at}}
 
 // update_status_node : Update status of the node
 http://192.168.110.240:7000/graphql?query=mutation+_{update_status_node(uuid:"d4f3a900-b674-11e8-906e-000ffee02d5c"){status}}
 
 // update_status_nodes : Update status of all nodes
+// !!USE ONLY FOR DEVELOPMENT!!
 http://192.168.110.240:7000/graphql?query=mutation+_{update_status_nodes{status}}
 
 // on_node : On node
@@ -40,4 +42,5 @@ http://192.168.110.240:7000/graphql?query={node_detail(node_uuid:"d4f3a900-b674-
 http://192.168.110.240:7000/graphql?query=mutation+_{create_node_detail(node_uuid:"d4f3a900-b674-11e8-906e-000ffee02d5c"){node_uuid,cpu_model,cpu_processors,cpu_threads}}
 
 // update_nodes_detail : Update detail infos of all nodes
+// !!USE ONLY FOR DEVELOPMENT!!
 http://192.168.110.240:7000/graphql?query=mutation+_{update_nodes_detail{node_uuid,cpu_model,cpu_processors,cpu_threads}}
