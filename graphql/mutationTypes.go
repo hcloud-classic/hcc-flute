@@ -459,7 +459,7 @@ var mutationTypes = graphql.NewObject(graphql.ObjectConfig{
 		http://192.168.110.240:7000/graphql?query=mutation+_{update_nodes_detail(){status}}
 		*/
 		"update_nodes_detail": &graphql.Field{
-			Type:        nodedetailType,
+			Type:        graphql.NewList(nodedetailType),
 			Description: "Update detail infos of all nodes",
 			Resolve: func(params graphql.ResolveParams) (interface{}, error) {
 				logger.Logger.Println("Resolving: update_nodes_detail")
