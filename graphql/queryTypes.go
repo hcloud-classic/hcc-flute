@@ -113,7 +113,7 @@ var queryTypes = graphql.NewObject(
 
 			////////////////////////////// Node Detail ///////////////////////////////
 			/* Get (read) detail of a node by uuid
-			   http://192.168.110.240:7000/graphql?query={node_detail(node_uuid:"[node_uuid]]"){node_uuid,cpu_model,cpu_processors,cpu_threads}}
+			   http://192.168.110.240:7000/graphql?query={node_detail(node_uuid:"d4f3a900-b674-11e8-906e-000ffee02d5c"){node_uuid,cpu_model,cpu_processors,cpu_threads}}
 			*/
 			"node_detail": &graphql.Field{
 				Type:        nodedetailType,
