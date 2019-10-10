@@ -40,4 +40,4 @@ http://192.168.110.240:7000/graphql?query={node_detail(node_uuid:"d4f3a900-b674-
 http://192.168.110.240:7000/graphql?query=mutation+_{create_node_detail(node_uuid:"d4f3a900-b674-11e8-906e-000ffee02d5c"){node_uuid,cpu_model,cpu_processors,cpu_threads}}
 
 // update_nodes_detail : Update detail infos of all nodes
-http://192.168.110.240:7000/graphql?query=mutation+_{update_nodes_detail{status}}
+http://192.168.110.240:7000/graphql?query=mutation+_{update_nodes_detail{node_uuid,cpu_model,cpu_processors,cpu_threads}}
