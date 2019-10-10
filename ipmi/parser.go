@@ -69,6 +69,7 @@ func BMCIPParser() {
 	}
 }
 
+// BMCIPParser : Check BMC IP list from config file and change active flag of given BMC IP from database
 func BMCIPParserCheckActive(bmcIP string) {
 	var ipMatched = false
 	for _, ip := range config.Ipmi.BMCIPListArray {
