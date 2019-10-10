@@ -173,7 +173,7 @@ var mutationTypes = graphql.NewObject(graphql.ObjectConfig{
 		},
 
 		/* Update all infos of all nodes (except power state)
-		http://192.168.110.240:7000/graphql?query=mutation+_{update_all_nodes(){uuid,bmc_mac_addr,bmc_ip,status,cpu_cores,memory,desc,created_at}}
+		http://192.168.110.240:7000/graphql?query=mutation+_{update_all_nodes{uuid,bmc_mac_addr,bmc_ip,status,cpu_cores,memory,desc,created_at}}
 		*/
 		"update_all_nodes": &graphql.Field{
 			Type:        graphql.NewList(nodeType),
