@@ -14,7 +14,7 @@ var queryTypes = graphql.NewObject(
 		Fields: graphql.Fields{
 			////////////////////////////// Node ///////////////////////////////
 			/* Get (read) single node by uuid
-			   http://192.168.110.240:7000/graphql?query={node(uuid:"d4f3a900-b674-11e8-906e-000ffee02d5c"){uuid,mac_addr,ipmi_ip,status,cpu_cores,memory,detail,created_at}}
+			   http://192.168.110.240:7000/graphql?query={node(uuid:"d4f3a900-b674-11e8-906e-000ffee02d5c"){uuid,bmc_mac_addr,bmc_ip,pxe_mac_addr,status,cpu_cores,memory,desc,created_at}}
 			*/
 			"node": &graphql.Field{
 				Type:        nodeType,
@@ -34,14 +34,15 @@ var queryTypes = graphql.NewObject(
 						var uuid string
 						var BMCmacAddr string
 						var bmcIP string
+						var pxeMACaddr string
 						var status string
 						var cpuCores int
 						var memory int
-						var detail string
+						var desc string
 						var createdAt time.Time
 
-						sql := "select * from node where uuid = ?"
-						err := mysql.Db.QueryRow(sql, requestedUUID).Scan(&uuid, &BMCmacAddr, &bmcIP, &status, &cpuCores, &memory, &detail, &createdAt)
+						sql := "select uuid, bmc_mac_addr, bmc_ip, pxe_mac_addr, status, cpu_cores, memory, `desc`, created_at from node where uuid = ?"
+						err := mysql.Db.QueryRow(sql, requestedUUID).Scan(&uuid, &BMCmacAddr, &bmcIP, &pxeMACaddr, &status, &cpuCores, &memory, &desc, &createdAt)
 						if err != nil {
 							logger.Logger.Println(err)
 							return nil, nil
@@ -50,10 +51,11 @@ var queryTypes = graphql.NewObject(
 						node.UUID = uuid
 						node.BmcMacAddr = BMCmacAddr
 						node.BmcIP = bmcIP
+						node.PXEMacAddr = pxeMACaddr
 						node.Status = status
 						node.CPUCores = cpuCores
 						node.Memory = memory
-						node.Desc = detail
+						node.Desc = desc
 						node.CreatedAt = createdAt
 
 						return node, nil
@@ -63,7 +65,7 @@ var queryTypes = graphql.NewObject(
 			},
 
 			/* Get (read) node list
-			   http://192.168.110.240:7000/graphql?query={list_node{uuid,mac_addr,ipmi_ip,status,cpu_cores,memory,detail,created_at}}
+			   http://192.168.110.240:7000/graphql?query={list_node{uuid,bmc_mac_addr,bmc_ip,pxe_mac_addr,status,cpu_cores,memory,desc,created_at}}
 			*/
 			"list_node": &graphql.Field{
 				Type:        graphql.NewList(nodeType),
@@ -72,16 +74,18 @@ var queryTypes = graphql.NewObject(
 					logger.Logger.Println("Resolving: list_node")
 
 					var nodes []types.Node
+
 					var uuid string
-					var macAddr string
+					var BMCmacAddr string
 					var bmcIP string
+					var pxeMACaddr string
 					var status string
 					var cpuCores int
 					var memory int
-					var detail string
+					var desc string
 					var createdAt time.Time
 
-					sql := "select * from node where active = 1"
+					sql := "select uuid, bmc_mac_addr, bmc_ip, pxe_mac_addr, status, cpu_cores, memory, `desc`, created_at from node where active = 1"
 					stmt, err := mysql.Db.Query(sql)
 					if err != nil {
 						logger.Logger.Println(err)
@@ -92,12 +96,12 @@ var queryTypes = graphql.NewObject(
 					}()
 
 					for stmt.Next() {
-						err := stmt.Scan(&uuid, &macAddr, &bmcIP, &status, &cpuCores, &memory, &detail, &createdAt)
+						err := stmt.Scan(&uuid, &BMCmacAddr, &bmcIP, &pxeMACaddr, &status, &cpuCores, &memory, &desc, &createdAt)
 						if err != nil {
 							logger.Logger.Println(err)
 						}
 
-						node := types.Node{UUID: uuid, BmcMacAddr: macAddr, BmcIP: bmcIP, Status: status, CPUCores: cpuCores, Memory: memory, Desc: detail, CreatedAt: createdAt}
+						node := types.Node{UUID: uuid, BmcMacAddr: BMCmacAddr, BmcIP: bmcIP, PXEMacAddr: pxeMACaddr, Status: status, CPUCores: cpuCores, Memory: memory, Desc: desc, CreatedAt: createdAt}
 
 						logger.Logger.Println(node)
 						nodes = append(nodes, node)
