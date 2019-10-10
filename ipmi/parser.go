@@ -40,13 +40,11 @@ func BMCIPParser() {
 	}
 
 	for _, node := range nodes {
-		var ipMatched bool
+		var ipMatched = false
 		for _, ip := range config.Ipmi.BMCIPListArray {
 			if node.BmcIP == ip {
 				ipMatched = true
 				break
-			} else {
-				ipMatched = false
 			}
 		}
 
@@ -69,4 +67,33 @@ func BMCIPParser() {
 
 		_ = stmt.Close()
 	}
+}
+
+func BMCIPParserCheckActive(bmcIP string) {
+	var ipMatched = false
+	for _, ip := range config.Ipmi.BMCIPListArray {
+		if bmcIP == ip {
+			ipMatched = true
+			break
+		}
+	}
+
+	var sqlStr string
+	if ipMatched {
+		sqlStr = "update node set active = 1 where bmc_ip = ?"
+	} else {
+		sqlStr = "update node set active = 0 where bmc_ip = ?"
+	}
+
+	stmt, err := mysql.Db.Prepare(sqlStr)
+	if err != nil {
+		logger.Logger.Panic(err.Error())
+	}
+
+	_, err2 := stmt.Exec(bmcIP)
+	if err2 != nil {
+		logger.Logger.Panic(err2)
+	}
+
+	_ = stmt.Close()
 }

@@ -113,6 +113,8 @@ var mutationTypes = graphql.NewObject(graphql.ObjectConfig{
 					}
 					logger.Logger.Println(result.LastInsertId())
 
+					ipmi.BMCIPParserCheckActive(node.BmcIP)
+
 					return node, nil
 				}
 
