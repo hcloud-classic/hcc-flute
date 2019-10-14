@@ -33,7 +33,10 @@ func main() {
 		_ = mysql.Db.Close()
 	}()
 
-	ipmi.BMCIPParser()
+	err = ipmi.BMCIPParser()
+	if err != nil {
+		return
+	}
 
 	logger.Logger.Println("Starting ipmi.CheckAll(). Interval is " + strconv.Itoa(int(config.Ipmi.CheckAllIntervalMs)) + "ms")
 	ipmi.CheckAll()

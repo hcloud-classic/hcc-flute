@@ -1,6 +1,7 @@
 package graphql
 
 import (
+	"errors"
 	"github.com/graphql-go/graphql"
 	"hcc/flute/config"
 	"hcc/flute/ipmi"
@@ -41,49 +42,49 @@ var mutationTypes = graphql.NewObject(graphql.ObjectConfig{
 					serialNo, err := ipmi.GetSerialNo(bmcIP)
 					if err != nil {
 						logger.Logger.Println(err)
-						return nil, nil
+						return nil, err
 					}
 
 					uuid, err := ipmi.GetUUID(bmcIP, serialNo)
 					if err != nil {
 						logger.Logger.Println(err)
-						return nil, nil
+						return nil, err
 					}
 
 					BMCmac, err := ipmi.GetNICMac(bmcIP, int(config.Ipmi.BaseboardNICNoBMC), true)
 					if err != nil {
 						logger.Logger.Println(err)
-						return nil, nil
+						return nil, err
 					}
 
 					PXEmac, err := ipmi.GetNICMac(bmcIP, int(config.Ipmi.BaseboardNICNoPXE), false)
 					if err != nil {
 						logger.Logger.Println(err)
-						return nil, nil
+						return nil, err
 					}
 
 					powerState, err := ipmi.GetPowerState(bmcIP, serialNo)
 					if err != nil {
 						logger.Logger.Println(err)
-						return nil, nil
+						return nil, err
 					}
 
 					processors, err := ipmi.GetProcessors(bmcIP, serialNo)
 					if err != nil {
 						logger.Logger.Println(err)
-						return nil, nil
+						return nil, err
 					}
 
 					cpuCores, err := ipmi.GetProcessorsCores(bmcIP, serialNo, processors)
 					if err != nil {
 						logger.Logger.Println(err)
-						return nil, nil
+						return nil, err
 					}
 
 					memory, err := ipmi.GetTotalSystemMemory(bmcIP, serialNo)
 					if err != nil {
 						logger.Logger.Println(err)
-						return nil, nil
+						return nil, err
 					}
 
 					node := types.Node{
@@ -101,7 +102,7 @@ var mutationTypes = graphql.NewObject(graphql.ObjectConfig{
 					stmt, err := mysql.Db.Prepare(sql)
 					if err != nil {
 						logger.Logger.Println(err.Error())
-						return nil, nil
+						return nil, err
 					}
 					defer func() {
 						_ = stmt.Close()
@@ -109,16 +110,20 @@ var mutationTypes = graphql.NewObject(graphql.ObjectConfig{
 					result, err2 := stmt.Exec(node.UUID, node.BmcMacAddr, node.BmcIP, node.PXEMacAddr, node.Status, node.CPUCores, node.Memory, node.Desc)
 					if err2 != nil {
 						logger.Logger.Println(err2)
-						return nil, nil
+						return nil, err2
 					}
 					logger.Logger.Println(result.LastInsertId())
 
-					ipmi.BMCIPParserCheckActive(node.BmcIP)
+					err = ipmi.BMCIPParserCheckActive(node.BmcIP)
+					if err != nil {
+						logger.Logger.Println(err)
+						return nil, err
+					}
 
 					return node, nil
 				}
 
-				return nil, nil
+				return nil, errors.New("need bmc_ip argument")
 			},
 		},
 
@@ -153,7 +158,7 @@ var mutationTypes = graphql.NewObject(graphql.ObjectConfig{
 					stmt, err := mysql.Db.Prepare(sql)
 					if err != nil {
 						logger.Logger.Println(err.Error())
-						return nil, nil
+						return nil, err
 					}
 					defer func() {
 						_ = stmt.Close()
@@ -161,14 +166,14 @@ var mutationTypes = graphql.NewObject(graphql.ObjectConfig{
 					result, err2 := stmt.Exec(node.Desc, node.UUID)
 					if err2 != nil {
 						logger.Logger.Println(err2)
-						return nil, nil
+						return nil, err2
 					}
 					logger.Logger.Println(result.LastInsertId())
 
 					return node, nil
 				}
 
-				return nil, nil
+				return nil, errors.New("need uuid and desc arguments")
 			},
 		},
 
@@ -208,19 +213,19 @@ var mutationTypes = graphql.NewObject(graphql.ObjectConfig{
 					err := mysql.Db.QueryRow(sql, uuid).Scan(&bmcIP)
 					if err != nil {
 						logger.Logger.Println(err)
-						return nil, nil
+						return nil, err
 					}
 
 					serialNo, err := ipmi.GetSerialNo(bmcIP)
 					if err != nil {
 						logger.Logger.Println(err)
-						return nil, nil
+						return nil, err
 					}
 
 					powerState, err := ipmi.GetPowerState(bmcIP, serialNo)
 					if err != nil {
 						logger.Logger.Println(err)
-						return nil, nil
+						return nil, err
 					}
 
 					node := types.Node{
@@ -232,7 +237,7 @@ var mutationTypes = graphql.NewObject(graphql.ObjectConfig{
 					stmt, err := mysql.Db.Prepare(sql)
 					if err != nil {
 						logger.Logger.Println(err.Error())
-						return nil, nil
+						return nil, err
 					}
 					defer func() {
 						_ = stmt.Close()
@@ -240,14 +245,14 @@ var mutationTypes = graphql.NewObject(graphql.ObjectConfig{
 					result, err2 := stmt.Exec(node.Status, node.UUID)
 					if err2 != nil {
 						logger.Logger.Println(err2)
-						return nil, nil
+						return nil, err2
 					}
 					logger.Logger.Println(result.LastInsertId())
 
 					return node, nil
 				}
 
-				return nil, nil
+				return nil, errors.New("need uuid argument")
 			},
 		},
 
@@ -287,13 +292,13 @@ var mutationTypes = graphql.NewObject(graphql.ObjectConfig{
 					err := mysql.Db.QueryRow(sql, uuid).Scan(&bmcIP)
 					if err != nil {
 						logger.Logger.Println(err)
-						return nil, nil
+						return nil, err
 					}
 
 					serialNo, err := ipmi.GetSerialNo(bmcIP)
 					if err != nil {
 						logger.Logger.Println(err)
-						return nil, nil
+						return nil, err
 					}
 
 					state, _ := ipmi.GetPowerState(bmcIP, serialNo)
@@ -304,13 +309,13 @@ var mutationTypes = graphql.NewObject(graphql.ObjectConfig{
 					result, err := ipmi.ChangePowerState(bmcIP, serialNo, "On")
 					if err != nil {
 						logger.Logger.Println(err)
-						return nil, nil
+						return nil, err
 					}
 
 					return result, nil
 				}
 
-				return nil, nil
+				return nil, errors.New("need uuid argument")
 			},
 		},
 
@@ -342,13 +347,13 @@ var mutationTypes = graphql.NewObject(graphql.ObjectConfig{
 					err := mysql.Db.QueryRow(sql, uuid).Scan(&bmcIP)
 					if err != nil {
 						logger.Logger.Println(err)
-						return nil, nil
+						return nil, err
 					}
 
 					serialNo, err := ipmi.GetSerialNo(bmcIP)
 					if err != nil {
 						logger.Logger.Println(err)
-						return nil, nil
+						return nil, err
 					}
 
 					state, _ := ipmi.GetPowerState(bmcIP, serialNo)
@@ -363,13 +368,13 @@ var mutationTypes = graphql.NewObject(graphql.ObjectConfig{
 					result, err := ipmi.ChangePowerState(bmcIP, serialNo, changeState)
 					if err != nil {
 						logger.Logger.Println(err)
-						return nil, nil
+						return nil, err
 					}
 
 					return result, nil
 				}
 
-				return nil, nil
+				return nil, errors.New("need uuid argument")
 			},
 		},
 
@@ -398,31 +403,31 @@ var mutationTypes = graphql.NewObject(graphql.ObjectConfig{
 					err := mysql.Db.QueryRow(sql, nodeUUID).Scan(&bmcIP)
 					if err != nil {
 						logger.Logger.Println(err)
-						return nil, nil
+						return nil, err
 					}
 
 					serialNo, err := ipmi.GetSerialNo(bmcIP)
 					if err != nil {
 						logger.Logger.Println(err)
-						return nil, nil
+						return nil, err
 					}
 
 					model, err := ipmi.GetProcessorModel(bmcIP, serialNo)
 					if err != nil {
 						logger.Logger.Println(err)
-						return nil, nil
+						return nil, err
 					}
 
 					processors, err := ipmi.GetProcessors(bmcIP, serialNo)
 					if err != nil {
 						logger.Logger.Println(err)
-						return nil, nil
+						return nil, err
 					}
 
 					threads, err := ipmi.GetProcessorsThreads(bmcIP, serialNo, processors)
 					if err != nil {
 						logger.Logger.Println(err)
-						return nil, nil
+						return nil, err
 					}
 
 					nodedetail := types.NodeDetail{
@@ -436,7 +441,7 @@ var mutationTypes = graphql.NewObject(graphql.ObjectConfig{
 					stmt, err := mysql.Db.Prepare(sql)
 					if err != nil {
 						logger.Logger.Println(err.Error())
-						return nil, nil
+						return nil, err
 					}
 					defer func() {
 						_ = stmt.Close()
@@ -444,14 +449,14 @@ var mutationTypes = graphql.NewObject(graphql.ObjectConfig{
 					result, err2 := stmt.Exec(nodedetail.NodeUUID, nodedetail.CPUModel, nodedetail.CPUProcessors, nodedetail.CPUThreads)
 					if err2 != nil {
 						logger.Logger.Println(err2)
-						return nil, nil
+						return nil, err2
 					}
 					logger.Logger.Println(result.LastInsertId())
 
 					return nodedetail, nil
 				}
 
-				return nil, nil
+				return nil, errors.New("need node_uuid argument")
 			},
 		},
 

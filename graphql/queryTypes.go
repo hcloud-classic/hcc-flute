@@ -1,11 +1,13 @@
 package graphql
 
 import (
-	"github.com/graphql-go/graphql"
+	"errors"
 	"hcc/flute/logger"
 	"hcc/flute/mysql"
 	"hcc/flute/types"
 	"time"
+
+	"github.com/graphql-go/graphql"
 )
 
 var queryTypes = graphql.NewObject(
@@ -45,7 +47,7 @@ var queryTypes = graphql.NewObject(
 						err := mysql.Db.QueryRow(sql, requestedUUID).Scan(&uuid, &BMCmacAddr, &bmcIP, &pxeMACaddr, &status, &cpuCores, &memory, &desc, &createdAt)
 						if err != nil {
 							logger.Logger.Println(err)
-							return nil, nil
+							return nil, err
 						}
 
 						node.UUID = uuid
@@ -60,7 +62,7 @@ var queryTypes = graphql.NewObject(
 
 						return node, nil
 					}
-					return nil, nil
+					return nil, errors.New("need uuid argument")
 				},
 			},
 
@@ -89,7 +91,7 @@ var queryTypes = graphql.NewObject(
 					stmt, err := mysql.Db.Query(sql)
 					if err != nil {
 						logger.Logger.Println(err)
-						return nil, nil
+						return nil, err
 					}
 					defer func() {
 						_ = stmt.Close()
@@ -99,6 +101,7 @@ var queryTypes = graphql.NewObject(
 						err := stmt.Scan(&uuid, &BMCmacAddr, &bmcIP, &pxeMACaddr, &status, &cpuCores, &memory, &desc, &createdAt)
 						if err != nil {
 							logger.Logger.Println(err)
+							return nil, err
 						}
 
 						node := types.Node{UUID: uuid, BmcMacAddr: BMCmacAddr, BmcIP: bmcIP, PXEMacAddr: pxeMACaddr, Status: status, CPUCores: cpuCores, Memory: memory, Desc: desc, CreatedAt: createdAt}
@@ -139,7 +142,7 @@ var queryTypes = graphql.NewObject(
 						err := mysql.Db.QueryRow(sql, requestedNodeUUID).Scan(&nodeUUID, &cpuModel, &cpuProcessors, &cpuThreads)
 						if err != nil {
 							logger.Logger.Println(err)
-							return nil, nil
+							return nil, err
 						}
 
 						nodeDetail.NodeUUID = nodeUUID
@@ -149,7 +152,7 @@ var queryTypes = graphql.NewObject(
 
 						return nodeDetail, nil
 					}
-					return nil, nil
+					return nil, errors.New("need node_uuid argument")
 				},
 			},
 
@@ -172,7 +175,7 @@ var queryTypes = graphql.NewObject(
 					stmt, err := mysql.Db.Query(sql)
 					if err != nil {
 						logger.Logger.Println(err)
-						return nil, nil
+						return nil, err
 					}
 					defer func() {
 						_ = stmt.Close()
@@ -182,6 +185,7 @@ var queryTypes = graphql.NewObject(
 						err := stmt.Scan(&nodeUUID, &cpuModel, &cpuProcessors, &cpuThreads)
 						if err != nil {
 							logger.Logger.Println(err)
+							return nil, err
 						}
 
 						nodeDetail := types.NodeDetail{NodeUUID: nodeUUID, CPUModel: cpuModel, CPUProcessors: cpuProcessors, CPUThreads: cpuThreads}
