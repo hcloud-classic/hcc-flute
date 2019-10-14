@@ -25,7 +25,7 @@ func Prepare() error {
 
 	err = Db.Ping()
 	if err != nil {
-		logger.Logger.Println(err.Error())
+		logger.Logger.Println(err)
 		return err
 	}
 

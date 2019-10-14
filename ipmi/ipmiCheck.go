@@ -117,7 +117,7 @@ func UpdateAllNodes() (interface{}, error) {
 		sql := "update node set bmc_mac_addr = ?, pxe_mac_addr = ?, cpu_cores = ?, memory = ? where uuid = ?"
 		stmt, err := mysql.Db.Prepare(sql)
 		if err != nil {
-			logger.Logger.Println(err.Error())
+			logger.Logger.Println(err)
 			return nil, nil
 		}
 
@@ -180,7 +180,7 @@ func UpdateStatusNodes() (interface{}, error) {
 		sql = "update node set status = ? where uuid = ?"
 		stmt, err := mysql.Db.Prepare(sql)
 		if err != nil {
-			logger.Logger.Println(err.Error())
+			logger.Logger.Println(err)
 			return nil, nil
 		}
 
@@ -263,7 +263,7 @@ func UpdateNodesDetail() (interface{}, error) {
 			sql = "insert into node_detail(node_uuid, cpu_model, cpu_processors, cpu_threads) values (?, ?, ?, ?)"
 			stmt, err := mysql.Db.Prepare(sql)
 			if err != nil {
-				logger.Logger.Println(err.Error())
+				logger.Logger.Println(err)
 				return nil, nil
 			}
 			defer func() {
@@ -279,7 +279,7 @@ func UpdateNodesDetail() (interface{}, error) {
 			sql = "update node_detail set cpu_model = ?, cpu_processors = ?, cpu_threads = ? where node_uuid = ?"
 			stmt, err := mysql.Db.Prepare(sql)
 			if err != nil {
-				logger.Logger.Println(err.Error())
+				logger.Logger.Println(err)
 				return nil, nil
 			}
 

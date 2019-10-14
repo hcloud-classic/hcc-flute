@@ -101,7 +101,7 @@ var mutationTypes = graphql.NewObject(graphql.ObjectConfig{
 					sql := "insert into node(uuid, bmc_mac_addr, bmc_ip, pxe_mac_addr, status, cpu_cores, memory, `desc`, created_at) values (?, ?, ?, ?, ?, ?, ?, ?, now())"
 					stmt, err := mysql.Db.Prepare(sql)
 					if err != nil {
-						logger.Logger.Println(err.Error())
+						logger.Logger.Println(err)
 						return nil, err
 					}
 					defer func() {
@@ -157,7 +157,7 @@ var mutationTypes = graphql.NewObject(graphql.ObjectConfig{
 					sql := "update node set `desc` = ? where uuid = ?"
 					stmt, err := mysql.Db.Prepare(sql)
 					if err != nil {
-						logger.Logger.Println(err.Error())
+						logger.Logger.Println(err)
 						return nil, err
 					}
 					defer func() {
@@ -236,7 +236,7 @@ var mutationTypes = graphql.NewObject(graphql.ObjectConfig{
 					sql = "update node set status = ? where uuid = ?"
 					stmt, err := mysql.Db.Prepare(sql)
 					if err != nil {
-						logger.Logger.Println(err.Error())
+						logger.Logger.Println(err)
 						return nil, err
 					}
 					defer func() {
@@ -440,7 +440,7 @@ var mutationTypes = graphql.NewObject(graphql.ObjectConfig{
 					sql = "insert into node_detail(node_uuid, cpu_model, cpu_processors, cpu_threads) values (?, ?, ?, ?)"
 					stmt, err := mysql.Db.Prepare(sql)
 					if err != nil {
-						logger.Logger.Println(err.Error())
+						logger.Logger.Println(err)
 						return nil, err
 					}
 					defer func() {
