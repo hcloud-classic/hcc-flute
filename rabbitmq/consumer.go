@@ -55,31 +55,31 @@ func OnNode() error {
 			sql := "select bmc_ip from node where uuid = ?"
 			err := mysql.Db.QueryRow(sql, uuid).Scan(&bmcIP)
 			if err != nil {
-				logger.Logger.Println("on_node: UUID = "+uuid+": "+err.Error())
-				logger.Logger.Println("on_node: UUID = "+uuid+": failed to get bmc IP of the node")
+				logger.Logger.Println("on_node: UUID = " + uuid + ": " + err.Error())
+				logger.Logger.Println("on_node: UUID = " + uuid + ": failed to get bmc IP of the node")
 				return
 			}
 
 			serialNo, err := ipmi.GetSerialNo(bmcIP)
 			if err != nil {
-				logger.Logger.Println("on_node: UUID = "+uuid+": "+err.Error())
-				logger.Logger.Println("on_node: UUID = "+uuid+": failed to get serial no of the node")
+				logger.Logger.Println("on_node: UUID = " + uuid + ": " + err.Error())
+				logger.Logger.Println("on_node: UUID = " + uuid + ": failed to get serial no of the node")
 				return
 			}
 
 			state, _ := ipmi.GetPowerState(bmcIP, serialNo)
 			if state == "On" {
-				logger.Logger.Println("on_node: UUID = "+uuid+": already turned on")
+				logger.Logger.Println("on_node: UUID = " + uuid + ": already turned on")
 				return
 			}
 
 			result, err := ipmi.ChangePowerState(bmcIP, serialNo, "On")
 			if err != nil {
-				logger.Logger.Println("on_node: UUID = "+uuid+": "+err.Error())
-				logger.Logger.Println("on_node: UUID = "+uuid+": failed to turn on the node")
+				logger.Logger.Println("on_node: UUID = " + uuid + ": " + err.Error())
+				logger.Logger.Println("on_node: UUID = " + uuid + ": failed to turn on the node")
 				return
 			}
-			logger.Logger.Println("on_node: UUID = "+uuid+": "+result)
+			logger.Logger.Println("on_node: UUID = " + uuid + ": " + result)
 		}
 	}()
 
