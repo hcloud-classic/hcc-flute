@@ -5,10 +5,10 @@ import "github.com/Terry-Mao/goconf"
 var configLocation = "/etc/flute/flute.conf"
 
 type fluteConfig struct {
-	MysqlConfig *goconf.Section
-	HTTPConfig  *goconf.Section
+	MysqlConfig    *goconf.Section
+	HTTPConfig     *goconf.Section
 	RabbitMQConfig *goconf.Section
-	IpmiConfig  *goconf.Section
+	IpmiConfig     *goconf.Section
 }
 
 /*-----------------------------------
@@ -37,6 +37,7 @@ bmc_ip_list 172.31.0.1,172.31.0.2,172.31.0.3,172.31.0.4
 username user
 password pass
 request_timeout_ms 5000
+request_retry 3
 check_all_interval_ms 10000
 check_status_interval_ms 5000
 check_nodes_detail_interval_ms 15000

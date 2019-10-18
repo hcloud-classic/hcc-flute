@@ -117,6 +117,11 @@ func parseIpmi() {
 		logger.Logger.Panicln(err)
 	}
 
+	Ipmi.RequestRetry, err = config.IpmiConfig.Int("request_retry")
+	if err != nil {
+		logger.Logger.Panicln(err)
+	}
+
 	Ipmi.CheckAllIntervalMs, err = config.IpmiConfig.Int("check_all_interval_ms")
 	if err != nil {
 		logger.Logger.Panicln(err)

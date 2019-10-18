@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"hcc/flute/config"
+	"hcc/flute/logger"
 	"io/ioutil"
 	"net/http"
 	"strconv"
@@ -15,18 +16,24 @@ import (
 
 // GetSerialNo : Get serial number from IPMI node
 func GetSerialNo(bmcIP string) (string, error) {
-	http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
+	var resp *http.Response
 
-	client := &http.Client{Timeout: time.Duration(config.Ipmi.RequestTimeoutMs) * time.Millisecond}
-	req, err := http.NewRequest("GET", "https://"+bmcIP+"/redfish/v1/Systems/", nil)
-	if err != nil {
-		return "", err
-	}
-	req.SetBasicAuth(config.Ipmi.Username, config.Ipmi.Password)
-	resp, err := client.Do(req)
+	for i := 0; i < int(config.Ipmi.RequestRetry); i++ {
+		http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
 
-	if err != nil {
-		return "", err
+		client := &http.Client{Timeout: time.Duration(config.Ipmi.RequestTimeoutMs) * time.Millisecond}
+		req, err := http.NewRequest("GET", "https://"+bmcIP+"/redfish/v1/Systems/", nil)
+		if err != nil {
+			return "", err
+		}
+		req.SetBasicAuth(config.Ipmi.Username, config.Ipmi.Password)
+		resp, err = client.Do(req)
+		if err != nil {
+			logger.Logger.Println(err)
+			logger.Logger.Println("GetSerialNo(): Retrying for " + bmcIP + " " + strconv.Itoa(i+1) + "/" + strconv.Itoa(int(config.Ipmi.RequestRetry)))
+		} else {
+			break
+		}
 	}
 	defer func() {
 		_ = resp.Body.Close()
@@ -57,18 +64,24 @@ func GetSerialNo(bmcIP string) (string, error) {
 
 // GetUUID : Get UUID from IPMI node
 func GetUUID(bmcIP string, serialNo string) (string, error) {
-	http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
+	var resp *http.Response
 
-	client := &http.Client{Timeout: time.Duration(config.Ipmi.RequestTimeoutMs) * time.Millisecond}
-	req, err := http.NewRequest("GET", "https://"+bmcIP+"/redfish/v1/Systems/"+serialNo, nil)
-	if err != nil {
-		return "", err
-	}
-	req.SetBasicAuth(config.Ipmi.Username, config.Ipmi.Password)
-	resp, err := client.Do(req)
+	for i := 0; i < int(config.Ipmi.RequestRetry); i++ {
+		http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
 
-	if err != nil {
-		return "", err
+		client := &http.Client{Timeout: time.Duration(config.Ipmi.RequestTimeoutMs) * time.Millisecond}
+		req, err := http.NewRequest("GET", "https://"+bmcIP+"/redfish/v1/Systems/"+serialNo, nil)
+		if err != nil {
+			return "", err
+		}
+		req.SetBasicAuth(config.Ipmi.Username, config.Ipmi.Password)
+		resp, err = client.Do(req)
+		if err != nil {
+			logger.Logger.Println(err)
+			logger.Logger.Println("GetUUID(): Retrying for " + bmcIP + " " + strconv.Itoa(i+1) + "/" + strconv.Itoa(int(config.Ipmi.RequestRetry)))
+		} else {
+			break
+		}
 	}
 	defer func() {
 		_ = resp.Body.Close()
@@ -99,18 +112,24 @@ func GetUUID(bmcIP string, serialNo string) (string, error) {
 
 // GetPowerState : Get power status from IPMI node
 func GetPowerState(bmcIP string, serialNo string) (string, error) {
-	http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
+	var resp *http.Response
 
-	client := &http.Client{Timeout: time.Duration(config.Ipmi.RequestTimeoutMs) * time.Millisecond}
-	req, err := http.NewRequest("GET", "https://"+bmcIP+"/redfish/v1/Systems/"+serialNo, nil)
-	if err != nil {
-		return "", err
-	}
-	req.SetBasicAuth(config.Ipmi.Username, config.Ipmi.Password)
-	resp, err := client.Do(req)
+	for i := 0; i < int(config.Ipmi.RequestRetry); i++ {
+		http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
 
-	if err != nil {
-		return "", err
+		client := &http.Client{Timeout: time.Duration(config.Ipmi.RequestTimeoutMs) * time.Millisecond}
+		req, err := http.NewRequest("GET", "https://"+bmcIP+"/redfish/v1/Systems/"+serialNo, nil)
+		if err != nil {
+			return "", err
+		}
+		req.SetBasicAuth(config.Ipmi.Username, config.Ipmi.Password)
+		resp, err = client.Do(req)
+		if err != nil {
+			logger.Logger.Println(err)
+			logger.Logger.Println("GetPowerState(): Retrying for " + bmcIP + " " + strconv.Itoa(i+1) + "/" + strconv.Itoa(int(config.Ipmi.RequestRetry)))
+		} else {
+			break
+		}
 	}
 	defer func() {
 		_ = resp.Body.Close()
@@ -141,17 +160,23 @@ func GetPowerState(bmcIP string, serialNo string) (string, error) {
 
 // GetProcessors : Get count of CPU processors from IPMI node
 func GetProcessors(bmcIP string, serialNo string) (int, error) {
-	http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
-	client := &http.Client{Timeout: time.Duration(config.Ipmi.RequestTimeoutMs) * time.Millisecond}
-	req, err := http.NewRequest("GET", "https://"+bmcIP+"/redfish/v1/Systems/"+serialNo+"/Processors", nil)
-	if err != nil {
-		return 0, err
-	}
-	req.SetBasicAuth(config.Ipmi.Username, config.Ipmi.Password)
-	resp, err := client.Do(req)
+	var resp *http.Response
 
-	if err != nil {
-		return 0, err
+	for i := 0; i < int(config.Ipmi.RequestRetry); i++ {
+		http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
+		client := &http.Client{Timeout: time.Duration(config.Ipmi.RequestTimeoutMs) * time.Millisecond}
+		req, err := http.NewRequest("GET", "https://"+bmcIP+"/redfish/v1/Systems/"+serialNo+"/Processors", nil)
+		if err != nil {
+			return 0, err
+		}
+		req.SetBasicAuth(config.Ipmi.Username, config.Ipmi.Password)
+		resp, err = client.Do(req)
+		if err != nil {
+			logger.Logger.Println(err)
+			logger.Logger.Println("GetProcessors(): Retrying for " + bmcIP + " " + strconv.Itoa(i+1) + "/" + strconv.Itoa(int(config.Ipmi.RequestRetry)))
+		} else {
+			break
+		}
 	}
 	defer func() {
 		_ = resp.Body.Close()
@@ -188,15 +213,21 @@ func GetProcessorsCores(bmcIP string, serialNo string, processors int) (int, err
 	coreSum := 0
 
 	for i := 1; i <= processors; i++ {
-		req, err := http.NewRequest("GET", "https://"+bmcIP+"/redfish/v1/Systems/"+serialNo+"/Processors/CPU"+strconv.Itoa(i), nil)
-		if err != nil {
-			return 0, err
-		}
-		req.SetBasicAuth(config.Ipmi.Username, config.Ipmi.Password)
-		resp, err := client.Do(req)
+		var resp *http.Response
 
-		if err != nil {
-			return 0, err
+		for i := 0; i < int(config.Ipmi.RequestRetry); i++ {
+			req, err := http.NewRequest("GET", "https://"+bmcIP+"/redfish/v1/Systems/"+serialNo+"/Processors/CPU"+strconv.Itoa(i), nil)
+			if err != nil {
+				return 0, err
+			}
+			req.SetBasicAuth(config.Ipmi.Username, config.Ipmi.Password)
+			resp, err = client.Do(req)
+			if err != nil {
+				logger.Logger.Println(err)
+				logger.Logger.Println("GetProcessorsCores(): CPU" + strconv.Itoa(i) + ": Retrying for " + bmcIP + " " + strconv.Itoa(i+1) + "/" + strconv.Itoa(int(config.Ipmi.RequestRetry)))
+			} else {
+				break
+			}
 		}
 
 		if resp.StatusCode >= 200 && resp.StatusCode <= 299 {
@@ -232,15 +263,21 @@ func GetProcessorsThreads(bmcIP string, serialNo string, processors int) (int, e
 	threadSum := 0
 
 	for i := 1; i <= processors; i++ {
-		req, err := http.NewRequest("GET", "https://"+bmcIP+"/redfish/v1/Systems/"+serialNo+"/Processors/CPU"+strconv.Itoa(i), nil)
-		if err != nil {
-			return 0, err
-		}
-		req.SetBasicAuth(config.Ipmi.Username, config.Ipmi.Password)
-		resp, err := client.Do(req)
+		var resp *http.Response
 
-		if err != nil {
-			return 0, err
+		for i := 0; i < int(config.Ipmi.RequestRetry); i++ {
+			req, err := http.NewRequest("GET", "https://"+bmcIP+"/redfish/v1/Systems/"+serialNo+"/Processors/CPU"+strconv.Itoa(i), nil)
+			if err != nil {
+				return 0, err
+			}
+			req.SetBasicAuth(config.Ipmi.Username, config.Ipmi.Password)
+			resp, err = client.Do(req)
+			if err != nil {
+				logger.Logger.Println(err)
+				logger.Logger.Println("GetProcessorsThreads(): CPU" + strconv.Itoa(i) + ": Retrying for " + bmcIP + " " + strconv.Itoa(i+1) + "/" + strconv.Itoa(int(config.Ipmi.RequestRetry)))
+			} else {
+				break
+			}
 		}
 
 		if resp.StatusCode >= 200 && resp.StatusCode <= 299 {
@@ -270,17 +307,23 @@ func GetProcessorsThreads(bmcIP string, serialNo string, processors int) (int, e
 
 // GetProcessorModel : Get model of first processor from IPMI node
 func GetProcessorModel(bmcIP string, serialNo string) (string, error) {
-	http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
-	client := &http.Client{Timeout: time.Duration(config.Ipmi.RequestTimeoutMs) * time.Millisecond}
-	req, err := http.NewRequest("GET", "https://"+bmcIP+"/redfish/v1/Systems/"+serialNo+"/Processors/CPU1", nil)
-	if err != nil {
-		return "", err
-	}
-	req.SetBasicAuth(config.Ipmi.Username, config.Ipmi.Password)
-	resp, err := client.Do(req)
+	var resp *http.Response
 
-	if err != nil {
-		return "", err
+	for i := 0; i < int(config.Ipmi.RequestRetry); i++ {
+		http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
+		client := &http.Client{Timeout: time.Duration(config.Ipmi.RequestTimeoutMs) * time.Millisecond}
+		req, err := http.NewRequest("GET", "https://"+bmcIP+"/redfish/v1/Systems/"+serialNo+"/Processors/CPU1", nil)
+		if err != nil {
+			return "", err
+		}
+		req.SetBasicAuth(config.Ipmi.Username, config.Ipmi.Password)
+		resp, err = client.Do(req)
+		if err != nil {
+			logger.Logger.Println(err)
+			logger.Logger.Println("GetProcessorModel(): Retrying for " + bmcIP + " " + strconv.Itoa(i+1) + "/" + strconv.Itoa(int(config.Ipmi.RequestRetry)))
+		} else {
+			break
+		}
 	}
 	defer func() {
 		_ = resp.Body.Close()
@@ -309,18 +352,24 @@ func GetProcessorModel(bmcIP string, serialNo string) (string, error) {
 
 // GetTotalSystemMemory : Get total system memory from IPMI node
 func GetTotalSystemMemory(bmcIP string, serialNo string) (int, error) {
-	http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
+	var resp *http.Response
 
-	client := &http.Client{Timeout: time.Duration(config.Ipmi.RequestTimeoutMs) * time.Millisecond}
-	req, err := http.NewRequest("GET", "https://"+bmcIP+"/redfish/v1/Systems/"+serialNo, nil)
-	if err != nil {
-		return 0, err
-	}
-	req.SetBasicAuth(config.Ipmi.Username, config.Ipmi.Password)
-	resp, err := client.Do(req)
+	for i := 0; i < int(config.Ipmi.RequestRetry); i++ {
+		http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
 
-	if err != nil {
-		return 0, err
+		client := &http.Client{Timeout: time.Duration(config.Ipmi.RequestTimeoutMs) * time.Millisecond}
+		req, err := http.NewRequest("GET", "https://"+bmcIP+"/redfish/v1/Systems/"+serialNo, nil)
+		if err != nil {
+			return 0, err
+		}
+		req.SetBasicAuth(config.Ipmi.Username, config.Ipmi.Password)
+		resp, err = client.Do(req)
+		if err != nil {
+			logger.Logger.Println(err)
+			logger.Logger.Println("GetTotalSystemMemory(): Retrying for " + bmcIP + " " + strconv.Itoa(i+1) + "/" + strconv.Itoa(int(config.Ipmi.RequestRetry)))
+		} else {
+			break
+		}
 	}
 	defer func() {
 		_ = resp.Body.Close()
@@ -352,26 +401,32 @@ func GetTotalSystemMemory(bmcIP string, serialNo string) (int, error) {
 
 // ChangePowerState : Change power status for selected IPMI node
 func ChangePowerState(bmcIP string, serialNo string, state string) (string, error) {
-	http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
+	var resp *http.Response
 
-	client := &http.Client{Timeout: time.Duration(config.Ipmi.RequestTimeoutMs) * time.Millisecond}
+	for i := 0; i < int(config.Ipmi.RequestRetry); i++ {
+		http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
 
-	resetType := ipmiResetType{state}
-	jsonBytes, err := json.Marshal(resetType)
-	if err != nil {
-		return "", err
-	}
+		client := &http.Client{Timeout: time.Duration(config.Ipmi.RequestTimeoutMs) * time.Millisecond}
 
-	req, err := http.NewRequest("POST", "https://"+bmcIP+"/redfish/v1/Systems/"+serialNo+"/Actions/ComputerSystem.Reset", bytes.NewBuffer(jsonBytes))
-	if err != nil {
-		return "", err
-	}
-	req.SetBasicAuth(config.Ipmi.Username, config.Ipmi.Password)
+		resetType := ipmiResetType{state}
+		jsonBytes, err := json.Marshal(resetType)
+		if err != nil {
+			return "", err
+		}
 
-	resp, err := client.Do(req)
+		req, err := http.NewRequest("POST", "https://"+bmcIP+"/redfish/v1/Systems/"+serialNo+"/Actions/ComputerSystem.Reset", bytes.NewBuffer(jsonBytes))
+		if err != nil {
+			return "", err
+		}
+		req.SetBasicAuth(config.Ipmi.Username, config.Ipmi.Password)
 
-	if err != nil {
-		return "", err
+		resp, err = client.Do(req)
+		if err != nil {
+			logger.Logger.Println(err)
+			logger.Logger.Println("ChangePowerState(): Retrying for " + bmcIP + " " + strconv.Itoa(i+1) + "/" + strconv.Itoa(int(config.Ipmi.RequestRetry)))
+		} else {
+			break
+		}
 	}
 	defer func() {
 		_ = resp.Body.Close()
@@ -401,18 +456,24 @@ func ChangePowerState(bmcIP string, serialNo string, state string) (string, erro
 
 // GetNICMac : Get MAC address of selected NIC from IPMI node
 func GetNICMac(bmcIP string, nicNO int, isBMC bool) (string, error) {
-	http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
+	var resp *http.Response
 
-	client := &http.Client{Timeout: time.Duration(config.Ipmi.RequestTimeoutMs) * time.Millisecond}
-	req, err := http.NewRequest("GET", "https://"+bmcIP+"/redfish/v1/Managers/BMC/EthernetInterfaces/"+strconv.Itoa(nicNO), nil)
-	if err != nil {
-		return "", err
-	}
-	req.SetBasicAuth(config.Ipmi.Username, config.Ipmi.Password)
-	resp, err := client.Do(req)
+	for i := 0; i < int(config.Ipmi.RequestRetry); i++ {
+		http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
 
-	if err != nil {
-		return "", err
+		client := &http.Client{Timeout: time.Duration(config.Ipmi.RequestTimeoutMs) * time.Millisecond}
+		req, err := http.NewRequest("GET", "https://"+bmcIP+"/redfish/v1/Managers/BMC/EthernetInterfaces/"+strconv.Itoa(nicNO), nil)
+		if err != nil {
+			return "", err
+		}
+		req.SetBasicAuth(config.Ipmi.Username, config.Ipmi.Password)
+		resp, err = client.Do(req)
+		if err != nil {
+			logger.Logger.Println(err)
+			logger.Logger.Println("GetNICMac(): Retrying for " + bmcIP + " " + strconv.Itoa(i+1) + "/" + strconv.Itoa(int(config.Ipmi.RequestRetry)))
+		} else {
+			break
+		}
 	}
 	defer func() {
 		_ = resp.Body.Close()
