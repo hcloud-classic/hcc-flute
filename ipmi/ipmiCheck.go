@@ -60,49 +60,49 @@ func UpdateAllNodes() (interface{}, error) {
 		err := stmt.Scan(&bmcIP)
 		if err != nil {
 			logger.Logger.Println(err)
-			return nil, nil
+			continue
 		}
 
 		serialNo, err := GetSerialNo(bmcIP)
 		if err != nil {
 			logger.Logger.Println(err)
-			return nil, nil
+			continue
 		}
 
 		uuid, err := GetUUID(bmcIP, serialNo)
 		if err != nil {
 			logger.Logger.Println(err)
-			return nil, nil
+			continue
 		}
 
 		bmcMAC, err := GetNICMac(bmcIP, int(config.Ipmi.BaseboardNICNoBMC), true)
 		if err != nil {
 			logger.Logger.Println(err)
-			return nil, nil
+			continue
 		}
 
 		pxeMAC, err := GetNICMac(bmcIP, int(config.Ipmi.BaseboardNICNoPXE), false)
 		if err != nil {
 			logger.Logger.Println(err)
-			return nil, nil
+			continue
 		}
 
 		processors, err := GetProcessors(bmcIP, serialNo)
 		if err != nil {
 			logger.Logger.Println(err)
-			return nil, nil
+			continue
 		}
 
 		cpuCores, err := GetProcessorsCores(bmcIP, serialNo, processors)
 		if err != nil {
 			logger.Logger.Println(err)
-			return nil, nil
+			continue
 		}
 
 		memory, err := GetTotalSystemMemory(bmcIP, serialNo)
 		if err != nil {
 			logger.Logger.Println(err)
-			return nil, nil
+			continue
 		}
 
 		node := types.Node{
@@ -118,13 +118,14 @@ func UpdateAllNodes() (interface{}, error) {
 		stmt, err := mysql.Db.Prepare(sql)
 		if err != nil {
 			logger.Logger.Println(err)
-			return nil, nil
+			continue
 		}
 
 		result, err2 := stmt.Exec(node.BmcMacAddr, node.PXEMacAddr, node.CPUCores, node.Memory, node.UUID)
 		if err2 != nil {
 			logger.Logger.Println(err2)
-			return nil, nil
+			_ = stmt.Close()
+			continue
 		}
 		_ = stmt.Close()
 
@@ -157,19 +158,19 @@ func UpdateStatusNodes() (interface{}, error) {
 		err := stmt.Scan(&uuid, &bmcIP)
 		if err != nil {
 			logger.Logger.Println(err)
-			return nil, nil
+			continue
 		}
 
 		serialNo, err := GetSerialNo(bmcIP)
 		if err != nil {
 			logger.Logger.Println(err)
-			return nil, nil
+			continue
 		}
 
 		powerState, err := GetPowerState(bmcIP, serialNo)
 		if err != nil {
 			logger.Logger.Println(err)
-			return nil, nil
+			continue
 		}
 
 		node := types.Node{
@@ -181,13 +182,14 @@ func UpdateStatusNodes() (interface{}, error) {
 		stmt, err := mysql.Db.Prepare(sql)
 		if err != nil {
 			logger.Logger.Println(err)
-			return nil, nil
+			continue
 		}
 
 		result, err2 := stmt.Exec(node.Status, node.UUID)
 		if err2 != nil {
 			logger.Logger.Println(err2)
-			return nil, nil
+			_ = stmt.Close()
+			continue
 		}
 		_ = stmt.Close()
 
@@ -220,31 +222,31 @@ func UpdateNodesDetail() (interface{}, error) {
 		err := stmt.Scan(&uuid, &bmcIP)
 		if err != nil {
 			logger.Logger.Println(err)
-			return nil, nil
+			continue
 		}
 
 		serialNo, err := GetSerialNo(bmcIP)
 		if err != nil {
 			logger.Logger.Println(err)
-			return nil, nil
+			continue
 		}
 
 		model, err := GetProcessorModel(bmcIP, serialNo)
 		if err != nil {
 			logger.Logger.Println(err)
-			return nil, nil
+			continue
 		}
 
 		processors, err := GetProcessors(bmcIP, serialNo)
 		if err != nil {
 			logger.Logger.Println(err)
-			return nil, nil
+			continue
 		}
 
 		threads, err := GetProcessorsThreads(bmcIP, serialNo, processors)
 		if err != nil {
 			logger.Logger.Println(err)
-			return nil, nil
+			continue
 		}
 
 		nodedetail := types.NodeDetail{
@@ -264,29 +266,31 @@ func UpdateNodesDetail() (interface{}, error) {
 			stmt, err := mysql.Db.Prepare(sql)
 			if err != nil {
 				logger.Logger.Println(err)
-				return nil, nil
+				continue
 			}
-			defer func() {
-				_ = stmt.Close()
-			}()
+
 			result, err2 := stmt.Exec(nodedetail.NodeUUID, nodedetail.CPUModel, nodedetail.CPUProcessors, nodedetail.CPUThreads)
 			if err2 != nil {
 				logger.Logger.Println(err2)
-				return nil, nil
+				_ = stmt.Close()
+				continue
 			}
+			_ = stmt.Close()
+
 			logger.Logger.Println(result.LastInsertId())
 		} else {
 			sql = "update node_detail set cpu_model = ?, cpu_processors = ?, cpu_threads = ? where node_uuid = ?"
 			stmt, err := mysql.Db.Prepare(sql)
 			if err != nil {
 				logger.Logger.Println(err)
-				return nil, nil
+				continue
 			}
 
 			result, err2 := stmt.Exec(nodedetail.CPUModel, nodedetail.CPUProcessors, nodedetail.CPUThreads, nodedetail.NodeUUID)
 			if err2 != nil {
 				logger.Logger.Println(err2)
-				return nil, nil
+				_ = stmt.Close()
+				continue
 			}
 			_ = stmt.Close()
 
@@ -294,9 +298,6 @@ func UpdateNodesDetail() (interface{}, error) {
 				logger.Logger.Println(result.LastInsertId())
 			}
 		}
-		defer func() {
-			_ = stmt.Close()
-		}()
 
 		nodedetails = append(nodedetails, nodedetail)
 	}
