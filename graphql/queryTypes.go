@@ -5,6 +5,7 @@ import (
 	"hcc/flute/logger"
 	"hcc/flute/mysql"
 	"hcc/flute/types"
+	"strconv"
 	"time"
 )
 
@@ -12,10 +13,6 @@ var queryTypes = graphql.NewObject(
 	graphql.ObjectConfig{
 		Name: "Query",
 		Fields: graphql.Fields{
-			////////////////////////////// Node ///////////////////////////////
-			/* Get (read) single node by uuid
-			   http://192.168.110.240:7000/graphql?query={node(uuid:"d4f3a900-b674-11e8-906e-000ffee02d5c"){uuid,mac_addr,ipmi_ip,status,cpu_cores,memory,detail,created_at}}
-			*/
 			"node": &graphql.Field{
 				Type:        nodeType,
 				Description: "Get a node by uuid",
@@ -34,14 +31,16 @@ var queryTypes = graphql.NewObject(
 						var uuid string
 						var BMCmacAddr string
 						var bmcIP string
+						var pxeMacAddr string
 						var status string
 						var cpuCores int
 						var memory int
 						var detail string
 						var createdAt time.Time
+						var active int
 
 						sql := "select * from node where uuid = ?"
-						err := mysql.Db.QueryRow(sql, requestedUUID).Scan(&uuid, &BMCmacAddr, &bmcIP, &status, &cpuCores, &memory, &detail, &createdAt)
+						err := mysql.Db.QueryRow(sql, requestedUUID).Scan(&uuid, &BMCmacAddr, &bmcIP, &pxeMacAddr, &status, &cpuCores, &memory, &detail, &createdAt, &active)
 						if err != nil {
 							logger.Logger.Println(err)
 							return nil, nil
@@ -53,66 +52,193 @@ var queryTypes = graphql.NewObject(
 						node.Status = status
 						node.CPUCores = cpuCores
 						node.Memory = memory
-						node.Desc = detail
+						node.Description = detail
 						node.CreatedAt = createdAt
+						node.Active = active
 
 						return node, nil
 					}
 					return nil, nil
 				},
 			},
-
-			/* Get (read) node list
-			   http://192.168.110.240:7000/graphql?query={list_node{uuid,mac_addr,ipmi_ip,status,cpu_cores,memory,detail,created_at}}
-			*/
 			"list_node": &graphql.Field{
 				Type:        graphql.NewList(nodeType),
 				Description: "Get node list",
+				Args: graphql.FieldConfigArgument{
+					"bmc_mac_addr": &graphql.ArgumentConfig{
+						Type: graphql.String,
+					},
+					"bmc_ip": &graphql.ArgumentConfig{
+						Type: graphql.String,
+					},
+					"pxe_mac_addr": &graphql.ArgumentConfig{
+						Type: graphql.String,
+					},
+					"status": &graphql.ArgumentConfig{
+						Type: graphql.String,
+					},
+					"cpu_cores": &graphql.ArgumentConfig{
+						Type: graphql.Int,
+					},
+					"memory": &graphql.ArgumentConfig{
+						Type: graphql.Int,
+					},
+					"description": &graphql.ArgumentConfig{
+						Type: graphql.String,
+					},
+					"active": &graphql.ArgumentConfig{
+						Type: graphql.String,
+					},
+					"row": &graphql.ArgumentConfig{
+						Type: graphql.Int,
+					},
+					"page": &graphql.ArgumentConfig{
+						Type: graphql.Int,
+					},
+				},
 				Resolve: func(params graphql.ResolveParams) (interface{}, error) {
 					logger.Logger.Println("Resolving: list_node")
 
 					var nodes []types.Node
 					var uuid string
-					var macAddr string
-					var bmcIP string
-					var status string
-					var cpuCores int
-					var memory int
-					var detail string
 					var createdAt time.Time
 
-					sql := "select * from node where active = 1"
-					stmt, err := mysql.Db.Query(sql)
+					bmcMacAddr, bmcMacAddrOk := params.Args["bmc_mac_addr"].(string)
+					bmcIp, bmcIpOk := params.Args["bmc_ip"].(string)
+					pxeMacAdr, pxeMacAdrOk := params.Args["pxe_mac_addr"].(string)
+					status, statusOk := params.Args["status"].(string)
+					cpuCores, cpuCoresOk := params.Args["cpu_cores"].(int)
+					memory, memoryOk := params.Args["memory"].(int)
+					description, descriptionOk := params.Args["description"].(string)
+					active, activeOk := params.Args["active"].(int)
+					row, rowOk := params.Args["row"].(int)
+					page, pageOk := params.Args["page"].(int)
+					if !rowOk || !pageOk {
+						return nil, nil
+					}
+
+					sql := "select * from node where"
+					if bmcMacAddrOk {
+						sql += " bmc_mac_addr = '" + bmcMacAddr + "'"
+						if bmcIpOk || pxeMacAdrOk || statusOk || cpuCoresOk || memoryOk || descriptionOk || activeOk {
+							sql += " and"
+						}
+					}
+					if bmcIpOk {
+						sql += " bmc_ip = '" + bmcIp + "'"
+						if pxeMacAdrOk || statusOk || cpuCoresOk || memoryOk || descriptionOk || activeOk {
+							sql += " and"
+						}
+					}
+					if pxeMacAdrOk {
+						sql += " pxe_mac_addr = '" + pxeMacAdr + "'"
+						if statusOk || cpuCoresOk || memoryOk || descriptionOk || activeOk {
+							sql += " and"
+						}
+					}
+					if statusOk {
+						sql += " status = '" + status + "'"
+						if cpuCoresOk || memoryOk || descriptionOk || activeOk {
+							sql += " and"
+						}
+					}
+					if cpuCoresOk {
+						sql += " cpu_cores = '" + strconv.Itoa(cpuCores) + "'"
+						if memoryOk || descriptionOk || activeOk {
+							sql += " and"
+						}
+					}
+					if memoryOk {
+						sql += " memory = '" + strconv.Itoa(memory) + "'"
+						if descriptionOk || activeOk {
+							sql += " and"
+						}
+					}
+					if descriptionOk {
+						sql += " description = '" + description + "'"
+						if activeOk {
+							sql += " and"
+						}
+					}
+					if activeOk {
+						sql += " active = '" + strconv.Itoa(active) + "'"
+					}
+					sql += " order by created_at desc limit ? offset ?"
+
+					logger.Logger.Println("list_node sql : ", sql)
+
+					stmt, err := mysql.Db.Query(sql, row, row*(page-1))
 					if err != nil {
 						logger.Logger.Println(err)
 						return nil, nil
 					}
-					defer func() {
-						_ = stmt.Close()
-					}()
+					defer stmt.Close()
 
 					for stmt.Next() {
-						err := stmt.Scan(&uuid, &macAddr, &bmcIP, &status, &cpuCores, &memory, &detail, &createdAt)
+						err := stmt.Scan(&uuid, &bmcMacAddr, &bmcIp, &pxeMacAdr, &status, &cpuCores, &memory, &description, &createdAt, &active)
 						if err != nil {
 							logger.Logger.Println(err)
 						}
-
-						node := types.Node{UUID: uuid, BmcMacAddr: macAddr, BmcIP: bmcIP, Status: status, CPUCores: cpuCores, Memory: memory, Desc: detail, CreatedAt: createdAt}
-
-						logger.Logger.Println(node)
+						node := types.Node{UUID: uuid, BmcMacAddr: bmcMacAddr, BmcIP: bmcIp, PXEMacAddr: pxeMacAdr, Status: status, CPUCores: cpuCores, Memory: memory, Description: description, CreatedAt: createdAt, Active: active}
 						nodes = append(nodes, node)
 					}
-
 					return nodes, nil
 				},
 			},
+			"all_node": &graphql.Field{
+				Type:        graphql.NewList(nodeType),
+				Description: "Get all node list",
+				Args: graphql.FieldConfigArgument{
+					"row": &graphql.ArgumentConfig{
+						Type: graphql.Int,
+					},
+					"page": &graphql.ArgumentConfig{
+						Type: graphql.Int,
+					},
+				},
+				Resolve: func(params graphql.ResolveParams) (interface{}, error) {
+					logger.Logger.Println("Resolving: all_node")
 
-			////////////////////////////// Node Detail ///////////////////////////////
-			/* Get (read) detail of a node by uuid
-			   http://192.168.110.240:7000/graphql?query={node_detail(node_uuid:"[node_uuid]]"){node_uuid,cpu_model,cpu_processors,cpu_threads}}
-			*/
-			"node_detail": &graphql.Field{
-				Type:        nodedetailType,
+					var nodes []types.Node
+					var uuid string
+					var bmcMacAddr string
+					var bmcIP string
+					var pxeMacAdr string
+					var status string
+					var cpuCores int
+					var memory int
+					var description string
+					var createdAt time.Time
+					var active int
+					row, rowOk := params.Args["row"].(int)
+					page, pageOk := params.Args["page"].(int)
+					if !rowOk || !pageOk {
+						return nil, nil
+					}
+
+					sql := "select * from node order by created_at desc limit ? offset ?"
+					logger.Logger.Println("list_server sql  : ", sql)
+
+					stmt, err := mysql.Db.Query(sql, row, row*(page-1))
+					if err != nil {
+						logger.Logger.Println(err)
+						return nil, nil
+					}
+					defer stmt.Close()
+
+					for stmt.Next() {
+						err := stmt.Scan(&uuid, &bmcMacAddr, &bmcIP, &pxeMacAdr, &status, &cpuCores, &memory, &description, &createdAt, &active)
+						if err != nil {
+							logger.Logger.Println(err)
+						}
+						node := types.Node{UUID: uuid, BmcMacAddr: bmcMacAddr, BmcIP: bmcIP, PXEMacAddr: pxeMacAdr, Status: status, CPUCores: cpuCores, Memory: memory, Description: description, CreatedAt: createdAt, Active: active}
+						nodes = append(nodes, node)
+					}
+					return nodes, nil
+				},
+			},
+			"detail_node": &graphql.Field{
+				Type:        nodeDetailType,
 				Description: "Get detail of a node by uuid",
 				Args: graphql.FieldConfigArgument{
 					"node_uuid": &graphql.ArgumentConfig{
@@ -122,22 +248,19 @@ var queryTypes = graphql.NewObject(
 				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
 					logger.Logger.Println("Resolving: node_detail")
 
-					requestedNodeUUID, ok := p.Args["node_uuid"].(string)
-					if ok {
-						nodeDetail := new(types.NodeDetail)
-
-						var nodeUUID string
-						var cpuModel string
-						var cpuProcessors int
-						var cpuThreads int
-
+					nodeDetail := new(types.NodeDetail)
+					var nodeUUID string
+					var cpuModel string
+					var cpuProcessors int
+					var cpuThreads int
+					requestedNodeUUID, requestedNodeUUIDok := p.Args["node_uuid"].(string)
+					if requestedNodeUUIDok {
 						sql := "select * from node_detail where node_uuid = ?"
 						err := mysql.Db.QueryRow(sql, requestedNodeUUID).Scan(&nodeUUID, &cpuModel, &cpuProcessors, &cpuThreads)
 						if err != nil {
 							logger.Logger.Println(err)
 							return nil, nil
 						}
-
 						nodeDetail.NodeUUID = nodeUUID
 						nodeDetail.CPUModel = cpuModel
 						nodeDetail.CPUProcessors = cpuProcessors
@@ -148,45 +271,25 @@ var queryTypes = graphql.NewObject(
 					return nil, nil
 				},
 			},
-
-			/* Get (read) node detail list
-			   http://192.168.110.240:7000/graphql?query={list_node_detail{node_uuid,cpu_model,cpu_processors,cpu_threads}}
-			*/
-			"list_node_detail": &graphql.Field{
-				Type:        graphql.NewList(nodedetailType),
-				Description: "Get node detail list",
+			"num_node": &graphql.Field{
+				Type:        nodeNum,
+				Description: "Get the number of node",
 				Resolve: func(params graphql.ResolveParams) (interface{}, error) {
-					logger.Logger.Println("Resolving: list_node_detail")
+					logger.Logger.Println("Resolving: num_node")
 
-					var nodeDetails []types.NodeDetail
-					var nodeUUID string
-					var cpuModel string
-					var cpuProcessors int
-					var cpuThreads int
+					var nodeNum types.NodeNum
+					var nodeNr int
 
-					sql := "select nd.* from node n, node_detail nd where n.uuid = nd.node_uuid and n.active = 1"
-					stmt, err := mysql.Db.Query(sql)
+					sql := "select count(*) from node"
+					err := mysql.Db.QueryRow(sql).Scan(&nodeNr)
 					if err != nil {
 						logger.Logger.Println(err)
 						return nil, nil
 					}
-					defer func() {
-						_ = stmt.Close()
-					}()
+					logger.Logger.Println("Count: ", nodeNr)
+					nodeNum.Number = nodeNr
 
-					for stmt.Next() {
-						err := stmt.Scan(&nodeUUID, &cpuModel, &cpuProcessors, &cpuThreads)
-						if err != nil {
-							logger.Logger.Println(err)
-						}
-
-						nodeDetail := types.NodeDetail{NodeUUID: nodeUUID, CPUModel: cpuModel, CPUProcessors: cpuProcessors, CPUThreads: cpuThreads}
-
-						logger.Logger.Println(nodeDetail)
-						nodeDetails = append(nodeDetails, nodeDetail)
-					}
-
-					return nodeDetails, nil
+					return nodeNum, nil
 				},
 			},
 		},
