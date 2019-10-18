@@ -258,7 +258,6 @@ func UpdateNodesDetail() (interface{}, error) {
 
 		sql := "select node_uuid from node_detail where node_uuid = ?"
 		err = mysql.Db.QueryRow(sql, uuid).Scan(&uuid)
-		logger.Logger.Println(err)
 		if err != nil {
 			logger.Logger.Println("Inserting not existing new node_detail")
 
