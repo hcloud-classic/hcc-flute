@@ -7,8 +7,3 @@ type NodeDetail struct {
 	CPUProcessors int    `json:"cpu_processors"`
 	CPUThreads    int    `json:"cpu_threads"`
 }
-
-// NodeDetails : Array struct of node_details
-type NodeDetails struct {
-	Nodes []Node `json:"node_detail"`
-}
