@@ -7,6 +7,7 @@ import (
 	"hcc/flute/ipmi"
 	"hcc/flute/logger"
 	"hcc/flute/mysql"
+	"hcc/flute/rabbitmq"
 	"net/http"
 	"strconv"
 )
@@ -33,7 +34,10 @@ func main() {
 		_ = mysql.Db.Close()
 	}()
 
-	ipmi.BMCIPParser()
+	err = ipmi.BMCIPParser()
+	if err != nil {
+		return
+	}
 
 	logger.Logger.Println("Starting ipmi.CheckAll(). Interval is " + strconv.Itoa(int(config.Ipmi.CheckAllIntervalMs)) + "ms")
 	ipmi.CheckAll()
@@ -41,6 +45,22 @@ func main() {
 	ipmi.CheckStatus()
 	logger.Logger.Println("Starting ipmi.CheckNodesDetail(). Interval is " + strconv.Itoa(int(config.Ipmi.CheckNodesDetailIntervalMs)) + "ms")
 	ipmi.CheckNodesDetail()
+
+	err = rabbitmq.PrepareChannel()
+	if err != nil {
+		logger.Logger.Panic(err)
+	}
+	defer func() {
+		_ = rabbitmq.Channel.Close()
+	}()
+	defer func() {
+		_ = rabbitmq.Connection.Close()
+	}()
+
+	err = rabbitmq.OnNode()
+	if err != nil {
+		logger.Logger.Panic(err)
+	}
 
 	http.Handle("/graphql", graphql.Handler)
 

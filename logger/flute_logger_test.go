@@ -20,5 +20,7 @@ func Test_Logger_Prepare(t *testing.T) {
 	if !Prepare() {
 		t.Fatal("Failed to prepare logger!")
 	}
-	defer FpLog.Close()
+	defer func() {
+		_ = FpLog.Close()
+	}()
 }
