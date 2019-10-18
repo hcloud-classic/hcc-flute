@@ -225,7 +225,7 @@ func GetProcessorsCores(bmcIP string, serialNo string, processors int) (int, err
 		}
 		req.SetBasicAuth(config.Ipmi.Username, config.Ipmi.Password)
 
-		var j  = 0
+		var j = 0
 		for ; j < int(config.Ipmi.RequestRetry); j++ {
 			resp, err := client.Do(req)
 			if err != nil || resp.StatusCode < 200 || resp.StatusCode > 299 {
@@ -284,7 +284,7 @@ func GetProcessorsThreads(bmcIP string, serialNo string, processors int) (int, e
 		}
 		req.SetBasicAuth(config.Ipmi.Username, config.Ipmi.Password)
 
-		var j  = 0
+		var j = 0
 		for ; j < int(config.Ipmi.RequestRetry); j++ {
 			resp, err := client.Do(req)
 			if err != nil || resp.StatusCode < 200 || resp.StatusCode > 299 {
@@ -460,22 +460,22 @@ func ChangePowerState(bmcIP string, serialNo string, state string) (string, erro
 					return "", err
 				}
 
-					str := string(respBody)
+				str := string(respBody)
 
-					var processors ipmiProcessors
-					err = json.Unmarshal([]byte(str), &processors)
-					if err != nil {
-						_ = resp.Body.Close()
-						return "", err
-					}
-
+				var processors ipmiProcessors
+				err = json.Unmarshal([]byte(str), &processors)
+				if err != nil {
 					_ = resp.Body.Close()
-					return str, nil
+					return "", err
 				}
 
 				_ = resp.Body.Close()
-				return "", err
+				return str, nil
 			}
+
+			_ = resp.Body.Close()
+			return "", err
+		}
 	}
 
 	return "", errors.New("ChangePowerState(): retry count exceeded for " + bmcIP)
