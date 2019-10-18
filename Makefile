@@ -35,9 +35,6 @@ gofmt: ## Run gofmt for go files
 	@find -name '*.go' -exec $(GOROOT)/bin/gofmt -s -w {} \;
 
 goreport_dep: ## Get the dependencies for goreport
-	@wget https://raw.githubusercontent.com/alecthomas/gometalinter/master/scripts/install.sh
-	@chmod +x install.sh
-	@./install.sh -b $(GOPATH)/bin
 	@$(GOROOT)/bin/go get -u github.com/gojp/goreportcard/cmd/goreportcard-cli
 	@$(GOROOT)/bin/go install github.com/gojp/goreportcard/cmd/goreportcard-cli
 	@rm -f install.sh

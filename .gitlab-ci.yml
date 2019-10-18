@@ -28,15 +28,15 @@ code_coverage:
   stage: test
   script:
     - gmake coverage
-  only:
-  - master
+#  only:
+#  - master
 
 go_report:
   stage: test
   script:
     - gmake goreport
-  only:
-  - master
+#  only:
+#  - master
 
 #lint_code:
 #  stage: test
@@ -53,6 +53,5 @@ build:
     - sudo chmod 755 /usr/jails/basejail/bin/flute
     - sudo ezjail-admin start flute &
     - echo "Finished"
-  only:
-  - master
-
+#  only:
+#  - master

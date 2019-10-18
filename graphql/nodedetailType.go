@@ -2,7 +2,7 @@ package graphql
 
 import "github.com/graphql-go/graphql"
 
-var nodedetailType = graphql.NewObject(
+var nodeDetailType = graphql.NewObject(
 	graphql.ObjectConfig{
 		Name: "NodeDetail",
 		Fields: graphql.Fields{
