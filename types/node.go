@@ -14,6 +14,7 @@ type Node struct {
 	Desc       string    `json:"desc"`
 	CreatedAt  time.Time `json:"created_at"`
 	Active     int       `json:"active"`
+	ForceOff	bool	`json:"force_off"`
 }
 
 // Nodes : Array struct of nodes
