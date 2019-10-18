@@ -27,7 +27,7 @@ var nodeType = graphql.NewObject(
 			"memory": &graphql.Field{
 				Type: graphql.Int,
 			},
-			"desc": &graphql.Field{
+			"description": &graphql.Field{
 				Type: graphql.String,
 			},
 			"created_at": &graphql.Field{
