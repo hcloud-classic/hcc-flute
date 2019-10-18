@@ -107,7 +107,7 @@ var queryTypes = graphql.NewObject(
 					var createdAt time.Time
 
 					bmcMacAddr, bmcMacAddrOk := params.Args["bmc_mac_addr"].(string)
-					bmcIp, bmcIpOk := params.Args["bmc_ip"].(string)
+					bmcIP, bmcIPOk := params.Args["bmc_ip"].(string)
 					pxeMacAdr, pxeMacAdrOk := params.Args["pxe_mac_addr"].(string)
 					status, statusOk := params.Args["status"].(string)
 					cpuCores, cpuCoresOk := params.Args["cpu_cores"].(int)
@@ -123,12 +123,12 @@ var queryTypes = graphql.NewObject(
 					sql := "select * from node where"
 					if bmcMacAddrOk {
 						sql += " bmc_mac_addr = '" + bmcMacAddr + "'"
-						if bmcIpOk || pxeMacAdrOk || statusOk || cpuCoresOk || memoryOk || descriptionOk || activeOk {
+						if bmcIPOk || pxeMacAdrOk || statusOk || cpuCoresOk || memoryOk || descriptionOk || activeOk {
 							sql += " and"
 						}
 					}
-					if bmcIpOk {
-						sql += " bmc_ip = '" + bmcIp + "'"
+					if bmcIPOk {
+						sql += " bmc_ip = '" + bmcIP + "'"
 						if pxeMacAdrOk || statusOk || cpuCoresOk || memoryOk || descriptionOk || activeOk {
 							sql += " and"
 						}
@@ -180,11 +180,11 @@ var queryTypes = graphql.NewObject(
 					}()
 
 					for stmt.Next() {
-						err := stmt.Scan(&uuid, &bmcMacAddr, &bmcIp, &pxeMacAdr, &status, &cpuCores, &memory, &description, &createdAt, &active)
+						err := stmt.Scan(&uuid, &bmcMacAddr, &bmcIP, &pxeMacAdr, &status, &cpuCores, &memory, &description, &createdAt, &active)
 						if err != nil {
 							logger.Logger.Println(err)
 						}
-						node := types.Node{UUID: uuid, BmcMacAddr: bmcMacAddr, BmcIP: bmcIp, PXEMacAddr: pxeMacAdr, Status: status, CPUCores: cpuCores, Memory: memory, Description: description, CreatedAt: createdAt, Active: active}
+						node := types.Node{UUID: uuid, BmcMacAddr: bmcMacAddr, BmcIP: bmcIP, PXEMacAddr: pxeMacAdr, Status: status, CPUCores: cpuCores, Memory: memory, Description: description, CreatedAt: createdAt, Active: active}
 						nodes = append(nodes, node)
 					}
 					return nodes, nil

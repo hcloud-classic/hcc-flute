@@ -85,13 +85,13 @@ var mutationTypes = graphql.NewObject(graphql.ObjectConfig{
 					}
 
 					node := types.Node{
-						UUID:       uuid,
-						BmcMacAddr: BMCmac,
-						BmcIP:      bmcIP,
-						PXEMacAddr: PXEmac,
-						Status:     powerState,
-						CPUCores:   cpuCores,
-						Memory:     memory,
+						UUID:        uuid,
+						BmcMacAddr:  BMCmac,
+						BmcIP:       bmcIP,
+						PXEMacAddr:  PXEmac,
+						Status:      powerState,
+						CPUCores:    cpuCores,
+						Memory:      memory,
 						Description: description,
 					}
 
@@ -336,7 +336,7 @@ var mutationTypes = graphql.NewObject(graphql.ObjectConfig{
 
 				requestUUIDD, requestUUIDDOK := params.Args["uuid"].(string)
 				bmcMacAddr, bmcMacAddrOk := params.Args["bmc_mac_addr"].(string)
-				bmcIp, bmcIpOk := params.Args["bmc_ip"].(string)
+				bmcIP, bmcIPOk := params.Args["bmc_ip"].(string)
 				pxeMacAdr, pxeMacAdrOk := params.Args["pxe_mac_addr"].(string)
 				status, statusOk := params.Args["status"].(string)
 				cpuCores, cpuCoresOk := params.Args["cpu_cores"].(int)
@@ -347,7 +347,7 @@ var mutationTypes = graphql.NewObject(graphql.ObjectConfig{
 				node := new(types.Node)
 				node.UUID = requestUUIDD
 				node.BmcMacAddr = bmcMacAddr
-				node.BmcIP = bmcIp
+				node.BmcIP = bmcIP
 				node.PXEMacAddr = pxeMacAdr
 				node.Status = status
 				node.CPUCores = cpuCores
@@ -356,19 +356,19 @@ var mutationTypes = graphql.NewObject(graphql.ObjectConfig{
 				node.Active = active
 
 				if requestUUIDDOK {
-					if !bmcMacAddrOk && !bmcIpOk && !pxeMacAdrOk && !statusOk && !cpuCoresOk && !memoryOk && !descriptionOk && !activeOk {
+					if !bmcMacAddrOk && !bmcIPOk && !pxeMacAdrOk && !statusOk && !cpuCoresOk && !memoryOk && !descriptionOk && !activeOk {
 						return nil, nil
 					}
 
 					sql := "update node set"
 					if bmcMacAddrOk {
 						sql += " bmc_mac_addr = '" + bmcMacAddr + "'"
-						if bmcIpOk || pxeMacAdrOk || statusOk || cpuCoresOk || memoryOk || descriptionOk || activeOk {
+						if bmcIPOk || pxeMacAdrOk || statusOk || cpuCoresOk || memoryOk || descriptionOk || activeOk {
 							sql += ", "
 						}
 					}
-					if bmcIpOk {
-						sql += " bmc_ip = '" + bmcIp + "'"
+					if bmcIPOk {
+						sql += " bmc_ip = '" + bmcIP + "'"
 						if pxeMacAdrOk || statusOk || cpuCoresOk || memoryOk || descriptionOk || activeOk {
 							sql += ", "
 						}
