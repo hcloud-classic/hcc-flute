@@ -15,7 +15,9 @@ func Test_DB_Prepare(t *testing.T) {
 	if !logger.Prepare() {
 		t.Fatal("Failed to prepare logger!")
 	}
-	defer logger.FpLog.Close()
+	defer func() {
+		_ = logger.FpLog.Close()
+	}()
 
 	config.Parser()
 
@@ -23,5 +25,7 @@ func Test_DB_Prepare(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer Db.Close()
+	defer func() {
+		_ = Db.Close()
+	}()
 }
