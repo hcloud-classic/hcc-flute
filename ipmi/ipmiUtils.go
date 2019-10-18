@@ -235,7 +235,7 @@ func GetProcessorsCores(bmcIP string, serialNo string, processors int) (int, err
 					_ = resp.Body.Close()
 					logger.Logger.Println("GetProcessorsCores(): http response returned error code " + strconv.Itoa(resp.StatusCode) + " for " + bmcIP)
 				}
-				logger.Logger.Println("GetProcessorsCores(): Retrying for " + bmcIP + " " + strconv.Itoa(i+1) + "/" + strconv.Itoa(int(config.Ipmi.RequestRetry)))
+				logger.Logger.Println("GetProcessorsCores(): Retrying for " + bmcIP + " " + strconv.Itoa(j+1) + "/" + strconv.Itoa(int(config.Ipmi.RequestRetry)))
 				continue
 			} else {
 				// Check response
@@ -294,7 +294,7 @@ func GetProcessorsThreads(bmcIP string, serialNo string, processors int) (int, e
 					_ = resp.Body.Close()
 					logger.Logger.Println("GetProcessorsThreads(): http response returned error code " + strconv.Itoa(resp.StatusCode) + " for " + bmcIP)
 				}
-				logger.Logger.Println("GetProcessorsThreads(): Retrying for " + bmcIP + " " + strconv.Itoa(i+1) + "/" + strconv.Itoa(int(config.Ipmi.RequestRetry)))
+				logger.Logger.Println("GetProcessorsThreads(): Retrying for " + bmcIP + " " + strconv.Itoa(j+1) + "/" + strconv.Itoa(int(config.Ipmi.RequestRetry)))
 				continue
 			} else {
 				// Check response
