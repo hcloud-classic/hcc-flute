@@ -2,9 +2,9 @@ package graphql
 
 import (
 	"errors"
-	"hcc/flute/logger"
-	"hcc/flute/mysql"
-	"hcc/flute/types"
+	"hcc/flute/lib/logger"
+	"hcc/flute/lib/mysql"
+	"hcc/flute/model"
 	"strconv"
 	"time"
 
@@ -28,7 +28,7 @@ var queryTypes = graphql.NewObject(
 
 					requestedUUID, ok := p.Args["uuid"].(string)
 					if ok {
-						node := new(types.Node)
+						node := new(model.Node)
 
 						var uuid string
 						var BMCmacAddr string
@@ -102,7 +102,7 @@ var queryTypes = graphql.NewObject(
 				Resolve: func(params graphql.ResolveParams) (interface{}, error) {
 					logger.Logger.Println("Resolving: list_node")
 
-					var nodes []types.Node
+					var nodes []model.Node
 					var uuid string
 					var createdAt time.Time
 
@@ -184,7 +184,7 @@ var queryTypes = graphql.NewObject(
 						if err != nil {
 							logger.Logger.Println(err)
 						}
-						node := types.Node{UUID: uuid, BmcMacAddr: bmcMacAddr, BmcIP: bmcIP, PXEMacAddr: pxeMacAdr, Status: status, CPUCores: cpuCores, Memory: memory, Description: description, CreatedAt: createdAt, Active: active}
+						node := model.Node{UUID: uuid, BmcMacAddr: bmcMacAddr, BmcIP: bmcIP, PXEMacAddr: pxeMacAdr, Status: status, CPUCores: cpuCores, Memory: memory, Description: description, CreatedAt: createdAt, Active: active}
 						nodes = append(nodes, node)
 					}
 					return nodes, nil
@@ -204,7 +204,7 @@ var queryTypes = graphql.NewObject(
 				Resolve: func(params graphql.ResolveParams) (interface{}, error) {
 					logger.Logger.Println("Resolving: all_node")
 
-					var nodes []types.Node
+					var nodes []model.Node
 					var uuid string
 					var bmcMacAddr string
 					var bmcIP string
@@ -238,7 +238,7 @@ var queryTypes = graphql.NewObject(
 							logger.Logger.Println(err)
 							return nil, err
 						}
-						node := types.Node{UUID: uuid, BmcMacAddr: bmcMacAddr, BmcIP: bmcIP, PXEMacAddr: pxeMacAdr, Status: status, CPUCores: cpuCores, Memory: memory, Description: description, CreatedAt: createdAt, Active: active}
+						node := model.Node{UUID: uuid, BmcMacAddr: bmcMacAddr, BmcIP: bmcIP, PXEMacAddr: pxeMacAdr, Status: status, CPUCores: cpuCores, Memory: memory, Description: description, CreatedAt: createdAt, Active: active}
 						nodes = append(nodes, node)
 					}
 					return nodes, nil
@@ -255,7 +255,7 @@ var queryTypes = graphql.NewObject(
 				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
 					logger.Logger.Println("Resolving: node_detail")
 
-					nodeDetail := new(types.NodeDetail)
+					nodeDetail := new(model.NodeDetail)
 					var nodeUUID string
 					var cpuModel string
 					var cpuProcessors int
@@ -284,7 +284,7 @@ var queryTypes = graphql.NewObject(
 				Resolve: func(params graphql.ResolveParams) (interface{}, error) {
 					logger.Logger.Println("Resolving: num_node")
 
-					var nodeNum types.NodeNum
+					var nodeNum model.NodeNum
 					var nodeNr int
 
 					sql := "select count(*) from node"

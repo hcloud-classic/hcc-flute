@@ -2,10 +2,9 @@ package ipmi
 
 import (
 	"errors"
-	"hcc/flute/config"
-	"hcc/flute/logger"
-	"hcc/flute/mysql"
-	"hcc/flute/types"
+	"hcc/flute/lib/config"
+	"hcc/flute/lib/logger"
+	"hcc/flute/lib/mysql"
 	"strings"
 )
 

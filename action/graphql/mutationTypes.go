@@ -3,11 +3,10 @@ package graphql
 import (
 	"errors"
 	"github.com/graphql-go/graphql"
-	"hcc/flute/config"
-	"hcc/flute/ipmi"
-	"hcc/flute/logger"
-	"hcc/flute/mysql"
-	"hcc/flute/types"
+	"hcc/flute/lib/config"
+	"hcc/flute/lib/ipmi"
+	"hcc/flute/lib/logger"
+	"hcc/flute/lib/mysql"
 	"strconv"
 )
 

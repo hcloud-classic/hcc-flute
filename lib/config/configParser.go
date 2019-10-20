@@ -2,7 +2,7 @@ package config
 
 import (
 	"github.com/Terry-Mao/goconf"
-	"hcc/flute/logger"
+	"hcc/flute/lib/logger"
 	"strings"
 )
 

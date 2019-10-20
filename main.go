@@ -1,19 +1,19 @@
 package main
 
 import (
-	"hcc/flute/checkroot"
-	"hcc/flute/config"
-	"hcc/flute/graphql"
-	"hcc/flute/ipmi"
-	"hcc/flute/logger"
-	"hcc/flute/mysql"
-	"hcc/flute/rabbitmq"
+	"hcc/flute/action/graphql"
+	"hcc/flute/action/rabbitmq"
+	"hcc/flute/lib/config"
+	"hcc/flute/lib/ipmi"
+	"hcc/flute/lib/logger"
+	"hcc/flute/lib/mysql"
+	"hcc/flute/lib/syscheck"
 	"net/http"
 	"strconv"
 )
 
 func main() {
-	if !checkroot.CheckRoot() {
+	if !syscheck.CheckRoot() {
 		return
 	}
 
