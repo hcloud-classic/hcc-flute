@@ -3,6 +3,7 @@ package main
 import (
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	"hcc/flute/action/graphql"
 	fluteEnd "hcc/flute/end"
 	fluteInit "hcc/flute/init"
@@ -31,6 +32,15 @@ import (
 =======
 	"hcc/flute/rabbitmq"
 >>>>>>> 6df92f308119d4455f03636275411261b0c45f72
+=======
+	"hcc/flute/action/graphql"
+	"hcc/flute/action/rabbitmq"
+	"hcc/flute/lib/config"
+	"hcc/flute/lib/ipmi"
+	"hcc/flute/lib/logger"
+	"hcc/flute/lib/mysql"
+	"hcc/flute/lib/syscheck"
+>>>>>>> f41ff24 (Refactoring packages structure)
 	"net/http"
 	"strconv"
 )
@@ -57,7 +67,7 @@ func main() {
 		return
 =======
 func main() {
-	if !checkroot.CheckRoot() {
+	if !syscheck.CheckRoot() {
 		return
 	}
 

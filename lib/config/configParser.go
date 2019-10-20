@@ -56,6 +56,37 @@ func parseHTTP() {
 	}
 }
 
+<<<<<<< HEAD
+=======
+func parseRabbitMQ() {
+	config.RabbitMQConfig = conf.Get("rabbitmq")
+	if config.RabbitMQConfig == nil {
+		logger.Logger.Panicln("no rabbitmq section")
+	}
+
+	RabbitMQ = rabbitmq{}
+	RabbitMQ.ID, err = config.RabbitMQConfig.String("rabbitmq_id")
+	if err != nil {
+		logger.Logger.Panicln(err)
+	}
+
+	RabbitMQ.Password, err = config.RabbitMQConfig.String("rabbitmq_password")
+	if err != nil {
+		logger.Logger.Panicln(err)
+	}
+
+	RabbitMQ.Address, err = config.RabbitMQConfig.String("rabbitmq_address")
+	if err != nil {
+		logger.Logger.Panicln(err)
+	}
+
+	RabbitMQ.Port, err = config.RabbitMQConfig.Int("rabbitmq_port")
+	if err != nil {
+		logger.Logger.Panicln(err)
+	}
+}
+
+>>>>>>> f41ff24 (Refactoring packages structure)
 func parseIpmi() {
 	config.IpmiConfig = conf.Get("ipmi")
 	if config.IpmiConfig == nil {
@@ -109,12 +140,20 @@ func parseIpmi() {
 		logger.Logger.Panicln(err)
 	}
 
+<<<<<<< HEAD
 	Ipmi.BaseboardNICNumPXE, err = config.IpmiConfig.Int("baseboard_nic_num_pxe")
+=======
+	Ipmi.BaseboardNICNoPXE, err = config.IpmiConfig.Int("baseboard_nic_no_pxe")
+>>>>>>> f41ff24 (Refactoring packages structure)
 	if err != nil {
 		logger.Logger.Panicln(err)
 	}
 
+<<<<<<< HEAD
 	Ipmi.BaseboardNICNumBMC, err = config.IpmiConfig.Int("baseboard_nic_num_bmc")
+=======
+	Ipmi.BaseboardNICNoBMC, err = config.IpmiConfig.Int("baseboard_nic_no_bmc")
+>>>>>>> f41ff24 (Refactoring packages structure)
 	if err != nil {
 		logger.Logger.Panicln(err)
 	}
@@ -128,5 +167,9 @@ func Parser() {
 
 	parseMysql()
 	parseHTTP()
+<<<<<<< HEAD
+=======
+	parseRabbitMQ()
+>>>>>>> f41ff24 (Refactoring packages structure)
 	parseIpmi()
 }

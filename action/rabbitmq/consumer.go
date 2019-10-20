@@ -2,10 +2,11 @@ package rabbitmq
 
 import (
 	"encoding/json"
-	"hcc/flute/ipmi"
-	"hcc/flute/logger"
-	"hcc/flute/mysql"
-	"hcc/flute/types"
+	"hcc/flute/lib/ipmi"
+	"hcc/flute/lib/logger"
+	"hcc/flute/lib/mysql"
+	"hcc/flute/model"
+	"hcc/flute/lib/dhcpd"
 	"log"
 )
 
@@ -41,7 +42,7 @@ func OnNode() error {
 		for d := range msgsCreate {
 			log.Printf("on_node: Received a create message: %s", d.Body)
 
-			var node types.Node
+			var node model.Node
 			err = json.Unmarshal(d.Body, &node)
 			if err != nil {
 				logger.Logger.Println("on_node: Failed to unmarshal node data")
@@ -118,7 +119,7 @@ func OffNode() error {
 		for d := range msgsCreate {
 			log.Printf("off_node: Received a create message: %s", d.Body)
 
-			var node types.Node
+			var node model.Node
 			err = json.Unmarshal(d.Body, &node)
 			if err != nil {
 				logger.Logger.Println("off_node: Failed to unmarshal node data")
@@ -162,6 +163,64 @@ func OffNode() error {
 				return
 			}
 			logger.Logger.Println("off_node: UUID = " + uuid + ": " + result)
+		}
+	}()
+
+	return nil
+}
+
+// GetNodes : Consume 'get_nodes' queues from RabbitMQ channel
+func GetNodes(nodeNr int, serverUUID string) error {
+	qCreate, err := Channel.QueueDeclare(
+		"get_nodes",
+		false,
+		false,
+		false,
+		false,
+		nil)
+	if err != nil {
+		logger.Logger.Println("get_nodes: Failed to declare a create queue")
+		return err
+	}
+
+	msgsCreate, err := Channel.Consume(
+		qCreate.Name,
+		"",
+		true,
+		false,
+		false,
+		false,
+		nil,
+	)
+	if err != nil {
+		logger.Logger.Println("get_nodes: Failed to register consumer")
+		return err
+	}
+
+	go func() {
+		for d := range msgsCreate {
+			log.Printf("get_nodes: Received a create message: %s", d.Body)
+
+			var server model.Server
+			err = json.Unmarshal(d.Body, &server)
+			if err != nil {
+				logger.Logger.Println("get_nodes: Failed to unmarshal subnet data")
+				return
+			}
+
+			//serverUUID := server.UUID
+			//nodeNr := server.NodeNr
+
+			/*
+			TODO
+			1. select * from node where server_uuid is not null
+			2. 필요한 갯수 만큼 get
+			3. get 한 노드들에 대해 update node set server_uuid = [server_uuid]
+			4. return nodeUUIDs: select * from node where server_uuid = [server_uuid]
+			5. publish to harp: create_dhcpd_conf
+			 */
+
+			//logger.Logger.Println("create_dhcpd_config: UUID = " + uuid + ": " + result)
 		}
 	}()
 
