@@ -555,3 +555,71 @@ func NumNode(args map[string]interface{}) (interface{}, error) {
 
 	return nodeNum, nil
 }
+
+func GetAvailableNodes() ([]model.Node, error) {
+	var nodes []model.Node
+	var node model.Node
+
+	sql := "select * from node where server_uuid is not null"
+	stmt, err := mysql.Db.Query(sql)
+	if err != nil {
+		logger.Logger.Println(err)
+		return nil, nil
+	}
+	defer func() {
+		_ = stmt.Close()
+	}()
+
+	for stmt.Next() {
+		err := stmt.Scan(&node.UUID, &node.BmcMacAddr, &node.BmcIP, &node.PXEMacAddr, &node.Status, &node.CPUCores, &node.Memory, &node.Description, &node.CreatedAt, &node.Active)
+		if err != nil {
+			logger.Logger.Println(err)
+		}
+		nodes = append(nodes, node)
+	}
+
+	return nodes, nil
+}
+
+func UpdateNodeServerUUID(node model.Node, serverUUID string) error {
+		sql := "update node set server_uuid = server_uuid where uuid = ?"
+		stmt, err := mysql.Db.Prepare(sql)
+		if err != nil {
+			return err
+		}
+		defer func() {
+			_ = stmt.Close()
+		}()
+
+		_, err2 := stmt.Exec(node.UUID)
+		if err2 != nil {
+			return err2
+		}
+
+		return nil
+}
+
+func GetNodesOfServer(serverUUID string) ([]model.Node, error) {
+	var nodes []model.Node
+	var node model.Node
+
+	sql := "select * from node where server_uuid  = " + serverUUID
+	stmt, err := mysql.Db.Query(sql)
+	if err != nil {
+		logger.Logger.Println(err)
+		return nil, nil
+	}
+	defer func() {
+		_ = stmt.Close()
+	}()
+
+	for stmt.Next() {
+		err := stmt.Scan(&node.UUID, &node.BmcMacAddr, &node.BmcIP, &node.PXEMacAddr, &node.Status, &node.CPUCores, &node.Memory, &node.Description, &node.CreatedAt, &node.Active)
+		if err != nil {
+			logger.Logger.Println(err)
+		}
+		nodes = append(nodes, node)
+	}
+
+	return nodes, nil
+}

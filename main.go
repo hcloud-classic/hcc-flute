@@ -61,6 +61,14 @@ func main() {
 	if err != nil {
 		logger.Logger.Panic(err)
 	}
+	err = rabbitmq.OffNode()
+	if err != nil {
+		logger.Logger.Panic(err)
+	}
+	err = rabbitmq.GetNodes()
+	if err != nil {
+		logger.Logger.Panic(err)
+	}
 
 	http.Handle("/graphql", graphql.Handler)
 

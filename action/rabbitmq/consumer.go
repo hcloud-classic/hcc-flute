@@ -2,11 +2,11 @@ package rabbitmq
 
 import (
 	"encoding/json"
+	"hcc/flute/dao"
 	"hcc/flute/lib/ipmi"
 	"hcc/flute/lib/logger"
 	"hcc/flute/lib/mysql"
 	"hcc/flute/model"
-	"hcc/flute/lib/dhcpd"
 	"log"
 )
 
@@ -170,7 +170,7 @@ func OffNode() error {
 }
 
 // GetNodes : Consume 'get_nodes' queues from RabbitMQ channel
-func GetNodes(nodeNr int, serverUUID string) error {
+func GetNodes() error {
 	qCreate, err := Channel.QueueDeclare(
 		"get_nodes",
 		false,
@@ -208,15 +208,49 @@ func GetNodes(nodeNr int, serverUUID string) error {
 				return
 			}
 
-			//serverUUID := server.UUID
-			//nodeNr := server.NodeNr
+			serverUUID := server.UUID
+			nodeNr := server.NodeNr
+
+			nodes, err := dao.GetAvailableNodes()
+			if err != nil {
+				logger.Logger.Println(err)
+				return
+			}
+
+			if nodeNr > len(nodes) {
+				logger.Logger.Println("get_nodes: Requested nodeNr is lager than available nodes count")
+				return
+			}
+
+			for i, node := range nodes {
+				if i > nodeNr {
+					break
+				}
+				err := dao.UpdateNodeServerUUID(node, serverUUID)
+				if err != nil {
+					logger.Logger.Println("get_nodes: error occurred while updating server_uuid of node (UUID = " + node.UUID)
+					return
+				}
+			}
+
+			nodesSelected, err := dao.GetNodesOfServer(serverUUID)
+			if err != nil {
+				logger.Logger.Println(err)
+				return
+			}
+
+			err = ReturnNodes(nodesSelected)
+			if err != nil {
+				logger.Logger.Println(err)
+				return
+			}
 
 			/*
 			TODO
-			1. select * from node where server_uuid is not null
-			2. 필요한 갯수 만큼 get
-			3. get 한 노드들에 대해 update node set server_uuid = [server_uuid]
-			4. return nodeUUIDs: select * from node where server_uuid = [server_uuid]
+			- 1. select * from node where server_uuid is not null
+			- 2. 필요한 갯수 만큼 get
+			- 3. get 한 노드들에 대해 update node set server_uuid = [server_uuid]
+			- 4. return nodeUUIDs: select * from node where server_uuid = [server_uuid]
 			5. publish to harp: create_dhcpd_conf
 			 */
 
