@@ -1,10 +1,10 @@
 package ipmi
 
 import (
-	"hcc/flute/config"
-	"hcc/flute/logger"
-	"hcc/flute/mysql"
-	"hcc/flute/types"
+	"hcc/flute/lib/config"
+	"hcc/flute/lib/logger"
+	"hcc/flute/lib/mysql"
+	"hcc/flute/model"
 	"strconv"
 	"time"
 )
@@ -43,7 +43,7 @@ func checkNodesDetailUnlock() {
 
 // UpdateAllNodes : Get all infos from IPMI nodes and update database (except power state)
 func UpdateAllNodes() (interface{}, error) {
-	var nodes []types.Node
+	var nodes []model.Node
 	var bmcIP string
 
 	sql := "select bmc_ip from node where active = 1"
@@ -105,7 +105,7 @@ func UpdateAllNodes() (interface{}, error) {
 			continue
 		}
 
-		node := types.Node{
+		node := model.Node{
 			UUID:       uuid,
 			BmcMacAddr: bmcMAC,
 			BmcIP:      bmcIP,
@@ -140,7 +140,7 @@ func UpdateAllNodes() (interface{}, error) {
 
 // UpdateStatusNodes : Get status from IPMI nodes and update database
 func UpdateStatusNodes() (interface{}, error) {
-	var nodes []types.Node
+	var nodes []model.Node
 	var uuid string
 	var bmcIP string
 
@@ -173,7 +173,7 @@ func UpdateStatusNodes() (interface{}, error) {
 			continue
 		}
 
-		node := types.Node{
+		node := model.Node{
 			UUID:   uuid,
 			Status: powerState,
 		}
@@ -204,7 +204,7 @@ func UpdateStatusNodes() (interface{}, error) {
 
 // UpdateNodesDetail : Get detail infos from IPMI nodes and update database
 func UpdateNodesDetail() (interface{}, error) {
-	var nodedetails []types.NodeDetail
+	var nodedetails []model.NodeDetail
 	var uuid string
 	var bmcIP string
 
@@ -231,7 +231,7 @@ func UpdateNodesDetail() (interface{}, error) {
 			continue
 		}
 
-		model, err := GetProcessorModel(bmcIP, serialNo)
+		processorModel, err := GetProcessorModel(bmcIP, serialNo)
 		if err != nil {
 			logger.Logger.Println(err)
 			continue
@@ -249,9 +249,9 @@ func UpdateNodesDetail() (interface{}, error) {
 			continue
 		}
 
-		nodedetail := types.NodeDetail{
+		nodedetail := model.NodeDetail{
 			NodeUUID:      uuid,
-			CPUModel:      model,
+			CPUModel:      processorModel,
 			CPUProcessors: processors,
 			CPUThreads:    threads,
 		}

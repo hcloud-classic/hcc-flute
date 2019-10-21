@@ -1,14 +1,14 @@
 package mysql
 
 import (
-	"hcc/flute/checkroot"
-	"hcc/flute/config"
-	"hcc/flute/logger"
+	"hcc/flute/lib/syscheck"
+	"hcc/flute/lib/config"
+	"hcc/flute/lib/logger"
 	"testing"
 )
 
 func Test_DB_Prepare(t *testing.T) {
-	if !checkroot.CheckRoot() {
+	if !syscheck.CheckRoot() {
 		t.Fatal("Failed to get root permission!")
 	}
 

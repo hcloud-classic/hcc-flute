@@ -1,4 +1,4 @@
-package types
+package model
 
 // Ipmi : Struct of ipmi
 type Ipmi struct {

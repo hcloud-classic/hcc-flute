@@ -3,8 +3,8 @@ package rabbitmq
 import (
 	"errors"
 	"github.com/streadway/amqp"
-	"hcc/flute/config"
-	"hcc/flute/logger"
+	"hcc/flute/lib/config"
+	"hcc/flute/lib/logger"
 	"strconv"
 )
 
