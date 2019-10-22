@@ -1,4 +1,4 @@
-package model
+package types
 
 // NodeDetail : Struct of node_detail
 type NodeDetail struct {

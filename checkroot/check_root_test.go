@@ -1,4 +1,4 @@
-package syscheck
+package checkroot
 
 import "testing"
 

@@ -1,19 +1,19 @@
 package main
 
 import (
-	"hcc/flute/action/graphql"
-	"hcc/flute/action/rabbitmq"
-	"hcc/flute/lib/config"
-	"hcc/flute/lib/ipmi"
-	"hcc/flute/lib/logger"
-	"hcc/flute/lib/mysql"
-	"hcc/flute/lib/syscheck"
+	"hcc/flute/checkroot"
+	"hcc/flute/config"
+	"hcc/flute/graphql"
+	"hcc/flute/ipmi"
+	"hcc/flute/logger"
+	"hcc/flute/mysql"
+	"hcc/flute/rabbitmq"
 	"net/http"
 	"strconv"
 )
 
 func main() {
-	if !syscheck.CheckRoot() {
+	if !checkroot.CheckRoot() {
 		return
 	}
 
@@ -58,14 +58,6 @@ func main() {
 	}()
 
 	err = rabbitmq.OnNode()
-	if err != nil {
-		logger.Logger.Panic(err)
-	}
-	err = rabbitmq.OffNode()
-	if err != nil {
-		logger.Logger.Panic(err)
-	}
-	err = rabbitmq.GetNodes()
 	if err != nil {
 		logger.Logger.Panic(err)
 	}

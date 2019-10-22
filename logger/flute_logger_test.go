@@ -1,7 +1,7 @@
 package logger
 
 import (
-	"hcc/flute/lib/syscheck"
+	"hcc/flute/checkroot"
 	"testing"
 )
 
@@ -13,7 +13,7 @@ func Test_CreateDirIfNotExist(t *testing.T) {
 }
 
 func Test_Logger_Prepare(t *testing.T) {
-	if !syscheck.CheckRoot() {
+	if !checkroot.CheckRoot() {
 		t.Fatal("Failed to get root permission!")
 	}
 

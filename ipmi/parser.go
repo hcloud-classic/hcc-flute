@@ -2,10 +2,10 @@ package ipmi
 
 import (
 	"errors"
-	"hcc/flute/lib/config"
-	"hcc/flute/lib/logger"
-	"hcc/flute/lib/mysql"
-	"hcc/flute/model"
+	"hcc/flute/config"
+	"hcc/flute/logger"
+	"hcc/flute/mysql"
+	"hcc/flute/types"
 	"strings"
 )
 
@@ -28,7 +28,7 @@ func BMCIPParser() error {
 		_ = stmt.Close()
 	}()
 
-	var nodes []model.Node
+	var nodes []types.Node
 	var bmcIP string
 
 	for stmt.Next() {
@@ -38,7 +38,7 @@ func BMCIPParser() error {
 			return err
 		}
 
-		node := model.Node{BmcIP: bmcIP}
+		node := types.Node{BmcIP: bmcIP}
 		nodes = append(nodes, node)
 	}
 
