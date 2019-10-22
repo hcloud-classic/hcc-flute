@@ -10,10 +10,9 @@ func OnNode(macAddr string) error {
 		return err
 	}
 
-	err = packet.SendPort("255.255.255.255", "7")
-	err = packet.SendPort("255.255.255.255", "9")
-	if err != nil {
-		return err
+	for i := 0; i < 5; i++ {
+		_ = packet.SendPort("255.255.255.255", "7")
+		_ = packet.SendPort("255.255.255.255", "9")
 	}
 
 	return nil
