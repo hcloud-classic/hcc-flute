@@ -3,8 +3,8 @@ package rabbitmq
 import (
 	"encoding/json"
 	"github.com/streadway/amqp"
-	"hcc/flute/model"
 	"hcc/flute/lib/logger"
+	"hcc/flute/model"
 )
 
 // ReturnNodes : Publish 'return_nodes' queues to RabbitMQ channel
