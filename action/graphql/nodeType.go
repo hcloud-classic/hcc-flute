@@ -9,6 +9,9 @@ var nodeType = graphql.NewObject(
 			"uuid": &graphql.Field{
 				Type: graphql.String,
 			},
+			"server_uuid": &graphql.Field{
+				Type: graphql.String,
+			},
 			"bmc_mac_addr": &graphql.Field{
 				Type: graphql.String,
 			},
@@ -30,11 +33,11 @@ var nodeType = graphql.NewObject(
 			"description": &graphql.Field{
 				Type: graphql.String,
 			},
-			"created_at": &graphql.Field{
-				Type: graphql.DateTime,
-			},
 			"active": &graphql.Field{
 				Type: graphql.Int,
+			},
+			"created_at": &graphql.Field{
+				Type: graphql.DateTime,
 			},
 		},
 	},

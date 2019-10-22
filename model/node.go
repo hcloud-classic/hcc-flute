@@ -2,9 +2,10 @@ package model
 
 import "time"
 
-// Node : Struct of node
+// Node - cgs
 type Node struct {
 	UUID        string    `json:"uuid"`
+	ServerUUID  string    `json:"server_uuid"`
 	BmcMacAddr  string    `json:"bmc_mac_addr"`
 	BmcIP       string    `json:"bmc_ip"`
 	PXEMacAddr  string    `json:"pxe_mac_addr"`
@@ -17,12 +18,12 @@ type Node struct {
 	ForceOff    bool      `json:"force_off"`
 }
 
-// Nodes : Array struct of nodes
+// Nodes - cgs
 type Nodes struct {
 	Nodes []Node `json:"node"`
 }
 
-// NodeNum : Struct of number of nodes
+// NodeNum - cgs
 type NodeNum struct {
 	Number int `json:"number"`
 }
