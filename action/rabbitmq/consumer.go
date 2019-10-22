@@ -2,13 +2,80 @@ package rabbitmq
 
 import (
 	"encoding/json"
-	"hcc/flute/dao"
 	"hcc/flute/lib/ipmi"
 	"hcc/flute/lib/logger"
 	"hcc/flute/lib/mysql"
 	"hcc/flute/model"
 	"log"
 )
+
+func getAvailableNodes() ([]model.Node, error) {
+	var nodes []model.Node
+	var node model.Node
+
+	sql := "select * from node where server_uuid is not null"
+	stmt, err := mysql.Db.Query(sql)
+	if err != nil {
+		logger.Logger.Println(err)
+		return nil, nil
+	}
+	defer func() {
+		_ = stmt.Close()
+	}()
+
+	for stmt.Next() {
+		err := stmt.Scan(&node.UUID, &node.BmcMacAddr, &node.BmcIP, &node.PXEMacAddr, &node.Status, &node.CPUCores, &node.Memory, &node.Description, &node.CreatedAt, &node.Active)
+		if err != nil {
+			logger.Logger.Println(err)
+		}
+		nodes = append(nodes, node)
+	}
+
+	return nodes, nil
+}
+
+func updateNodeServerUUID(node model.Node, serverUUID string) error {
+	sql := "update node set server_uuid = server_uuid where uuid = ?"
+	stmt, err := mysql.Db.Prepare(sql)
+	if err != nil {
+		return err
+	}
+	defer func() {
+		_ = stmt.Close()
+	}()
+
+	_, err2 := stmt.Exec(node.UUID)
+	if err2 != nil {
+		return err2
+	}
+
+	return nil
+}
+
+func getNodesOfServer(serverUUID string) ([]model.Node, error) {
+	var nodes []model.Node
+	var node model.Node
+
+	sql := "select * from node where server_uuid  = " + serverUUID
+	stmt, err := mysql.Db.Query(sql)
+	if err != nil {
+		logger.Logger.Println(err)
+		return nil, nil
+	}
+	defer func() {
+		_ = stmt.Close()
+	}()
+
+	for stmt.Next() {
+		err := stmt.Scan(&node.UUID, &node.BmcMacAddr, &node.BmcIP, &node.PXEMacAddr, &node.Status, &node.CPUCores, &node.Memory, &node.Description, &node.CreatedAt, &node.Active)
+		if err != nil {
+			logger.Logger.Println(err)
+		}
+		nodes = append(nodes, node)
+	}
+
+	return nodes, nil
+}
 
 // OnNode : Consume 'on_node' queues from RabbitMQ channel
 func OnNode() error {
@@ -211,7 +278,7 @@ func GetNodes() error {
 			serverUUID := server.UUID
 			nodeNr := server.NodeNr
 
-			nodes, err := dao.GetAvailableNodes()
+			nodes, err := getAvailableNodes()
 			if err != nil {
 				logger.Logger.Println(err)
 				return
@@ -226,35 +293,26 @@ func GetNodes() error {
 				if i > nodeNr {
 					break
 				}
-				err := dao.UpdateNodeServerUUID(node, serverUUID)
+				err := updateNodeServerUUID(node, serverUUID)
 				if err != nil {
 					logger.Logger.Println("get_nodes: error occurred while updating server_uuid of node (UUID = " + node.UUID)
 					return
 				}
 			}
 
-			nodesSelected, err := dao.GetNodesOfServer(serverUUID)
+			nodesSelected, err := getNodesOfServer(serverUUID)
 			if err != nil {
 				logger.Logger.Println(err)
 				return
 			}
+
+			logger.Logger.Println("get_nodes: publishing ReturnNodes for serverUUID = " + serverUUID)
 
 			err = ReturnNodes(nodesSelected)
 			if err != nil {
 				logger.Logger.Println(err)
 				return
 			}
-
-			/*
-			TODO
-			- 1. select * from node where server_uuid is not null
-			- 2. 필요한 갯수 만큼 get
-			- 3. get 한 노드들에 대해 update node set server_uuid = [server_uuid]
-			- 4. return nodeUUIDs: select * from node where server_uuid = [server_uuid]
-			5. publish to harp: create_dhcpd_conf
-			 */
-
-			//logger.Logger.Println("create_dhcpd_config: UUID = " + uuid + ": " + result)
 		}
 	}()
 

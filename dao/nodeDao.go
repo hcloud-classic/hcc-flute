@@ -226,7 +226,6 @@ func CreateNode(args map[string]interface{}) (interface{}, error) {
 
 	node := model.Node{
 		UUID:        uuid,
-		ServerUUID:  "not_used",
 		BmcMacAddr:  args["bmc_mac_addr"].(string),
 		BmcIP:       args["bmc_ip"].(string),
 		PXEMacAddr:  args["pxe_mac_addr"].(string),
@@ -237,13 +236,15 @@ func CreateNode(args map[string]interface{}) (interface{}, error) {
 		Active:      args["active"].(int),
 	}
 
-	sql := "insert into node(uuid, server_uuid, bmc_mac_addr, bmc_ip, pxe_mac_addr, status, cpu_cores, memory, description, active, created_at) values (?, ?, ?, ?, ?, ?, ?, ?, ?, now())"
+	sql := "insert into node(uuid, bmc_mac_addr, bmc_ip, pxe_mac_addr, status, cpu_cores, memory, description, active, created_at) values (?, ?, ?, ?, ?, ?, ?, ?, ?, now())"
 	stmt, err := mysql.Db.Prepare(sql)
 	if err != nil {
-		logger.Logger.Println(err.Error())
+		logger.Logger.Println(err)
 		return nil, err
 	}
-	defer stmt.Close()
+	defer func() {
+		_ = stmt.Close()
+	}()
 	result, err := stmt.Exec(node.UUID, node.ServerUUID, node.BmcMacAddr, node.BmcIP, node.PXEMacAddr, node.Status, node.CPUCores, node.Memory, node.Description, node.Active)
 	if err != nil {
 		logger.Logger.Println(err)
@@ -371,7 +372,9 @@ func DeleteNode(args map[string]interface{}) (interface{}, error) {
 			logger.Logger.Println(err.Error())
 			return nil, err
 		}
-		defer stmt.Close()
+		defer func() {
+			_ = stmt.Close()
+		}()
 		result, err2 := stmt.Exec(requestedUUID)
 		if err2 != nil {
 			logger.Logger.Println(err2)
