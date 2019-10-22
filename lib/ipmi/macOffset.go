@@ -1,7 +1,7 @@
 package ipmi
 
 import (
-	"hcc/flute/logger"
+	"hcc/flute/lib/logger"
 	"math"
 )
 

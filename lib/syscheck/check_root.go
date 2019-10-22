@@ -1,4 +1,4 @@
-package checkroot
+package syscheck
 
 import (
 	"fmt"

@@ -1,19 +1,19 @@
 package main
 
 import (
-	"hcc/flute/checkroot"
-	"hcc/flute/config"
-	"hcc/flute/graphql"
-	"hcc/flute/ipmi"
-	"hcc/flute/logger"
-	"hcc/flute/mysql"
-	"hcc/flute/rabbitmq"
+	"hcc/flute/action/graphql"
+	"hcc/flute/action/rabbitmq"
+	"hcc/flute/lib/config"
+	"hcc/flute/lib/ipmi"
+	"hcc/flute/lib/logger"
+	"hcc/flute/lib/mysql"
+	"hcc/flute/lib/syscheck"
 	"net/http"
 	"strconv"
 )
 
 func main() {
-	if !checkroot.CheckRoot() {
+	if !syscheck.CheckRoot() {
 		return
 	}
 
@@ -39,12 +39,12 @@ func main() {
 		return
 	}
 
-	logger.Logger.Println("Starting ipmi.CheckAll(). Interval is " + strconv.Itoa(int(config.Ipmi.CheckAllIntervalMs)) + "ms")
-	ipmi.CheckAll()
-	logger.Logger.Println("Starting ipmi.CheckStatus(). Interval is " + strconv.Itoa(int(config.Ipmi.CheckStatusIntervalMs)) + "ms")
-	ipmi.CheckStatus()
-	logger.Logger.Println("Starting ipmi.CheckNodesDetail(). Interval is " + strconv.Itoa(int(config.Ipmi.CheckNodesDetailIntervalMs)) + "ms")
-	ipmi.CheckNodesDetail()
+	//logger.Logger.Println("Starting ipmi.CheckAll(). Interval is " + strconv.Itoa(int(config.Ipmi.CheckAllIntervalMs)) + "ms")
+	//ipmi.CheckAll()
+	//logger.Logger.Println("Starting ipmi.CheckStatus(). Interval is " + strconv.Itoa(int(config.Ipmi.CheckStatusIntervalMs)) + "ms")
+	//ipmi.CheckStatus()
+	//logger.Logger.Println("Starting ipmi.CheckNodesDetail(). Interval is " + strconv.Itoa(int(config.Ipmi.CheckNodesDetailIntervalMs)) + "ms")
+	//ipmi.CheckNodesDetail()
 
 	err = rabbitmq.PrepareChannel()
 	if err != nil {
@@ -58,6 +58,14 @@ func main() {
 	}()
 
 	err = rabbitmq.OnNode()
+	if err != nil {
+		logger.Logger.Panic(err)
+	}
+	err = rabbitmq.OffNode()
+	if err != nil {
+		logger.Logger.Panic(err)
+	}
+	err = rabbitmq.GetNodes()
 	if err != nil {
 		logger.Logger.Panic(err)
 	}

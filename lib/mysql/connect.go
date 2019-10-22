@@ -3,8 +3,8 @@ package mysql
 import (
 	"database/sql"
 	_ "github.com/go-sql-driver/mysql" // Needed for connect mysql
-	"hcc/flute/config"
-	"hcc/flute/logger"
+	"hcc/flute/lib/config"
+	"hcc/flute/lib/logger"
 	"strconv"
 )
 
