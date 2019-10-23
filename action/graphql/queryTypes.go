@@ -53,7 +53,7 @@ var queryTypes = graphql.NewObject(
 						Type: graphql.String,
 					},
 					"active": &graphql.ArgumentConfig{
-						Type: graphql.String,
+						Type: graphql.Int,
 					},
 					"row": &graphql.ArgumentConfig{
 						Type: graphql.Int,
