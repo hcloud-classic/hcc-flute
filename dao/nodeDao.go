@@ -80,7 +80,7 @@ func ReadNodeList(args map[string]interface{}) (interface{}, error) {
 		return nil, nil
 	}
 
-	sql := "select * from node where"
+	sql := "select * from node where 1 = 1 and"
 	if serverUUIDOk {
 		sql += " server_uuid = '" + serverUUID + "'"
 		if bmcMacAddrOk || bmcIPOk || pxeMacAdrOk || statusOk || cpuCoresOk || memoryOk || descriptionOk || activeOk {

@@ -9,73 +9,7 @@ import (
 	"log"
 )
 
-func getAvailableNodes() ([]model.Node, error) {
-	var nodes []model.Node
-	var node model.Node
 
-	sql := "select * from node where server_uuid is not null"
-	stmt, err := mysql.Db.Query(sql)
-	if err != nil {
-		logger.Logger.Println(err)
-		return nil, nil
-	}
-	defer func() {
-		_ = stmt.Close()
-	}()
-
-	for stmt.Next() {
-		err := stmt.Scan(&node.UUID, &node.BmcMacAddr, &node.BmcIP, &node.PXEMacAddr, &node.Status, &node.CPUCores, &node.Memory, &node.Description, &node.CreatedAt, &node.Active)
-		if err != nil {
-			logger.Logger.Println(err)
-		}
-		nodes = append(nodes, node)
-	}
-
-	return nodes, nil
-}
-
-func updateNodeServerUUID(node model.Node, serverUUID string) error {
-	sql := "update node set server_uuid = server_uuid where uuid = ?"
-	stmt, err := mysql.Db.Prepare(sql)
-	if err != nil {
-		return err
-	}
-	defer func() {
-		_ = stmt.Close()
-	}()
-
-	_, err2 := stmt.Exec(node.UUID)
-	if err2 != nil {
-		return err2
-	}
-
-	return nil
-}
-
-func getNodesOfServer(serverUUID string) ([]model.Node, error) {
-	var nodes []model.Node
-	var node model.Node
-
-	sql := "select * from node where server_uuid  = " + serverUUID
-	stmt, err := mysql.Db.Query(sql)
-	if err != nil {
-		logger.Logger.Println(err)
-		return nil, nil
-	}
-	defer func() {
-		_ = stmt.Close()
-	}()
-
-	for stmt.Next() {
-		err := stmt.Scan(&node.UUID, &node.BmcMacAddr, &node.BmcIP, &node.PXEMacAddr, &node.Status, &node.CPUCores, &node.Memory, &node.Description, &node.CreatedAt, &node.Active)
-		if err != nil {
-			logger.Logger.Println(err)
-		}
-		nodes = append(nodes, node)
-	}
-
-	return nodes, nil
-}
 
 // OnNode : Consume 'on_node' queues from RabbitMQ channel
 func OnNode() error {
@@ -236,6 +170,11 @@ func OffNode() error {
 	return nil
 }
 
+type nodesInfo struct {
+	ServerUUID string `json:"server_uuid"`
+	NodeNr     int    `json:"node_nr"`
+}
+
 // GetNodes : Consume 'get_nodes' queues from RabbitMQ channel
 func GetNodes() error {
 	qCreate, err := Channel.QueueDeclare(
@@ -266,53 +205,7 @@ func GetNodes() error {
 
 	go func() {
 		for d := range msgsCreate {
-			log.Printf("get_nodes: Received a create message: %s", d.Body)
-
-			var server model.Server
-			err = json.Unmarshal(d.Body, &server)
-			if err != nil {
-				logger.Logger.Println("get_nodes: Failed to unmarshal subnet data")
-				return
-			}
-
-			serverUUID := server.UUID
-			nodeNr := server.NodeNr
-
-			nodes, err := getAvailableNodes()
-			if err != nil {
-				logger.Logger.Println(err)
-				return
-			}
-
-			if nodeNr > len(nodes) {
-				logger.Logger.Println("get_nodes: Requested nodeNr is lager than available nodes count")
-				return
-			}
-
-			for i, node := range nodes {
-				if i > nodeNr {
-					break
-				}
-				err := updateNodeServerUUID(node, serverUUID)
-				if err != nil {
-					logger.Logger.Println("get_nodes: error occurred while updating server_uuid of node (UUID = " + node.UUID)
-					return
-				}
-			}
-
-			nodesSelected, err := getNodesOfServer(serverUUID)
-			if err != nil {
-				logger.Logger.Println(err)
-				return
-			}
-
-			logger.Logger.Println("get_nodes: publishing ReturnNodes for serverUUID = " + serverUUID)
-
-			err = ReturnNodes(nodesSelected)
-			if err != nil {
-				logger.Logger.Println(err)
-				return
-			}
+			///////////////////////////////////////////
 		}
 	}()
 

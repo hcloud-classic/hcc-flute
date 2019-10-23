@@ -1,14 +1,39 @@
 package graphql
 
 import (
+	"errors"
 	"github.com/graphql-go/graphql"
 	"hcc/flute/dao"
 	"hcc/flute/lib/logger"
+	"hcc/flute/lib/wol"
 )
 
 var mutationTypes = graphql.NewObject(graphql.ObjectConfig{
 	Name: "Mutation",
 	Fields: graphql.Fields{
+		"on_node": &graphql.Field{
+			Type:        graphql.String,
+			Description: "On node",
+			Args: graphql.FieldConfigArgument{
+				"mac": &graphql.ArgumentConfig{
+					Type: graphql.String,
+				},
+			},
+			Resolve: func(params graphql.ResolveParams) (interface{}, error) {
+				logger.Logger.Println("Resolving: on_node")
+				mac, macOk := params.Args["mac"].(string)
+				if macOk {
+					err := wol.OnNode(mac)
+					if err != nil {
+						return nil, err
+					}
+
+					return "Send magic packet to \"" + mac + "\"", nil
+				}
+
+				return nil, errors.New("need mac argument")
+			},
+		},
 		// node DB
 		"create_node": &graphql.Field{
 			Type:        nodeType,
