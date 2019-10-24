@@ -7,7 +7,6 @@ var configLocation = "/etc/flute/flute.conf"
 type fluteConfig struct {
 	MysqlConfig    *goconf.Section
 	HTTPConfig     *goconf.Section
-	RabbitMQConfig *goconf.Section
 	IpmiConfig     *goconf.Section
 }
 
@@ -23,18 +22,6 @@ database flute
 
 [http]
 port 7000
-
-[rabbitmq]
-rabbitmq_id admin
-rabbitmq_password qwe1212!Q
-rabbitmq_address 192.168.110.12
-rabbitmq_port 5672
-
-[rabbitmq]
-rabbitmq_id user
-rabbitmq_password pass
-rabbitmq_address 555.555.555.555
-rabbitmq_port 15672
 
 [ipmi]
 debug off
