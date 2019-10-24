@@ -48,10 +48,10 @@ build:
   stage: build
   script:
     - gmake
-    - sudo ezjail-admin stop flute
-    - sudo cp $PWD/flute /usr/jails/basejail/bin/
-    - sudo chmod 755 /usr/jails/basejail/bin/flute
-    - sudo ezjail-admin start flute &
+    - sudo /usr/sbin/service flute stop
+    - sudo cp $PWD/flute /bin/flute
+    - sudo chmod 755 /bin/flute
+    - sudo /usr/sbin/service flute start
     - echo "Finished"
 #  only:
 #  - master
