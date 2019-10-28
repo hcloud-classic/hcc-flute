@@ -2,6 +2,7 @@ package wol
 
 import (
 	"github.com/linde12/gowol"
+	"hcc/flute/lib/config"
 )
 
 func OnNode(macAddr string) error {
@@ -11,8 +12,8 @@ func OnNode(macAddr string) error {
 	}
 
 	for i := 0; i < 5; i++ {
-		_ = packet.SendPort("255.255.255.255", "7")
-		_ = packet.SendPort("255.255.255.255", "9")
+		_ = packet.SendPort(config.WOL.BroadcastAddress, "7")
+		_ = packet.SendPort(config.WOL.BroadcastAddress, "9")
 	}
 
 	return nil

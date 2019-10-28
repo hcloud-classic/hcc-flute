@@ -5,9 +5,10 @@ import "github.com/Terry-Mao/goconf"
 var configLocation = "/etc/flute/flute.conf"
 
 type fluteConfig struct {
-	MysqlConfig    *goconf.Section
-	HTTPConfig     *goconf.Section
-	IpmiConfig     *goconf.Section
+	MysqlConfig *goconf.Section
+	HTTPConfig  *goconf.Section
+	IpmiConfig  *goconf.Section
+	WOLConfig   *goconf.Section
 }
 
 /*-----------------------------------
@@ -35,4 +36,10 @@ check_status_interval_ms 5000
 check_nodes_detail_interval_ms 15000
 baseboard_nic_no_pxe 2
 baseboard_nic_no_bmc 3
+
+[wol]
+broadcast_address 192.168.110.255
+ */
+ */
+ */
 -----------------------------------*/
