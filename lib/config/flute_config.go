@@ -39,7 +39,4 @@ baseboard_nic_no_bmc 3
 
 [wol]
 broadcast_address 192.168.110.255
- */
- */
- */
 -----------------------------------*/
