@@ -1,9 +1,9 @@
 package dao
 
 import (
+	gouuid "github.com/nu7hatch/gouuid"
 	"hcc/flute/lib/logger"
 	"hcc/flute/lib/mysql"
-	"hcc/flute/lib/uuidgen"
 	"hcc/flute/model"
 	"strconv"
 	"time"
@@ -218,11 +218,12 @@ func ReadNodeNum(args map[string]interface{}) (interface{}, error) {
 
 // CreateNode - cgs
 func CreateNode(args map[string]interface{}) (interface{}, error) {
-	uuid, err := uuidgen.UUIDgen()
+	out, err := gouuid.NewV4()
 	if err != nil {
-		logger.Logger.Println("Failed to generate uuid!")
+		logger.Logger.Println(err)
 		return nil, err
 	}
+	uuid := out.String()
 
 	node := model.Node{
 		UUID:        uuid,
