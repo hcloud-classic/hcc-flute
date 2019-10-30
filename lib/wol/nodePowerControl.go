@@ -5,6 +5,7 @@ import (
 	"hcc/flute/lib/config"
 )
 
+// OnNode : Turn on the node by sending WOL signal
 func OnNode(macAddr string) error {
 	packet, err := gowol.NewMagicPacket(macAddr)
 	if err != nil {
