@@ -1,6 +1,7 @@
 package dao
 
 import (
+	"errors"
 	gouuid "github.com/nu7hatch/gouuid"
 	"hcc/flute/lib/logger"
 	"hcc/flute/lib/mysql"
@@ -59,6 +60,13 @@ func ReadNode(args map[string]interface{}) (interface{}, error) {
 	return node, nil
 }
 
+func checkReadNodeListPageRow(args map[string]interface{}) bool {
+	_, rowOk := args["row"].(int)
+	_, pageOk := args["page"].(int)
+
+	return !rowOk || !pageOk
+}
+
 // ReadNodeList - cgs
 func ReadNodeList(args map[string]interface{}) (interface{}, error) {
 	var nodes []model.Node
@@ -74,64 +82,42 @@ func ReadNodeList(args map[string]interface{}) (interface{}, error) {
 	memory, memoryOk := args["memory"].(int)
 	description, descriptionOk := args["description"].(string)
 	active, activeOk := args["active"].(int)
-	row, rowOk := args["row"].(int)
-	page, pageOk := args["page"].(int)
-	if !rowOk || !pageOk {
-		return nil, nil
+	row, _ := args["row"].(int)
+	page, _ := args["page"].(int)
+	if checkReadNodeListPageRow(args) {
+		return nil, errors.New("need row and page arguments")
 	}
 
-	sql := "select * from node where 1 = 1 and"
+	sql := "select * from node where 1=1"
+
 	if serverUUIDOk {
-		sql += " server_uuid = '" + serverUUID + "'"
-		if bmcMacAddrOk || bmcIPOk || pxeMacAdrOk || statusOk || cpuCoresOk || memoryOk || descriptionOk || activeOk {
-			sql += " and"
-		}
+		sql += " and server_uuid = '" + serverUUID + "'"
 	}
 	if bmcMacAddrOk {
-		sql += " bmc_mac_addr = '" + bmcMacAddr + "'"
-		if bmcIPOk || pxeMacAdrOk || statusOk || cpuCoresOk || memoryOk || descriptionOk || activeOk {
-			sql += " and"
-		}
+		sql += " and bmc_mac_addr = '" + bmcMacAddr + "'"
 	}
 	if bmcIPOk {
-		sql += " bmc_ip = '" + bmcIP + "'"
-		if pxeMacAdrOk || statusOk || cpuCoresOk || memoryOk || descriptionOk || activeOk {
-			sql += " and"
-		}
+		sql += " and bmc_ip = '" + bmcIP + "'"
 	}
 	if pxeMacAdrOk {
-		sql += " pxe_mac_addr = '" + pxeMacAdr + "'"
-		if statusOk || cpuCoresOk || memoryOk || descriptionOk || activeOk {
-			sql += " and"
-		}
+		sql += " and pxe_mac_addr = '" + pxeMacAdr + "'"
 	}
 	if statusOk {
-		sql += " status = '" + status + "'"
-		if cpuCoresOk || memoryOk || descriptionOk || activeOk {
-			sql += " and"
-		}
+		sql += " and status = '" + status + "'"
 	}
 	if cpuCoresOk {
-		sql += " cpu_cores = '" + strconv.Itoa(cpuCores) + "'"
-		if memoryOk || descriptionOk || activeOk {
-			sql += " and"
-		}
+		sql += " and cpu_cores = '" + strconv.Itoa(cpuCores) + "'"
 	}
 	if memoryOk {
-		sql += " memory = '" + strconv.Itoa(memory) + "'"
-		if descriptionOk || activeOk {
-			sql += " and"
-		}
+		sql += " and memory = '" + strconv.Itoa(memory) + "'"
 	}
 	if descriptionOk {
-		sql += " description = '" + description + "'"
-		if activeOk {
-			sql += " and"
-		}
+		sql += " and description = '" + description + "'"
 	}
 	if activeOk {
-		sql += " active = '" + strconv.Itoa(active) + "'"
+		sql += " and active = '" + strconv.Itoa(active) + "'"
 	}
+
 	sql += " order by created_at desc limit ? offset ?"
 
 	logger.Logger.Println("list_node sql : ", sql)
@@ -256,6 +242,20 @@ func CreateNode(args map[string]interface{}) (interface{}, error) {
 	return node, nil
 }
 
+func checkUpdateNodeArgs(args map[string]interface{}) bool {
+	_, serverUUIDOk := args["server_uuid"].(string)
+	_, bmcMacAddrOk := args["bmc_mac_addr"].(string)
+	_, bmcIPOk := args["bmc_ip"].(string)
+	_, pxeMacAdrOk := args["pxe_mac_addr"].(string)
+	_, statusOk := args["status"].(string)
+	_, cpuCoresOk := args["cpu_cores"].(int)
+	_, memoryOk := args["memory"].(int)
+	_, descriptionOk := args["description"].(string)
+	_, activeOk := args["active"].(int)
+
+	return !serverUUIDOk && !bmcMacAddrOk && !bmcIPOk && !pxeMacAdrOk && !statusOk && !cpuCoresOk && !memoryOk && !descriptionOk && !activeOk
+}
+
 // UpdateNode - cgs
 func UpdateNode(args map[string]interface{}) (interface{}, error) {
 	requestUUIDD, requestUUIDDOK := args["uuid"].(string)
@@ -282,65 +282,43 @@ func UpdateNode(args map[string]interface{}) (interface{}, error) {
 	node.Active = active
 
 	if requestUUIDDOK {
-		if !serverUUIDOk && !bmcMacAddrOk && !bmcIPOk && !pxeMacAdrOk && !statusOk && !cpuCoresOk && !memoryOk && !descriptionOk && !activeOk {
-			return nil, nil
+		if checkUpdateNodeArgs(args) {
+			return nil, errors.New("need some arguments")
 		}
 
 		sql := "update node set"
+		var updateSet = ""
 		if serverUUIDOk {
-			sql += " server_uuid = '" + serverUUID + "'"
-			if bmcMacAddrOk || bmcIPOk || pxeMacAdrOk || statusOk || cpuCoresOk || memoryOk || descriptionOk || activeOk {
-				sql += ", "
-			}
+			updateSet += " server_uuid = '" + serverUUID + "', "
 		}
 		if bmcMacAddrOk {
-			sql += " bmc_mac_addr = '" + bmcMacAddr + "'"
-			if bmcIPOk || pxeMacAdrOk || statusOk || cpuCoresOk || memoryOk || descriptionOk || activeOk {
-				sql += ", "
-			}
+			updateSet += " bmc_mac_addr = '" + bmcMacAddr + "', "
 		}
 		if bmcIPOk {
-			sql += " bmc_ip = '" + bmcIP + "'"
-			if pxeMacAdrOk || statusOk || cpuCoresOk || memoryOk || descriptionOk || activeOk {
-				sql += ", "
-			}
+			updateSet += " bmc_ip = '" + bmcIP + "', "
 		}
 		if pxeMacAdrOk {
-			sql += " pxe_mac_addr = '" + pxeMacAdr + "'"
-			if statusOk || cpuCoresOk || memoryOk || descriptionOk || activeOk {
-				sql += ", "
-			}
+			updateSet += " pxe_mac_addr = '" + pxeMacAdr + "', "
 		}
 		if statusOk {
-			sql += " status = '" + status + "'"
-			if cpuCoresOk || memoryOk || descriptionOk || activeOk {
-				sql += ", "
-			}
+			updateSet += " status = '" + status + "', "
 		}
 		if cpuCoresOk {
-			sql += " cpu_cores = '" + strconv.Itoa(cpuCores) + "'"
-			if memoryOk || descriptionOk || activeOk {
-				sql += ", "
-			}
+			updateSet += " cpu_cores = '" + strconv.Itoa(cpuCores) + "', "
 		}
 		if memoryOk {
-			sql += " memory = '" + strconv.Itoa(memory) + "'"
-			if descriptionOk || activeOk {
-				sql += ", "
-			}
+			updateSet += " memory = '" + strconv.Itoa(memory) + "', "
 		}
 		if descriptionOk {
-			sql += " description = '" + description + "'"
-			if activeOk {
-				sql += ", "
-			}
+			updateSet += " description = '" + description + "', "
 		}
 		if activeOk {
-			sql += " active = '" + strconv.Itoa(active) + "'"
+			updateSet += " active = '" + strconv.Itoa(active) + "', "
 		}
-		sql += " where uuid = ?"
+		sql += updateSet[0:len(updateSet)-2] + " where uuid = ?"
 
 		logger.Logger.Println("update_node sql : ", sql)
+
 		stmt, err := mysql.Db.Prepare(sql)
 		if err != nil {
 			logger.Logger.Println(err.Error())
