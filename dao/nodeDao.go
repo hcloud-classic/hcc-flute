@@ -304,16 +304,16 @@ func UpdateNode(args map[string]interface{}) (interface{}, error) {
 			updateSet += " status = '" + status + "', "
 		}
 		if cpuCoresOk {
-			updateSet += " cpu_cores = '" + strconv.Itoa(cpuCores) + "', "
+			updateSet += " cpu_cores = " + strconv.Itoa(cpuCores) + ", "
 		}
 		if memoryOk {
-			updateSet += " memory = '" + strconv.Itoa(memory) + "', "
+			updateSet += " memory = " + strconv.Itoa(memory) + ", "
 		}
 		if descriptionOk {
 			updateSet += " description = '" + description + "', "
 		}
 		if activeOk {
-			updateSet += " active = '" + strconv.Itoa(active) + "', "
+			updateSet += " active = " + strconv.Itoa(active) + ", "
 		}
 		sql += updateSet[0:len(updateSet)-2] + " where uuid = ?"
 
