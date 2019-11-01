@@ -106,16 +106,16 @@ func ReadNodeList(args map[string]interface{}) (interface{}, error) {
 		sql += " and status = '" + status + "'"
 	}
 	if cpuCoresOk {
-		sql += " and cpu_cores = '" + strconv.Itoa(cpuCores) + "'"
+		sql += " and cpu_cores = " + strconv.Itoa(cpuCores)
 	}
 	if memoryOk {
-		sql += " and memory = '" + strconv.Itoa(memory) + "'"
+		sql += " and memory = " + strconv.Itoa(memory)
 	}
 	if descriptionOk {
 		sql += " and description = '" + description + "'"
 	}
 	if activeOk {
-		sql += " and active = '" + strconv.Itoa(active) + "'"
+		sql += " and active = " + strconv.Itoa(active)
 	}
 
 	sql += " order by created_at desc limit ? offset ?"
@@ -132,11 +132,11 @@ func ReadNodeList(args map[string]interface{}) (interface{}, error) {
 	}()
 
 	for stmt.Next() {
-		err := stmt.Scan(&uuid, &serverUUID, &bmcMacAddr, &bmcIP, &pxeMacAdr, &status, &cpuCores, &memory, &description, &createdAt, &active)
+		err := stmt.Scan(&uuid, &serverUUID, &bmcMacAddr, &bmcIP, &pxeMacAdr, &status, &cpuCores, &memory, &description, &active, &createdAt)
 		if err != nil {
 			logger.Logger.Println(err)
 		}
-		node := model.Node{UUID: uuid, ServerUUID: serverUUID, BmcMacAddr: bmcMacAddr, BmcIP: bmcIP, PXEMacAddr: pxeMacAdr, Status: status, CPUCores: cpuCores, Memory: memory, Description: description, CreatedAt: createdAt, Active: active}
+		node := model.Node{UUID: uuid, ServerUUID: serverUUID, BmcMacAddr: bmcMacAddr, BmcIP: bmcIP, PXEMacAddr: pxeMacAdr, Status: status, CPUCores: cpuCores, Memory: memory, Description: description, Active: active, CreatedAt: createdAt}
 		nodes = append(nodes, node)
 	}
 	return nodes, nil
