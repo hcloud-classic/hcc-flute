@@ -2,7 +2,6 @@ package main
 
 import (
 	"hcc/flute/action/graphql"
-	"hcc/flute/action/rabbitmq"
 	"hcc/flute/lib/config"
 	"hcc/flute/lib/ipmi"
 	"hcc/flute/lib/logger"
@@ -34,41 +33,18 @@ func main() {
 		_ = mysql.Db.Close()
 	}()
 
+	// TODO : Temporary not using IPMI
 	err = ipmi.BMCIPParser()
 	if err != nil {
 		return
 	}
 
-	logger.Logger.Println("Starting ipmi.CheckAll(). Interval is " + strconv.Itoa(int(config.Ipmi.CheckAllIntervalMs)) + "ms")
-	ipmi.CheckAll()
-	logger.Logger.Println("Starting ipmi.CheckStatus(). Interval is " + strconv.Itoa(int(config.Ipmi.CheckStatusIntervalMs)) + "ms")
-	ipmi.CheckStatus()
-	logger.Logger.Println("Starting ipmi.CheckNodesDetail(). Interval is " + strconv.Itoa(int(config.Ipmi.CheckNodesDetailIntervalMs)) + "ms")
-	ipmi.CheckNodesDetail()
-
-	err = rabbitmq.PrepareChannel()
-	if err != nil {
-		logger.Logger.Panic(err)
-	}
-	defer func() {
-		_ = rabbitmq.Channel.Close()
-	}()
-	defer func() {
-		_ = rabbitmq.Connection.Close()
-	}()
-
-	err = rabbitmq.OnNode()
-	if err != nil {
-		logger.Logger.Panic(err)
-	}
-	err = rabbitmq.OffNode()
-	if err != nil {
-		logger.Logger.Panic(err)
-	}
-	err = rabbitmq.GetNodes()
-	if err != nil {
-		logger.Logger.Panic(err)
-	}
+	//logger.Logger.Println("Starting ipmi.CheckAll(). Interval is " + strconv.Itoa(int(config.Ipmi.CheckAllIntervalMs)) + "ms")
+	//ipmi.CheckAll()
+	//logger.Logger.Println("Starting ipmi.CheckStatus(). Interval is " + strconv.Itoa(int(config.Ipmi.CheckStatusIntervalMs)) + "ms")
+	//ipmi.CheckStatus()
+	//logger.Logger.Println("Starting ipmi.CheckNodesDetail(). Interval is " + strconv.Itoa(int(config.Ipmi.CheckNodesDetailIntervalMs)) + "ms")
+	//ipmi.CheckNodesDetail()
 
 	http.Handle("/graphql", graphql.Handler)
 

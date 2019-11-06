@@ -56,34 +56,6 @@ func parseHTTP() {
 	}
 }
 
-func parseRabbitMQ() {
-	config.RabbitMQConfig = conf.Get("rabbitmq")
-	if config.RabbitMQConfig == nil {
-		logger.Logger.Panicln("no rabbitmq section")
-	}
-
-	RabbitMQ = rabbitmq{}
-	RabbitMQ.ID, err = config.RabbitMQConfig.String("rabbitmq_id")
-	if err != nil {
-		logger.Logger.Panicln(err)
-	}
-
-	RabbitMQ.Password, err = config.RabbitMQConfig.String("rabbitmq_password")
-	if err != nil {
-		logger.Logger.Panicln(err)
-	}
-
-	RabbitMQ.Address, err = config.RabbitMQConfig.String("rabbitmq_address")
-	if err != nil {
-		logger.Logger.Panicln(err)
-	}
-
-	RabbitMQ.Port, err = config.RabbitMQConfig.Int("rabbitmq_port")
-	if err != nil {
-		logger.Logger.Panicln(err)
-	}
-}
-
 func parseIpmi() {
 	config.IpmiConfig = conf.Get("ipmi")
 	if config.IpmiConfig == nil {
@@ -148,6 +120,19 @@ func parseIpmi() {
 	}
 }
 
+func parseWOL() {
+	config.WOLConfig = conf.Get("wol")
+	if config.WOLConfig == nil {
+		logger.Logger.Panicln("no wol section")
+	}
+
+	WOL = wol{}
+	WOL.BroadcastAddress, err = config.WOLConfig.String("broadcast_address")
+	if err != nil {
+		logger.Logger.Panicln(err)
+	}
+}
+
 // Parser : Parse config file
 func Parser() {
 	if err = conf.Parse(configLocation); err != nil {
@@ -156,6 +141,6 @@ func Parser() {
 
 	parseMysql()
 	parseHTTP()
-	parseRabbitMQ()
 	parseIpmi()
+	parseWOL()
 }

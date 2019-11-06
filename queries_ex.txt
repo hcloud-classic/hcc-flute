@@ -28,7 +28,7 @@ query {
     status
     cpu_cores
     memory
-    desc
+    description
     created_at
     active
   }

@@ -1,6 +1,6 @@
 package model
 
-// NodeDetail : Struct of node_detail
+// NodeDetail - cgs
 type NodeDetail struct {
 	NodeUUID      string `json:"node_uuid"`
 	CPUModel      string `json:"cpu_model"`

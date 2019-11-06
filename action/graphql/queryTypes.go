@@ -10,6 +10,7 @@ var queryTypes = graphql.NewObject(
 	graphql.ObjectConfig{
 		Name: "Query",
 		Fields: graphql.Fields{
+			// node DB
 			"node": &graphql.Field{
 				Type:        nodeType,
 				Description: "Get a node by uuid",
@@ -18,16 +19,18 @@ var queryTypes = graphql.NewObject(
 						Type: graphql.String,
 					},
 				},
-				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+				Resolve: func(params graphql.ResolveParams) (interface{}, error) {
 					logger.Logger.Println("Resolving: node")
-
-					return dao.SelectNode(p.Args)
+					return dao.ReadNode(params.Args)
 				},
 			},
 			"list_node": &graphql.Field{
 				Type:        graphql.NewList(nodeType),
 				Description: "Get node list",
 				Args: graphql.FieldConfigArgument{
+					"server_uuid": &graphql.ArgumentConfig{
+						Type: graphql.String,
+					},
 					"bmc_mac_addr": &graphql.ArgumentConfig{
 						Type: graphql.String,
 					},
@@ -50,7 +53,7 @@ var queryTypes = graphql.NewObject(
 						Type: graphql.String,
 					},
 					"active": &graphql.ArgumentConfig{
-						Type: graphql.String,
+						Type: graphql.Int,
 					},
 					"row": &graphql.ArgumentConfig{
 						Type: graphql.Int,
@@ -61,8 +64,7 @@ var queryTypes = graphql.NewObject(
 				},
 				Resolve: func(params graphql.ResolveParams) (interface{}, error) {
 					logger.Logger.Println("Resolving: list_node")
-
-					return dao.ListNode(params.Args)
+					return dao.ReadNodeList(params.Args)
 				},
 			},
 			"all_node": &graphql.Field{
@@ -78,22 +80,7 @@ var queryTypes = graphql.NewObject(
 				},
 				Resolve: func(params graphql.ResolveParams) (interface{}, error) {
 					logger.Logger.Println("Resolving: all_node")
-
-					return  dao.AllNode(params.Args)
-				},
-			},
-			"detail_node": &graphql.Field{
-				Type:        nodeDetailType,
-				Description: "Get detail of a node by uuid",
-				Args: graphql.FieldConfigArgument{
-					"node_uuid": &graphql.ArgumentConfig{
-						Type: graphql.String,
-					},
-				},
-				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-					logger.Logger.Println("Resolving: node_detail")
-
-					return dao.DetailNode(p.Args)
+					return dao.ReadNodeAll(params.Args)
 				},
 			},
 			"num_node": &graphql.Field{
@@ -101,8 +88,21 @@ var queryTypes = graphql.NewObject(
 				Description: "Get the number of node",
 				Resolve: func(params graphql.ResolveParams) (interface{}, error) {
 					logger.Logger.Println("Resolving: num_node")
-
-					return dao.NumNode(params.Args)
+					return dao.ReadNodeNum(params.Args)
+				},
+			},
+			// node_detail DB
+			"node_detail": &graphql.Field{
+				Type:        nodeDetailType,
+				Description: "Get a node_detail by uuid",
+				Args: graphql.FieldConfigArgument{
+					"node_uuid": &graphql.ArgumentConfig{
+						Type: graphql.String,
+					},
+				},
+				Resolve: func(params graphql.ResolveParams) (interface{}, error) {
+					logger.Logger.Println("Resolving: node_detail")
+					return dao.ReadNodeDetail(params.Args)
 				},
 			},
 		},
