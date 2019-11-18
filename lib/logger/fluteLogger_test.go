@@ -13,7 +13,8 @@ func Test_CreateDirIfNotExist(t *testing.T) {
 }
 
 func Test_Logger_Prepare(t *testing.T) {
-	if !syscheck.CheckRoot() {
+	err := syscheck.CheckRoot()
+	if err != nil {
 		t.Fatal("Failed to get root permission!")
 	}
 

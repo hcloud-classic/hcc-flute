@@ -1,8 +1,9 @@
-package graphql
+package graphqlType
 
 import "github.com/graphql-go/graphql"
 
-var nodeType = graphql.NewObject(
+// NodeType : Graphql object type of Node
+var NodeType = graphql.NewObject(
 	graphql.ObjectConfig{
 		Name: "Node",
 		Fields: graphql.Fields{
