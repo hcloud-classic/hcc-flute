@@ -1,16 +1,15 @@
 package syscheck
 
 import (
-	"fmt"
+	"errors"
 	"os"
 )
 
 // CheckRoot : Check root permission (Check if uid is 0)
-func CheckRoot() bool {
+func CheckRoot() error {
 	if os.Geteuid() != 0 {
-		fmt.Println("Please run as root!")
-		return false
+		return errors.New("please run as root")
 	}
 
-	return true
+	return nil
 }

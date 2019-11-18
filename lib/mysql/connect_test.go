@@ -8,7 +8,8 @@ import (
 )
 
 func Test_DB_Prepare(t *testing.T) {
-	if !syscheck.CheckRoot() {
+	err := syscheck.CheckRoot()
+	if err != nil {
 		t.Fatal("Failed to get root permission!")
 	}
 
@@ -21,7 +22,7 @@ func Test_DB_Prepare(t *testing.T) {
 
 	config.Parser()
 
-	err := Prepare()
+	err = Prepare()
 	if err != nil {
 		t.Fatal(err)
 	}
