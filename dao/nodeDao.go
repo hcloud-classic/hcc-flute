@@ -168,13 +168,13 @@ func ReadNodeAll(args map[string]interface{}) (interface{}, error) {
 	if !rowOk && !pageOk {
 		sql = "select * from node order by created_at desc"
 		if activeOk {
-			sql += " where active=" + strconv.Itoa(active)
+			sql = "select * from node where active = " + strconv.Itoa(active) + " order by created_at desc"
 		}
 		stmt, err = mysql.Db.Query(sql)
 	} else if rowOk && pageOk {
 		sql = "select * from node order by created_at desc limit ? offset ?"
 		if activeOk {
-			sql += " where active=" + strconv.Itoa(active)
+			sql = "select * from node where active = " + strconv.Itoa(active) +" order by created_at desc limit ? offset ?"
 		}
 		stmt, err = mysql.Db.Query(sql, row, row*(page-1))
 	} else {
