@@ -160,15 +160,22 @@ func ReadNodeAll(args map[string]interface{}) (interface{}, error) {
 
 	row, rowOk := args["row"].(int)
 	page, pageOk := args["page"].(int)
+	active, activeOk := args["active"].(int)
 	var sql string
 	var stmt *dbsql.Rows
 	var err error
 
 	if !rowOk && !pageOk {
 		sql = "select * from node order by created_at desc"
+		if activeOk {
+			sql += " where active=" + strconv.Itoa(active)
+		}
 		stmt, err = mysql.Db.Query(sql)
 	} else if rowOk && pageOk {
 		sql = "select * from node order by created_at desc limit ? offset ?"
+		if activeOk {
+			sql += " where active=" + strconv.Itoa(active)
+		}
 		stmt, err = mysql.Db.Query(sql, row, row*(page-1))
 	} else {
 		return nil, errors.New("please insert row and page arguments or leave arguments as empty state")

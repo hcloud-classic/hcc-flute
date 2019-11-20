@@ -72,6 +72,9 @@ var queryTypes = graphql.NewObject(
 				Type:        graphql.NewList(graphqlType.NodeType),
 				Description: "Get all node list",
 				Args: graphql.FieldConfigArgument{
+					"active": &graphql.ArgumentConfig{
+						Type: graphql.Int,
+					},
 					"row": &graphql.ArgumentConfig{
 						Type: graphql.Int,
 					},
