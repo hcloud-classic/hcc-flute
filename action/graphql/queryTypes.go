@@ -92,8 +92,8 @@ var queryTypes = graphql.NewObject(
 					return dao.ReadNodeNum(params.Args)
 				},
 			},
-			// node_detail DB
-			"node_detail": &graphql.Field{
+			// detail_node DB
+			"detail_node": &graphql.Field{
 				Type:        graphqlType.NodeDetailType,
 				Description: "Get a node_detail by uuid",
 				Args: graphql.FieldConfigArgument{
