@@ -119,7 +119,7 @@ var mutationTypes = graphql.NewObject(graphql.ObjectConfig{
 				},
 			},
 			Resolve: func(params graphql.ResolveParams) (interface{}, error) {
-				logger.Logger.Println("Resolving: delete_bide")
+				logger.Logger.Println("Resolving: delete_node")
 				return dao.DeleteNode(params.Args)
 			},
 		},
