@@ -7,21 +7,7 @@
 query {
   node(uuid: "48d08a00-b652-11e8-906e-000ffee02d5c") {
     uuid
-    bmc_mac_addr
-    bmc_ip
-    pxe_mac_addr
-    status
-    cpu_cores
-    memory
-    desc
-    created_at
-    active
-  }
-}
-
-query {
-  list_node(memory:256, row:3, page:2) {
-    uuid
+    server_uuid
     bmc_mac_addr
     bmc_ip
     pxe_mac_addr
@@ -29,23 +15,40 @@ query {
     cpu_cores
     memory
     description
-    created_at
     active
+    created_at
+  }
+}
+
+query {
+  list_node(memory:256, row:3, page:2) {
+    uuid
+    server_uuid
+    bmc_mac_addr
+    bmc_ip
+    pxe_mac_addr
+    status
+    cpu_cores
+    memory
+    description
+    active
+    created_at
   }
 }
 
 query {
   all_node(row:2, page:3) {
     uuid
+    server_uuid
     bmc_mac_addr
-    pxe_mac_addr
     bmc_ip
+    pxe_mac_addr
     status
     cpu_cores
     memory
-    desc
-    created_at
+    description
     active
+    created_at
   }
 }
 
