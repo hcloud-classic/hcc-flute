@@ -1,6 +1,7 @@
 package dao
 
 import (
+	dbsql "database/sql"
 	"errors"
 	gouuid "github.com/nu7hatch/gouuid"
 	"hcc/flute/lib/logger"
@@ -156,14 +157,23 @@ func ReadNodeAll(args map[string]interface{}) (interface{}, error) {
 	var description string
 	var createdAt time.Time
 	var active int
+
 	row, rowOk := args["row"].(int)
 	page, pageOk := args["page"].(int)
-	if !rowOk || !pageOk {
-		return nil, nil
+	var sql string
+	var stmt *dbsql.Rows
+	var err error
+
+	if !rowOk && !pageOk {
+		sql = "select * from node order by created_at desc"
+		stmt, err = mysql.Db.Query(sql)
+	} else if rowOk && pageOk {
+		sql = "select * from node order by created_at desc limit ? offset ?"
+		stmt, err = mysql.Db.Query(sql, row, row*(page-1))
+	} else {
+		return nil, errors.New("please insert row and page arguments or leave arguments as empty state")
 	}
 
-	sql := "select * from node order by created_at desc limit ? offset ?"
-	stmt, err := mysql.Db.Query(sql, row, row*(page-1))
 	if err != nil {
 		logger.Logger.Println(err)
 		return nil, err
