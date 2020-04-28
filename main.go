@@ -7,6 +7,13 @@ import (
 	"strconv"
 )
 
+func init() {
+	err := fluteInit.MainInit()
+	if err != nil {
+		panic(err)
+	}
+}
+
 func main() {
 
 	http.Handle("/graphql", graphql.GraphqlHandler)
