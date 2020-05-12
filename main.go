@@ -15,6 +15,9 @@ func init() {
 }
 
 func main() {
+	defer func() {
+		fluteEnd.MainEnd()
+	}()
 
 	http.Handle("/graphql", graphql.GraphqlHandler)
 	logger.Logger.Println("Opening server on port " + strconv.Itoa(int(config.HTTP.Port)) + "...")
