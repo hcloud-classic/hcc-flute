@@ -1,9 +1,10 @@
 package config
 
 import (
-	"github.com/Terry-Mao/goconf"
 	"hcc/flute/lib/logger"
 	"strings"
+
+	"github.com/Terry-Mao/goconf"
 )
 
 var conf = goconf.New()
