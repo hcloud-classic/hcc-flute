@@ -11,7 +11,7 @@ import (
 	"time"
 )
 
-// ReadNode - cgs
+// ReadNode : Get all of infos of a node by UUID from database.
 func ReadNode(args map[string]interface{}) (interface{}, error) {
 	var node model.Node
 	var err error
@@ -68,7 +68,7 @@ func checkReadNodeListPageRow(args map[string]interface{}) bool {
 	return !rowOk || !pageOk
 }
 
-// ReadNodeList - cgs
+// ReadNodeList : Get selected infos of nodes from database.
 func ReadNodeList(args map[string]interface{}) (interface{}, error) {
 	var nodes []model.Node
 	var uuid string
@@ -143,7 +143,7 @@ func ReadNodeList(args map[string]interface{}) (interface{}, error) {
 	return nodes, nil
 }
 
-// ReadNodeAll - cgs
+// ReadNodeAll : Get all of infos of nodes from database.
 func ReadNodeAll(args map[string]interface{}) (interface{}, error) {
 	var nodes []model.Node
 	var uuid string
@@ -201,7 +201,7 @@ func ReadNodeAll(args map[string]interface{}) (interface{}, error) {
 	return nodes, nil
 }
 
-// ReadNodeNum - cgs
+// ReadNodeNum : Get count of nodes from database.
 func ReadNodeNum(args map[string]interface{}) (interface{}, error) {
 	var nodeNum model.NodeNum
 	var nodeNr int
@@ -219,7 +219,7 @@ func ReadNodeNum(args map[string]interface{}) (interface{}, error) {
 	return nodeNum, nil
 }
 
-// CreateNode - cgs
+// CreateNode : Add a node to database.
 func CreateNode(args map[string]interface{}) (interface{}, error) {
 	out, err := gouuid.NewV4()
 	if err != nil {
@@ -273,7 +273,7 @@ func checkUpdateNodeArgs(args map[string]interface{}) bool {
 	return !serverUUIDOk && !bmcMacAddrOk && !bmcIPOk && !pxeMacAdrOk && !statusOk && !cpuCoresOk && !memoryOk && !descriptionOk && !activeOk
 }
 
-// UpdateNode - cgs
+// UpdateNode : Update infos of a node.
 func UpdateNode(args map[string]interface{}) (interface{}, error) {
 	requestUUIDD, requestUUIDDOK := args["uuid"].(string)
 	serverUUID, serverUUIDOk := args["server_uuid"].(string)
@@ -356,7 +356,7 @@ func UpdateNode(args map[string]interface{}) (interface{}, error) {
 	return nil, nil
 }
 
-// DeleteNode - cgs
+// DeleteNode : Delete a node from database.
 func DeleteNode(args map[string]interface{}) (interface{}, error) {
 	var err error
 
