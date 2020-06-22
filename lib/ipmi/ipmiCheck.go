@@ -1,6 +1,7 @@
 package ipmi
 
 import (
+	"fmt"
 	"hcc/flute/lib/config"
 	"hcc/flute/lib/logger"
 	"hcc/flute/lib/mysql"
@@ -162,7 +163,12 @@ func UpdateAllNodes() (interface{}, error) {
 		_ = stmt.Close()
 
 		if config.Ipmi.Debug == "on" {
-			logger.Logger.Println(result.LastInsertId())
+			result, err := result.LastInsertId()
+			if err != nil {
+				logger.Logger.Print("UpdateAllNodes(): err=" + err.Error())
+			} else {
+				logger.Logger.Print("UpdateAllNodes(): result=" + strconv.Itoa(int(result)))
+			}
 		}
 		nodes = append(nodes, node)
 	}
@@ -173,7 +179,7 @@ func UpdateAllNodes() (interface{}, error) {
 // UpdateStatusNodes : Get status from IPMI nodes and update database
 func UpdateStatusNodes() (interface{}, error) {
 	var nodes []model.Node
-	var uuid string
+	var uuid interface{}
 	var bmcIP string
 
 	sql := "select uuid, bmc_ip from node where active = 1"
@@ -190,6 +196,13 @@ func UpdateStatusNodes() (interface{}, error) {
 		err := stmt.Scan(&uuid, &bmcIP)
 		if err != nil {
 			logger.Logger.Println(err)
+			continue
+		}
+
+		if uuid == nil || len(fmt.Sprint(uuid)) == 0 {
+			if config.Ipmi.Debug == "on" {
+				logger.Logger.Println("UpdateAllNodes(): " + bmcIP + "'s UUID is currently empty. Skipping...")
+			}
 			continue
 		}
 
@@ -218,7 +231,7 @@ func UpdateStatusNodes() (interface{}, error) {
 		}
 
 		node := model.Node {
-			UUID:   uuid,
+			UUID:   fmt.Sprint(uuid),
 			Status: powerState,
 		}
 
@@ -238,7 +251,12 @@ func UpdateStatusNodes() (interface{}, error) {
 		_ = stmt.Close()
 
 		if config.Ipmi.Debug == "on" {
-			logger.Logger.Println(result.LastInsertId())
+			result, err := result.LastInsertId()
+			if err != nil {
+				logger.Logger.Print("UpdateStatusNodes(): err=" + err.Error())
+			} else {
+				logger.Logger.Print("UpdateStatusNodes(): result=" + strconv.Itoa(int(result)))
+			}
 		}
 		nodes = append(nodes, node)
 	}
@@ -249,7 +267,7 @@ func UpdateStatusNodes() (interface{}, error) {
 // UpdateNodesDetail : Get detail infos from IPMI nodes and update database
 func UpdateNodesDetail() (interface{}, error) {
 	var nodedetails []model.NodeDetail
-	var uuid string
+	var uuid interface{}
 	var bmcIP string
 
 	sql := "select uuid, bmc_ip from node where active = 1"
@@ -266,6 +284,13 @@ func UpdateNodesDetail() (interface{}, error) {
 		err := stmt.Scan(&uuid, &bmcIP)
 		if err != nil {
 			logger.Logger.Println(err)
+			continue
+		}
+
+		if uuid == nil || len(fmt.Sprint(uuid)) == 0 {
+			if config.Ipmi.Debug == "on" {
+				logger.Logger.Println("UpdateAllNodes(): " + bmcIP + "'s UUID is currently empty. Skipping...")
+			}
 			continue
 		}
 
@@ -314,7 +339,7 @@ func UpdateNodesDetail() (interface{}, error) {
 		}
 
 		nodedetail := model.NodeDetail{
-			NodeUUID:      uuid,
+			NodeUUID:      fmt.Sprint(uuid),
 			CPUModel:      processorModel,
 			CPUProcessors: processors,
 			CPUThreads:    threads,
@@ -323,7 +348,7 @@ func UpdateNodesDetail() (interface{}, error) {
 		sql := "select node_uuid from node_detail where node_uuid = ?"
 		err = mysql.Db.QueryRow(sql, uuid).Scan(&uuid)
 		if err != nil {
-			logger.Logger.Println("Inserting not existing new node_detail")
+			logger.Logger.Println("UpdateNodesDetail(): Inserting not existing new node_detail")
 
 			sql = "insert into node_detail(node_uuid, cpu_model, cpu_processors, cpu_threads) values (?, ?, ?, ?)"
 			stmt, err := mysql.Db.Prepare(sql)
@@ -340,7 +365,14 @@ func UpdateNodesDetail() (interface{}, error) {
 			}
 			_ = stmt.Close()
 
-			logger.Logger.Println(result.LastInsertId())
+			if config.Ipmi.Debug == "on" {
+				result, err := result.LastInsertId()
+				if err != nil {
+					logger.Logger.Print("UpdateNodesDetail(): err=" + err.Error())
+				} else {
+					logger.Logger.Print("UpdateNodesDetail(): result=" + strconv.Itoa(int(result)))
+				}
+			}
 		} else {
 			sql = "update node_detail set cpu_model = ?, cpu_processors = ?, cpu_threads = ? where node_uuid = ?"
 			stmt, err := mysql.Db.Prepare(sql)
@@ -358,7 +390,12 @@ func UpdateNodesDetail() (interface{}, error) {
 			_ = stmt.Close()
 
 			if config.Ipmi.Debug == "on" {
-				logger.Logger.Println(result.LastInsertId())
+				result, err := result.LastInsertId()
+				if err != nil {
+					logger.Logger.Print("UpdateNodesDetail(): err=" + err.Error())
+				} else {
+					logger.Logger.Print("UpdateNodesDetail(): result=" + strconv.Itoa(int(result)))
+				}
 			}
 		}
 
