@@ -109,12 +109,12 @@ func parseIpmi() {
 		logger.Logger.Panicln(err)
 	}
 
-	Ipmi.BaseboardNICNoPXE, err = config.IpmiConfig.Int("baseboard_nic_no_pxe")
+	Ipmi.BaseboardNICNumPXE, err = config.IpmiConfig.Int("baseboard_nic_num_pxe")
 	if err != nil {
 		logger.Logger.Panicln(err)
 	}
 
-	Ipmi.BaseboardNICNoBMC, err = config.IpmiConfig.Int("baseboard_nic_no_bmc")
+	Ipmi.BaseboardNICNumBMC, err = config.IpmiConfig.Int("baseboard_nic_num_bmc")
 	if err != nil {
 		logger.Logger.Panicln(err)
 	}

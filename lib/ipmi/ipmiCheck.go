@@ -87,7 +87,7 @@ func UpdateAllNodes() (interface{}, error) {
 			logger.Logger.Println("UpdateAllNodes(): " + bmcIP + " UUID: " + uuid)
 		}
 
-		bmcMAC, err := GetNICMac(bmcIP, int(config.Ipmi.BaseboardNICNoBMC), true)
+		bmcMAC, err := GetNICMac(bmcIP, int(config.Ipmi.BaseboardNICNumBMC), true)
 		if err != nil {
 			logger.Logger.Println(err)
 			continue
@@ -97,7 +97,7 @@ func UpdateAllNodes() (interface{}, error) {
 			logger.Logger.Println("UpdateAllNodes(): " + bmcIP + " BMC MAC Addr: " + bmcMAC)
 		}
 
-		pxeMAC, err := GetNICMac(bmcIP, int(config.Ipmi.BaseboardNICNoPXE), false)
+		pxeMAC, err := GetNICMac(bmcIP, int(config.Ipmi.BaseboardNICNumPXE), false)
 		if err != nil {
 			logger.Logger.Println(err)
 			continue
