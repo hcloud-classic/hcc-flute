@@ -199,7 +199,7 @@ func UpdateStatusNodes() (interface{}, error) {
 			continue
 		}
 
-		if uuid == nil || len(fmt.Sprint(uuid)) == 0 {
+		if uuid == nil || len(fmt.Sprintf("%s", uuid)) == 0 {
 			if config.Ipmi.Debug == "on" {
 				logger.Logger.Println("UpdateAllNodes(): " + bmcIP + "'s UUID is currently empty. Skipping...")
 			}
@@ -231,7 +231,7 @@ func UpdateStatusNodes() (interface{}, error) {
 		}
 
 		node := model.Node {
-			UUID:   fmt.Sprint(uuid),
+			UUID:   fmt.Sprintf("%s", uuid),
 			Status: powerState,
 		}
 
@@ -287,7 +287,7 @@ func UpdateNodesDetail() (interface{}, error) {
 			continue
 		}
 
-		if uuid == nil || len(fmt.Sprint(uuid)) == 0 {
+		if uuid == nil || len(fmt.Sprintf("%s", uuid)) == 0 {
 			if config.Ipmi.Debug == "on" {
 				logger.Logger.Println("UpdateAllNodes(): " + bmcIP + "'s UUID is currently empty. Skipping...")
 			}
@@ -338,8 +338,10 @@ func UpdateNodesDetail() (interface{}, error) {
 			logger.Logger.Println("UpdateNodesDetail(): " + bmcIP + " Threads : " + strconv.Itoa(threads))
 		}
 
-		nodedetail := model.NodeDetail{
-			NodeUUID:      fmt.Sprint(uuid),
+		nodeUUID := fmt.Sprintf("%s", uuid)
+		fmt.Println(nodeUUID)
+		nodeDetail := model.NodeDetail{
+			NodeUUID:      nodeUUID,
 			CPUModel:      processorModel,
 			CPUProcessors: processors,
 			CPUThreads:    threads,
@@ -357,7 +359,7 @@ func UpdateNodesDetail() (interface{}, error) {
 				continue
 			}
 
-			result, err2 := stmt.Exec(nodedetail.NodeUUID, nodedetail.CPUModel, nodedetail.CPUProcessors, nodedetail.CPUThreads)
+			result, err2 := stmt.Exec(nodeDetail.NodeUUID, nodeDetail.CPUModel, nodeDetail.CPUProcessors, nodeDetail.CPUThreads)
 			if err2 != nil {
 				logger.Logger.Println(err2)
 				_ = stmt.Close()
@@ -381,7 +383,7 @@ func UpdateNodesDetail() (interface{}, error) {
 				continue
 			}
 
-			result, err2 := stmt.Exec(nodedetail.CPUModel, nodedetail.CPUProcessors, nodedetail.CPUThreads, nodedetail.NodeUUID)
+			result, err2 := stmt.Exec(nodeDetail.CPUModel, nodeDetail.CPUProcessors, nodeDetail.CPUThreads, nodeDetail.NodeUUID)
 			if err2 != nil {
 				logger.Logger.Println(err2)
 				_ = stmt.Close()
@@ -399,7 +401,7 @@ func UpdateNodesDetail() (interface{}, error) {
 			}
 		}
 
-		nodedetails = append(nodedetails, nodedetail)
+		nodedetails = append(nodedetails, nodeDetail)
 	}
 
 	return nodedetails, nil
