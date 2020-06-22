@@ -1,12 +1,10 @@
 package graphql
 
 import (
-	"errors"
 	"github.com/graphql-go/graphql"
 	graphqlType "hcc/flute/action/graphql/type"
 	"hcc/flute/dao"
 	"hcc/flute/lib/logger"
-	"hcc/flute/lib/wol"
 )
 
 var mutationTypes = graphql.NewObject(graphql.ObjectConfig{
@@ -16,25 +14,34 @@ var mutationTypes = graphql.NewObject(graphql.ObjectConfig{
 			Type:        graphql.String,
 			Description: "On node",
 			Args: graphql.FieldConfigArgument{
-				"mac": &graphql.ArgumentConfig{
+				"uuid": &graphql.ArgumentConfig{
 					Type: graphql.String,
 				},
 			},
 			Resolve: func(params graphql.ResolveParams) (interface{}, error) {
 				logger.Logger.Println("Resolving: on_node")
-				mac, macOk := params.Args["mac"].(string)
-				if macOk {
-					err := wol.OnNode(mac)
-					if err != nil {
-						return nil, err
-					}
 
-					return "Send magic packet to \"" + mac + "\"", nil
-				}
-
-				return nil, errors.New("need mac argument")
+				return dao.OnNode(params.Args)
 			},
 		},
+		"off_node": &graphql.Field{
+			Type:        graphql.String,
+			Description: "Off node",
+			Args: graphql.FieldConfigArgument{
+				"uuid": &graphql.ArgumentConfig{
+					Type: graphql.String,
+				},
+				"force_off": &graphql.ArgumentConfig{
+					Type: graphql.Boolean,
+				},
+			},
+			Resolve: func(params graphql.ResolveParams) (interface{}, error) {
+				logger.Logger.Println("Resolving: off_node")
+
+				return dao.OffNode(params.Args)
+			},
+		},
+
 		// node DB
 		"create_node": &graphql.Field{
 			Type:        graphqlType.NodeType,
