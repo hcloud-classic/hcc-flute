@@ -293,7 +293,7 @@ func OnNode(args map[string]interface{}) (interface{}, error) {
 		return result, nil
 	}
 
-	return nil, errors.New("need uuid argument")
+	return nil, errors.New("need a uuid argument")
 }
 
 func OffNode(args map[string]interface{}) (interface{}, error) {
@@ -334,7 +334,38 @@ func OffNode(args map[string]interface{}) (interface{}, error) {
 		return result, nil
 	}
 
-	return nil, errors.New("need uuid argument")
+	return nil, errors.New("need a uuid argument")
+}
+
+func ForceRestartNode(args map[string]interface{}) (interface{}, error) {
+	uuid, uuidOk := args["uuid"].(string)
+
+	if uuidOk {
+		var bmcIP string
+
+		sql := "select bmc_ip from node where uuid = ?"
+		err := mysql.Db.QueryRow(sql, uuid).Scan(&bmcIP)
+		if err != nil {
+			logger.Logger.Println(err)
+			return nil, err
+		}
+
+		serialNo, err := ipmi.GetSerialNo(bmcIP)
+		if err != nil {
+			logger.Logger.Println(err)
+			return nil, err
+		}
+
+		result, err := ipmi.ChangePowerState(bmcIP, serialNo, "ForceRestart")
+		if err != nil {
+			logger.Logger.Println(err)
+			return nil, err
+		}
+
+		return result, nil
+	}
+
+	return nil, errors.New("need a uuid argument")
 }
 
 func checkUpdateNodeArgs(args map[string]interface{}) bool {

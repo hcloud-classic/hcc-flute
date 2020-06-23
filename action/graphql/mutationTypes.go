@@ -41,6 +41,20 @@ var mutationTypes = graphql.NewObject(graphql.ObjectConfig{
 				return dao.OffNode(params.Args)
 			},
 		},
+		"force_restart_node": &graphql.Field{
+			Type:        graphql.String,
+			Description: "Force Restart node",
+			Args: graphql.FieldConfigArgument{
+				"uuid": &graphql.ArgumentConfig{
+					Type: graphql.String,
+				},
+			},
+			Resolve: func(params graphql.ResolveParams) (interface{}, error) {
+				logger.Logger.Println("Resolving: force_restart_node")
+
+				return dao.ForceRestartNode(params.Args)
+			},
+		},
 
 		// node DB
 		"create_node": &graphql.Field{
