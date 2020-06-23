@@ -87,3 +87,7 @@ mutation {
 mutation {
 	off_node(uuid: "7349e180-9ac4-11e9-906e-0017a4403562", force_off: true)
 }
+
+mutation {
+	force_restart_node(uuid: "7349e180-9ac4-11e9-906e-0017a4403562")
+}
