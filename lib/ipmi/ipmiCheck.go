@@ -339,7 +339,6 @@ func UpdateNodesDetail() (interface{}, error) {
 		}
 
 		nodeUUID := fmt.Sprintf("%s", uuid)
-		fmt.Println(nodeUUID)
 		nodeDetail := model.NodeDetail{
 			NodeUUID:      nodeUUID,
 			CPUModel:      processorModel,
