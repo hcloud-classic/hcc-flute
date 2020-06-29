@@ -62,18 +62,12 @@ func ReadNode(args map[string]interface{}) (interface{}, error) {
 	return node, nil
 }
 
-func checkReadNodeListPageRow(args map[string]interface{}) bool {
-	_, rowOk := args["row"].(int)
-	_, pageOk := args["page"].(int)
-
-	return !rowOk || !pageOk
-}
-
 // ReadNodeList : Get selected infos of nodes from database.
 func ReadNodeList(args map[string]interface{}) (interface{}, error) {
 	var nodes []model.Node
 	var uuid string
 	var createdAt time.Time
+	var noLimit bool
 
 	serverUUID, serverUUIDOk := args["server_uuid"].(string)
 	bmcMacAddr, bmcMacAddrOk := args["bmc_mac_addr"].(string)
@@ -84,10 +78,15 @@ func ReadNodeList(args map[string]interface{}) (interface{}, error) {
 	memory, memoryOk := args["memory"].(int)
 	description, descriptionOk := args["description"].(string)
 	active, activeOk := args["active"].(int)
-	row, _ := args["row"].(int)
-	page, _ := args["page"].(int)
-	if checkReadNodeListPageRow(args) {
-		return nil, errors.New("need row and page arguments")
+	row, rowOk := args["row"].(int)
+	page, pageOk := args["page"].(int)
+
+	if !rowOk && !pageOk {
+		noLimit = true
+	} else if rowOk && pageOk {
+		noLimit = false
+	} else {
+		return nil, errors.New("please insert row and page arguments or leave arguments as empty state")
 	}
 
 	sql := "select * from node where 1=1"
@@ -120,11 +119,21 @@ func ReadNodeList(args map[string]interface{}) (interface{}, error) {
 		sql += " and active = " + strconv.Itoa(active)
 	}
 
-	sql += " order by created_at desc limit ? offset ?"
+	if !noLimit {
+		sql += " order by created_at desc limit ? offset ?"
+	}
 
 	logger.Logger.Println("list_node sql : ", sql)
 
-	stmt, err := mysql.Db.Query(sql, row, row*(page-1))
+	var stmt *dbsql.Rows
+	var err error
+
+	if noLimit {
+		stmt, err = mysql.Db.Query(sql)
+	} else {
+		stmt, err = mysql.Db.Query(sql, row, row*(page-1))
+	}
+
 	if err != nil {
 		logger.Logger.Println(err)
 		return nil, err
