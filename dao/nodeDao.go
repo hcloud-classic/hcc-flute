@@ -138,3 +138,77 @@ func ReadNodeList(args map[string]interface{}) (interface{}, error) {
 	}
 	return nodes, nil
 }
+
+func ReadNodeAll(args map[string]interface{}) (interface{}, error) {
+	var nodes []model.Node
+	var uuid string
+	var serverUUID string
+	var bmcMacAddr string
+	var bmcIP string
+	var pxeMacAdr string
+	var status string
+	var cpuCores int
+	var memory int
+	var description string
+	var createdAt time.Time
+	var active int
+
+	row, rowOk := args["row"].(int)
+	page, pageOk := args["page"].(int)
+	active, activeOk := args["active"].(int)
+	var sql string
+	var stmt *dbsql.Rows
+	var err error
+
+	if !rowOk && !pageOk {
+		sql = "select * from node order by created_at desc"
+		if activeOk {
+			sql = "select * from node where active = " + strconv.Itoa(active) + " order by created_at desc"
+		}
+		stmt, err = mysql.Db.Query(sql)
+	} else if rowOk && pageOk {
+		sql = "select * from node order by created_at desc limit ? offset ?"
+		if activeOk {
+			sql = "select * from node where active = " + strconv.Itoa(active) + " order by created_at desc limit ? offset ?"
+		}
+		stmt, err = mysql.Db.Query(sql, row, row*(page-1))
+	} else {
+		return nil, errors.New("please insert row and page arguments or leave arguments as empty state")
+	}
+
+	if err != nil {
+		logger.Logger.Println(err)
+		return nil, err
+	}
+	defer func() {
+		_ = stmt.Close()
+	}()
+
+	for stmt.Next() {
+		err := stmt.Scan(&uuid, &serverUUID, &bmcMacAddr, &bmcIP, &pxeMacAdr, &status, &cpuCores, &memory, &description, &active, &createdAt)
+		if err != nil {
+			logger.Logger.Println(err)
+			return nil, err
+		}
+		node := model.Node{UUID: uuid, ServerUUID: serverUUID, BmcMacAddr: bmcMacAddr, BmcIP: bmcIP, PXEMacAddr: pxeMacAdr, Status: status, CPUCores: cpuCores, Memory: memory, Description: description, Active: active, CreatedAt: createdAt}
+		nodes = append(nodes, node)
+	}
+	return nodes, nil
+}
+
+func ReadNodeNum(args map[string]interface{}) (interface{}, error) {
+	var nodeNum model.NodeNum
+	var nodeNr int
+
+	sql := "select count(*) from node"
+	err := mysql.Db.QueryRow(sql).Scan(&nodeNr)
+	if err != nil {
+		logger.Logger.Println(err)
+		return nil, err
+	}
+
+	logger.Logger.Println("Count: ", nodeNr)
+	nodeNum.Number = nodeNr
+
+	return nodeNum, nil
+}
