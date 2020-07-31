@@ -12,6 +12,8 @@ import (
 	"time"
 )
 
+var nodeSelectColumns = "uuid, server_uuid, bmc_mac_addr, bmc_ip, pxe_mac_addr, status, cpu_cores, memory, description, active, created_at"
+
 // ReadNode : Get all of infos of a node by UUID from database.
 func ReadNode(args map[string]interface{}) (interface{}, error) {
 	var node model.Node
@@ -29,7 +31,7 @@ func ReadNode(args map[string]interface{}) (interface{}, error) {
 	var createdAt time.Time
 	var active int
 
-	sql := "select * from node where uuid = ?"
+	sql := "select " + nodeSelectColumns + " from node where uuid = ? and available = 1"
 	err = mysql.Db.QueryRow(sql, uuid).Scan(
 		&uuid,
 		&serverUUID,
@@ -89,7 +91,7 @@ func ReadNodeList(args map[string]interface{}) (interface{}, error) {
 		return nil, errors.New("please insert row and page arguments or leave arguments as empty state")
 	}
 
-	sql := "select * from node where 1=1"
+	sql := "select " + nodeSelectColumns + " from node where available = 1"
 
 	if serverUUIDOk {
 		sql += " and server_uuid = '" + serverUUID + "'"
@@ -176,15 +178,15 @@ func ReadNodeAll(args map[string]interface{}) (interface{}, error) {
 	var err error
 
 	if !rowOk && !pageOk {
-		sql = "select * from node order by created_at desc"
+		sql = "select " + nodeSelectColumns + " from node order by created_at desc"
 		if activeOk {
-			sql = "select * from node where active = " + strconv.Itoa(active) + " order by created_at desc"
+			sql = "select " + nodeSelectColumns + " from node where available = 1 and active = " + strconv.Itoa(active) + " order by created_at desc"
 		}
 		stmt, err = mysql.Db.Query(sql)
 	} else if rowOk && pageOk {
-		sql = "select * from node order by created_at desc limit ? offset ?"
+		sql = "select " + nodeSelectColumns + " from node order by created_at desc limit ? offset ?"
 		if activeOk {
-			sql = "select * from node where active = " + strconv.Itoa(active) +" order by created_at desc limit ? offset ?"
+			sql = "select " + nodeSelectColumns + " from node where available = 1 and active = " + strconv.Itoa(active) +" order by created_at desc limit ? offset ?"
 		}
 		stmt, err = mysql.Db.Query(sql, row, row*(page-1))
 	} else {
@@ -216,7 +218,7 @@ func ReadNodeNum(args map[string]interface{}) (interface{}, error) {
 	var nodeNum model.NodeNum
 	var nodeNr int
 
-	sql := "select count(*) from node"
+	sql := "select count(*) from node where available = 1"
 	err := mysql.Db.QueryRow(sql).Scan(&nodeNr)
 	if err != nil {
 		logger.Logger.Println(err)
@@ -250,7 +252,7 @@ func CreateNode(args map[string]interface{}) (interface{}, error) {
 		Active:      args["active"].(int),
 	}
 
-	sql := "insert into node(uuid, bmc_mac_addr, bmc_ip, pxe_mac_addr, status, cpu_cores, memory, description, active, created_at) values (?, ?, ?, ?, ?, ?, ?, ?, ?, now())"
+	sql := "insert into node(uuid, bmc_mac_addr, bmc_ip, pxe_mac_addr, status, cpu_cores, memory, description, active, available, created_at) values (?, ?, ?, ?, ?, ?, ?, ?, ?, 0, now())"
 	stmt, err := mysql.Db.Prepare(sql)
 	if err != nil {
 		logger.Logger.Println(err)
