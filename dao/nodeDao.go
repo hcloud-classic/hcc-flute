@@ -251,3 +251,17 @@ func CreateNode(args map[string]interface{}) (interface{}, error) {
 
 	return node, nil
 }
+
+func checkUpdateNodeArgs(args map[string]interface{}) bool {
+	_, serverUUIDOk := args["server_uuid"].(string)
+	_, bmcMacAddrOk := args["bmc_mac_addr"].(string)
+	_, bmcIPOk := args["bmc_ip"].(string)
+	_, pxeMacAdrOk := args["pxe_mac_addr"].(string)
+	_, statusOk := args["status"].(string)
+	_, cpuCoresOk := args["cpu_cores"].(int)
+	_, memoryOk := args["memory"].(int)
+	_, descriptionOk := args["description"].(string)
+	_, activeOk := args["active"].(int)
+
+	return !serverUUIDOk && !bmcMacAddrOk && !bmcIPOk && !pxeMacAdrOk && !statusOk && !cpuCoresOk && !memoryOk && !descriptionOk && !activeOk
+}
