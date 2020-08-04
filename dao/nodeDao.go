@@ -212,3 +212,42 @@ func ReadNodeNum(args map[string]interface{}) (interface{}, error) {
 
 	return nodeNum, nil
 }
+
+func CreateNode(args map[string]interface{}) (interface{}, error) {
+	out, err := gouuid.NewV4()
+	if err != nil {
+		logger.Logger.Println(err)
+		return nil, err
+	}
+	uuid := out.String()
+
+	node := model.Node{
+		UUID:        uuid,
+		BmcMacAddr:  args["bmc_mac_addr"].(string),
+		BmcIP:       args["bmc_ip"].(string),
+		PXEMacAddr:  args["pxe_mac_addr"].(string),
+		Status:      args["status"].(string),
+		CPUCores:    args["cpu_cores"].(int),
+		Memory:      args["memory"].(int),
+		Description: args["description"].(string),
+		Active:      args["active"].(int),
+	}
+
+	sql := "insert into node(uuid, bmc_mac_addr, bmc_ip, pxe_mac_addr, status, cpu_cores, memory, description, active, created_at) values (?, ?, ?, ?, ?, ?, ?, ?, ?, now())"
+	stmt, err := mysql.Db.Prepare(sql)
+	if err != nil {
+		logger.Logger.Println(err)
+		return nil, err
+	}
+	defer func() {
+		_ = stmt.Close()
+	}()
+	result, err := stmt.Exec(node.UUID, node.ServerUUID, node.BmcMacAddr, node.BmcIP, node.PXEMacAddr, node.Status, node.CPUCores, node.Memory, node.Description, node.Active)
+	if err != nil {
+		logger.Logger.Println(err)
+		return nil, err
+	}
+	logger.Logger.Println(result.LastInsertId())
+
+	return node, nil
+}
