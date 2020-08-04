@@ -265,3 +265,85 @@ func checkUpdateNodeArgs(args map[string]interface{}) bool {
 
 	return !serverUUIDOk && !bmcMacAddrOk && !bmcIPOk && !pxeMacAdrOk && !statusOk && !cpuCoresOk && !memoryOk && !descriptionOk && !activeOk
 }
+
+func UpdateNode(args map[string]interface{}) (interface{}, error) {
+	requestUUIDD, requestUUIDDOK := args["uuid"].(string)
+	serverUUID, serverUUIDOk := args["server_uuid"].(string)
+	bmcMacAddr, bmcMacAddrOk := args["bmc_mac_addr"].(string)
+	bmcIP, bmcIPOk := args["bmc_ip"].(string)
+	pxeMacAdr, pxeMacAdrOk := args["pxe_mac_addr"].(string)
+	status, statusOk := args["status"].(string)
+	cpuCores, cpuCoresOk := args["cpu_cores"].(int)
+	memory, memoryOk := args["memory"].(int)
+	description, descriptionOk := args["description"].(string)
+	active, activeOk := args["active"].(int)
+
+	node := new(model.Node)
+	node.ServerUUID = serverUUID
+	node.UUID = requestUUIDD
+	node.BmcMacAddr = bmcMacAddr
+	node.BmcIP = bmcIP
+	node.PXEMacAddr = pxeMacAdr
+	node.Status = status
+	node.CPUCores = cpuCores
+	node.Memory = memory
+	node.Description = description
+	node.Active = active
+
+	if requestUUIDDOK {
+		if checkUpdateNodeArgs(args) {
+			return nil, errors.New("need some arguments")
+		}
+
+		sql := "update node set"
+		var updateSet = ""
+		if serverUUIDOk {
+			updateSet += " server_uuid = '" + serverUUID + "', "
+		}
+		if bmcMacAddrOk {
+			updateSet += " bmc_mac_addr = '" + bmcMacAddr + "', "
+		}
+		if bmcIPOk {
+			updateSet += " bmc_ip = '" + bmcIP + "', "
+		}
+		if pxeMacAdrOk {
+			updateSet += " pxe_mac_addr = '" + pxeMacAdr + "', "
+		}
+		if statusOk {
+			updateSet += " status = '" + status + "', "
+		}
+		if cpuCoresOk {
+			updateSet += " cpu_cores = " + strconv.Itoa(cpuCores) + ", "
+		}
+		if memoryOk {
+			updateSet += " memory = " + strconv.Itoa(memory) + ", "
+		}
+		if descriptionOk {
+			updateSet += " description = '" + description + "', "
+		}
+		if activeOk {
+			updateSet += " active = " + strconv.Itoa(active) + ", "
+		}
+		sql += updateSet[0:len(updateSet)-2] + " where uuid = ?"
+
+		logger.Logger.Println("update_node sql : ", sql)
+
+		stmt, err := mysql.Db.Prepare(sql)
+		if err != nil {
+			logger.Logger.Println(err.Error())
+			return nil, err
+		}
+		defer func() {
+			_ = stmt.Close()
+		}()
+
+		result, err2 := stmt.Exec(node.UUID)
+		if err2 != nil {
+			logger.Logger.Println(err2)
+			return nil, err2
+		}
+		logger.Logger.Println(result.LastInsertId())
+		return node, nil
+	}
+	return nil, nil
+}
