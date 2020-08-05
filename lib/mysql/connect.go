@@ -11,8 +11,7 @@ import (
 // Db : Pointer of mysql connection
 var Db *sql.DB
 
-// Prepare : Connect to mysql and prepare pointer of mysql connection
-func Prepare() error {
+func prepare() error {
 	var err error
 	Db, err = sql.Open("mysql",
 		config.Mysql.ID+":"+config.Mysql.Password+"@tcp("+

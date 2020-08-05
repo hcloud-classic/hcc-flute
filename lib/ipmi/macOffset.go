@@ -53,7 +53,7 @@ func lastMacOffset(input string) string {
 	}
 
 	// Apply offset
-	sum -= 2
+	sum -= 3
 
 	// Get 2 int value for last part of MAC address
 	part1 := sum / 16
