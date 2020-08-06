@@ -1,4 +1,7 @@
 flute
+tmp_melody
+*.proto
+*.pb.go
 coverage.out
 goreport_grade
 .idea/
