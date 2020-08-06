@@ -51,9 +51,20 @@ var VNC_VNCAction_name = rpcmsgType.VNC_VNCAction_name
 var VNC_VNCAction_value = rpcmsgType.VNC_VNCAction_value
 
 type Node = rpcmsgType.Node
+type NodeDetail = rpcmsgType.NodeDetail
 type Server = rpcmsgType.Server
-type VNC = rpcmsgType.VNC
 type ServerNode = rpcmsgType.ServerNode
+type VNC = rpcmsgType.VNC
+type Volume = rpcmsgType.Volume
+type VolumeAttachment = rpcmsgType.VolumeAttachment
+type Ipmi = rpcmsgType.Ipmi
+type AdaptiveIP = rpcmsgType.AdaptiveIP
+type AdaptiveIPServer = rpcmsgType.AdaptiveIPServer
+type Subnet = rpcmsgType.Subnet
+type Series = rpcmsgType.Series
+type Telegraf = rpcmsgType.Telegraf
+type Control = rpcmsgType.Control
+type Quota = rpcmsgType.Quota
 
 type ReqOnOffNode_PowerState int32
 

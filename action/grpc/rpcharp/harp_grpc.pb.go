@@ -19,7 +19,7 @@ const _ = grpc.SupportPackageIsVersion6
 type HarpClient interface {
 	// Subnet
 	CreateSubnet(ctx context.Context, in *Subnet, opts ...grpc.CallOption) (*Subnet, error)
-	GetSubnet(ctx context.Context, in *UUID, opts ...grpc.CallOption) (*Subnet, error)
+	GetSubnet(ctx context.Context, in *ReqHarp, opts ...grpc.CallOption) (*ResHarp, error)
 	GetSubnetList(ctx context.Context, in *GetSubnetListRequest, opts ...grpc.CallOption) (*SubnetList, error)
 	GetSubnetNum(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*SubnetNum, error)
 	UpdateSubnet(ctx context.Context, in *Subnet, opts ...grpc.CallOption) (*Subnet, error)
@@ -54,8 +54,8 @@ func (c *harpClient) CreateSubnet(ctx context.Context, in *Subnet, opts ...grpc.
 	return out, nil
 }
 
-func (c *harpClient) GetSubnet(ctx context.Context, in *UUID, opts ...grpc.CallOption) (*Subnet, error) {
-	out := new(Subnet)
+func (c *harpClient) GetSubnet(ctx context.Context, in *ReqHarp, opts ...grpc.CallOption) (*ResHarp, error) {
+	out := new(ResHarp)
 	err := c.cc.Invoke(ctx, "/pb.Harp/GetSubnet", in, out, opts...)
 	if err != nil {
 		return nil, err
@@ -186,7 +186,7 @@ func (c *harpClient) CreateDHPCDConf(ctx context.Context, in *CreateDHPCDConfReq
 type HarpServer interface {
 	// Subnet
 	CreateSubnet(context.Context, *Subnet) (*Subnet, error)
-	GetSubnet(context.Context, *UUID) (*Subnet, error)
+	GetSubnet(context.Context, *ReqHarp) (*ResHarp, error)
 	GetSubnetList(context.Context, *GetSubnetListRequest) (*SubnetList, error)
 	GetSubnetNum(context.Context, *Empty) (*SubnetNum, error)
 	UpdateSubnet(context.Context, *Subnet) (*Subnet, error)
@@ -212,7 +212,7 @@ type UnimplementedHarpServer struct {
 func (*UnimplementedHarpServer) CreateSubnet(context.Context, *Subnet) (*Subnet, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CreateSubnet not implemented")
 }
-func (*UnimplementedHarpServer) GetSubnet(context.Context, *UUID) (*Subnet, error) {
+func (*UnimplementedHarpServer) GetSubnet(context.Context, *ReqHarp) (*ResHarp, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetSubnet not implemented")
 }
 func (*UnimplementedHarpServer) GetSubnetList(context.Context, *GetSubnetListRequest) (*SubnetList, error) {
@@ -279,7 +279,7 @@ func _Harp_CreateSubnet_Handler(srv interface{}, ctx context.Context, dec func(i
 }
 
 func _Harp_GetSubnet_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(UUID)
+	in := new(ReqHarp)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -291,7 +291,7 @@ func _Harp_GetSubnet_Handler(srv interface{}, ctx context.Context, dec func(inte
 		FullMethod: "/pb.Harp/GetSubnet",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(HarpServer).GetSubnet(ctx, req.(*UUID))
+		return srv.(HarpServer).GetSubnet(ctx, req.(*ReqHarp))
 	}
 	return interceptor(ctx, in, info, handler)
 }

@@ -1,4 +1,4 @@
-package init
+package grpcsrv
 
 import (
 	"context"
@@ -40,4 +40,8 @@ func InitGRPC() error {
 	}
 
 	return err
+}
+
+func CleanGRPC() {
+
 }
