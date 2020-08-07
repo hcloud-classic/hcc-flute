@@ -20,7 +20,7 @@ func intToHEXChar(input int, isUpperCase bool) string {
 		return ""
 	}
 
-	return string(input)
+	return string(rune(input))
 }
 
 func lastMacOffset(input string, offset int) string {
