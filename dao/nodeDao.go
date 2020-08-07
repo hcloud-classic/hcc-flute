@@ -3,12 +3,12 @@ package dao
 import (
 	dbsql "database/sql"
 	"errors"
+	"github.com/golang/protobuf/ptypes"
 	gouuid "github.com/nu7hatch/gouuid"
 	pb "hcc/flute/action/grpc/rpcflute"
 	"hcc/flute/lib/ipmi"
 	"hcc/flute/lib/logger"
 	"hcc/flute/lib/mysql"
-	"hcc/flute/model"
 	"strconv"
 	"time"
 )
@@ -16,11 +16,9 @@ import (
 var nodeSelectColumns = "uuid, server_uuid, bmc_mac_addr, bmc_ip, pxe_mac_addr, status, cpu_cores, memory, description, active, created_at"
 
 // ReadNode : Get all of infos of a node by UUID from database.
-func ReadNode(args map[string]interface{}) (interface{}, error) {
-	var node model.Node
-	var err error
+func ReadNode(uuid string) (*pb.Node, error) {
+	var node pb.Node
 
-	uuid := args["uuid"].(string)
 	var serverUUID string
 	var bmcMacAddr string
 	var bmcIP string
@@ -33,7 +31,7 @@ func ReadNode(args map[string]interface{}) (interface{}, error) {
 	var active int
 
 	sql := "select " + nodeSelectColumns + " from node where uuid = ? and available = 1"
-	err = mysql.Db.QueryRow(sql, uuid).Scan(
+	err := mysql.Db.QueryRow(sql, uuid).Scan(
 		&uuid,
 		&serverUUID,
 		&bmcMacAddr,
@@ -56,109 +54,26 @@ func ReadNode(args map[string]interface{}) (interface{}, error) {
 	node.BmcIP = bmcIP
 	node.PXEMacAddr = pxeMacAdr
 	node.Status = status
-	node.CPUCores = cpuCores
-	node.Memory = memory
+	node.CPUCores = int32(cpuCores)
+	node.Memory = int32(memory)
 	node.Description = description
-	node.Active = active
-	node.CreatedAt = createdAt
+	node.Active = int32(active)
 
-	return node, nil
-}
-
-// ReadNodeList : Get selected infos of nodes from database.
-func ReadNodeList(args map[string]interface{}) (interface{}, error) {
-	var nodes []model.Node
-	var uuid string
-	var createdAt time.Time
-	var noLimit bool
-
-	serverUUID, serverUUIDOk := args["server_uuid"].(string)
-	bmcMacAddr, bmcMacAddrOk := args["bmc_mac_addr"].(string)
-	bmcIP, bmcIPOk := args["bmc_ip"].(string)
-	pxeMacAdr, pxeMacAdrOk := args["pxe_mac_addr"].(string)
-	status, statusOk := args["status"].(string)
-	cpuCores, cpuCoresOk := args["cpu_cores"].(int)
-	memory, memoryOk := args["memory"].(int)
-	description, descriptionOk := args["description"].(string)
-	active, activeOk := args["active"].(int)
-	row, rowOk := args["row"].(int)
-	page, pageOk := args["page"].(int)
-
-	if !rowOk && !pageOk {
-		noLimit = true
-	} else if rowOk && pageOk {
-		noLimit = false
-	} else {
-		return nil, errors.New("please insert row and page arguments or leave arguments as empty state")
-	}
-
-	sql := "select " + nodeSelectColumns + " from node where available = 1"
-
-	if serverUUIDOk {
-		sql += " and server_uuid = '" + serverUUID + "'"
-	}
-	if bmcMacAddrOk {
-		sql += " and bmc_mac_addr = '" + bmcMacAddr + "'"
-	}
-	if bmcIPOk {
-		sql += " and bmc_ip = '" + bmcIP + "'"
-	}
-	if pxeMacAdrOk {
-		sql += " and pxe_mac_addr = '" + pxeMacAdr + "'"
-	}
-	if statusOk {
-		sql += " and status = '" + status + "'"
-	}
-	if cpuCoresOk {
-		sql += " and cpu_cores = " + strconv.Itoa(cpuCores)
-	}
-	if memoryOk {
-		sql += " and memory = " + strconv.Itoa(memory)
-	}
-	if descriptionOk {
-		sql += " and description = '" + description + "'"
-	}
-	if activeOk {
-		sql += " and active = " + strconv.Itoa(active)
-	}
-
-	if !noLimit {
-		sql += " order by created_at desc limit ? offset ?"
-	}
-
-	logger.Logger.Println("list_node sql : ", sql)
-
-	var stmt *dbsql.Rows
-	var err error
-
-	if noLimit {
-		stmt, err = mysql.Db.Query(sql)
-	} else {
-		stmt, err = mysql.Db.Query(sql, row, row*(page-1))
-	}
-
+	node.CreatedAt, err = ptypes.TimestampProto(createdAt)
 	if err != nil {
 		logger.Logger.Println(err)
 		return nil, err
 	}
-	defer func() {
-		_ = stmt.Close()
-	}()
 
-	for stmt.Next() {
-		err := stmt.Scan(&uuid, &serverUUID, &bmcMacAddr, &bmcIP, &pxeMacAdr, &status, &cpuCores, &memory, &description, &active, &createdAt)
-		if err != nil {
-			logger.Logger.Println(err)
-		}
-		node := model.Node{UUID: uuid, ServerUUID: serverUUID, BmcMacAddr: bmcMacAddr, BmcIP: bmcIP, PXEMacAddr: pxeMacAdr, Status: status, CPUCores: cpuCores, Memory: memory, Description: description, Active: active, CreatedAt: createdAt}
-		nodes = append(nodes, node)
-	}
-	return nodes, nil
+	return &node, nil
 }
 
-// ReadNodeAll : Get all of infos of nodes from database.
-func ReadNodeAll(args map[string]interface{}) (interface{}, error) {
-	var nodes []model.Node
+// ReadNodeList : Get selected infos of nodes from database.
+func ReadNodeList(in *pb.ReqGetNodeList) (*pb.ResGetNodeList, error) {
+	var nodeList pb.ResGetNodeList
+	var nodes []pb.Node
+	var pnodes []*pb.Node
+
 	var uuid string
 	var serverUUID string
 	var bmcMacAddr string
@@ -171,27 +86,79 @@ func ReadNodeAll(args map[string]interface{}) (interface{}, error) {
 	var createdAt time.Time
 	var active int
 
-	row, rowOk := args["row"].(int)
-	page, pageOk := args["page"].(int)
-	active, activeOk := args["active"].(int)
-	var sql string
-	var stmt *dbsql.Rows
-	var err error
-
+	var isLimit bool
+	row := in.GetRow()
+	rowOk := row != 0
+	page := in.GetPage()
+	pageOk := page != 0
 	if !rowOk && !pageOk {
-		sql = "select " + nodeSelectColumns + " from node order by created_at desc"
-		if activeOk {
-			sql = "select " + nodeSelectColumns + " from node where available = 1 and active = " + strconv.Itoa(active) + " order by created_at desc"
-		}
-		stmt, err = mysql.Db.Query(sql)
+		isLimit = false
 	} else if rowOk && pageOk {
-		sql = "select " + nodeSelectColumns + " from node order by created_at desc limit ? offset ?"
-		if activeOk {
-			sql = "select " + nodeSelectColumns + " from node where available = 1 and active = " + strconv.Itoa(active) + " order by created_at desc limit ? offset ?"
-		}
-		stmt, err = mysql.Db.Query(sql, row, row*(page-1))
+		isLimit = true
 	} else {
 		return nil, errors.New("please insert row and page arguments or leave arguments as empty state")
+	}
+
+	sql := "select " + nodeSelectColumns + " from node where available = 1"
+
+	if in.Node != nil {
+		reqNode := in.Node
+
+		serverUUID = reqNode.ServerUUID
+		serverUUIDOk := len(serverUUID) != 0
+		bmcMacAddr = reqNode.BmcMacAddr
+		bmcMacAddrOk := len(bmcMacAddr) != 0
+		bmcIP = reqNode.BmcIP
+		bmcIPOk := len(bmcIP) != 0
+		pxeMacAdr = reqNode.PXEMacAddr
+		pxeMacAdrOk := len(pxeMacAdr) != 0
+		status = reqNode.Status
+		statusOk := len(status) != 0
+		cpuCores = int(reqNode.CPUCores)
+		cpuCoresOk := cpuCores != 0
+		memory = int(reqNode.Memory)
+		memoryOk := memory != 0
+		description = reqNode.Description
+		descriptionOk := len(description) != 0
+
+		active = int(reqNode.Active)
+
+		if serverUUIDOk {
+			sql += " and server_uuid = '" + serverUUID + "'"
+		}
+		if bmcMacAddrOk {
+			sql += " and bmc_mac_addr = '" + bmcMacAddr + "'"
+		}
+		if bmcIPOk {
+			sql += " and bmc_ip = '" + bmcIP + "'"
+		}
+		if pxeMacAdrOk {
+			sql += " and pxe_mac_addr = '" + pxeMacAdr + "'"
+		}
+		if statusOk {
+			sql += " and status = '" + status + "'"
+		}
+		if cpuCoresOk {
+			sql += " and cpu_cores = " + strconv.Itoa(cpuCores)
+		}
+		if memoryOk {
+			sql += " and memory = " + strconv.Itoa(memory)
+		}
+		if descriptionOk {
+			sql += " and description = '" + description + "'"
+		}
+
+		sql += " and active = " + strconv.Itoa(active)
+	}
+
+	var stmt *dbsql.Rows
+	var err error
+	if isLimit {
+		sql += " order by created_at desc limit ? offset ?"
+		stmt, err = mysql.Db.Query(sql, row, row*(page-1))
+	} else {
+		sql += " order by created_at desc"
+		stmt, err = mysql.Db.Query(sql)
 	}
 
 	if err != nil {
@@ -208,16 +175,41 @@ func ReadNodeAll(args map[string]interface{}) (interface{}, error) {
 			logger.Logger.Println(err)
 			return nil, err
 		}
-		node := model.Node{UUID: uuid, ServerUUID: serverUUID, BmcMacAddr: bmcMacAddr, BmcIP: bmcIP, PXEMacAddr: pxeMacAdr, Status: status, CPUCores: cpuCores, Memory: memory, Description: description, Active: active, CreatedAt: createdAt}
-		nodes = append(nodes, node)
+
+		_createdAt, err := ptypes.TimestampProto(createdAt)
+		if err != nil {
+			logger.Logger.Println(err)
+			return nil, err
+		}
+
+		nodes = append(nodes, pb.Node{
+			UUID: uuid,
+			ServerUUID: serverUUID,
+			BmcMacAddr: bmcMacAddr,
+			BmcIP: bmcIP,
+			PXEMacAddr: pxeMacAdr,
+			Status: status,
+			CPUCores: int32(cpuCores),
+			Memory: int32(memory),
+			Description: description,
+			Active: int32(active),
+			CreatedAt: _createdAt,
+		})
 	}
-	return nodes, nil
+
+	for i:= range nodes {
+		pnodes = append(pnodes, &nodes[i])
+	}
+
+	nodeList.Node= pnodes
+
+	return &nodeList, nil
 }
 
 // ReadNodeNum : Get count of nodes from database.
-func ReadNodeNum(args map[string]interface{}) (interface{}, error) {
-	var nodeNum model.NodeNum
-	var nodeNr int
+func ReadNodeNum() (*pb.ResGetNodeNum, error) {
+	var resNodeNum pb.ResGetNodeNum
+	var nodeNr int64
 
 	sql := "select count(*) from node where available = 1"
 	err := mysql.Db.QueryRow(sql).Scan(&nodeNr)
@@ -225,15 +217,31 @@ func ReadNodeNum(args map[string]interface{}) (interface{}, error) {
 		logger.Logger.Println(err)
 		return nil, err
 	}
+	resNodeNum.Num = nodeNr
 
-	logger.Logger.Println("Count: ", nodeNr)
-	nodeNum.Number = nodeNr
+	return &resNodeNum, nil
+}
 
-	return nodeNum, nil
+func checkCreateNodeArgs(reqNode *pb.Node) bool {
+	serverUUIDOk := len(reqNode.ServerUUID) != 0
+	bmcMacAddrOk := len(reqNode.BmcMacAddr) != 0
+	bmcIPOk := len(reqNode.BmcIP) != 0
+	pxeMacAdrOk := len(reqNode.PXEMacAddr) != 0
+	statusOk := len(reqNode.Status) != 0
+	cpuCoresOk := reqNode.CPUCores != 0
+	memoryOk := reqNode.Memory != 0
+	descriptionOk := len(reqNode.Description) != 0
+
+	return !(serverUUIDOk && bmcMacAddrOk && bmcIPOk && pxeMacAdrOk && statusOk && cpuCoresOk && memoryOk && descriptionOk)
 }
 
 // CreateNode : Add a node to database.
-func CreateNode(args map[string]interface{}) (interface{}, error) {
+func CreateNode(in *pb.ReqCreateNode) (*pb.Node, error) {
+	reqNode := in.GetNode()
+	if reqNode == nil {
+		return nil, errors.New("node is nil")
+	}
+
 	out, err := gouuid.NewV4()
 	if err != nil {
 		logger.Logger.Println(err)
@@ -241,19 +249,22 @@ func CreateNode(args map[string]interface{}) (interface{}, error) {
 	}
 	uuid := out.String()
 
-	node := model.Node{
-		UUID:        uuid,
-		BmcMacAddr:  args["bmc_mac_addr"].(string),
-		BmcIP:       args["bmc_ip"].(string),
-		PXEMacAddr:  args["pxe_mac_addr"].(string),
-		Status:      args["status"].(string),
-		CPUCores:    args["cpu_cores"].(int),
-		Memory:      args["memory"].(int),
-		Description: args["description"].(string),
-		Active:      args["active"].(int),
+	if checkCreateNodeArgs(reqNode) {
+		return nil, errors.New("some of arguments are missing")
 	}
 
-	sql := "insert into node(uuid, bmc_mac_addr, bmc_ip, pxe_mac_addr, status, cpu_cores, memory, description, active, available, created_at) values (?, ?, ?, ?, ?, ?, ?, ?, ?, 0, now())"
+	node := pb.Node{
+		UUID:        uuid,
+		BmcMacAddr:  reqNode.BmcMacAddr,
+		BmcIP:       reqNode.BmcIP,
+		PXEMacAddr:  reqNode.PXEMacAddr,
+		Status:      reqNode.Status,
+		CPUCores:    reqNode.CPUCores,
+		Memory:      reqNode.Memory,
+		Description: reqNode.Description,
+	}
+
+	sql := "insert into node(uuid, bmc_mac_addr, bmc_ip, pxe_mac_addr, status, cpu_cores, memory, description, created_at) values (?, ?, ?, ?, ?, ?, ?, ?, now())"
 	stmt, err := mysql.Db.Prepare(sql)
 	if err != nil {
 		logger.Logger.Println(err)
@@ -262,14 +273,14 @@ func CreateNode(args map[string]interface{}) (interface{}, error) {
 	defer func() {
 		_ = stmt.Close()
 	}()
-	result, err := stmt.Exec(node.UUID, node.BmcMacAddr, node.BmcIP, node.PXEMacAddr, node.Status, node.CPUCores, node.Memory, node.Description, node.Active)
+	result, err := stmt.Exec(node.UUID, node.BmcMacAddr, node.BmcIP, node.PXEMacAddr, node.Status, node.CPUCores, node.Memory, node.Description)
 	if err != nil {
 		logger.Logger.Println(err)
 		return nil, err
 	}
 	logger.Logger.Println(result.LastInsertId())
 
-	return node, nil
+	return &node, nil
 }
 
 func NodePowerControl(in *pb.ReqNodePowerControl) ([]string, error) {
@@ -352,158 +363,189 @@ func NodePowerControl(in *pb.ReqNodePowerControl) ([]string, error) {
 	return results, nil
 }
 
-func GetPowerStateNode(args map[string]interface{}) (interface{}, error) {
-	uuid, uuidOk := args["uuid"].(string)
+func GetNodePowerState(in *pb.ReqNodePowerState) (string, error) {
+	uuid := in.GetUUID()
+	uuidOk := len(uuid) != 0
+	if !uuidOk {
+		return "", errors.New("need a uuid argument")
+	}
 
-	if uuidOk {
 		var bmcIP string
 
 		sql := "select bmc_ip from node where uuid = ?"
 		err := mysql.Db.QueryRow(sql, uuid).Scan(&bmcIP)
 		if err != nil {
 			logger.Logger.Println(err)
-			return nil, err
+			return "", err
 		}
 
 		serialNo, err := ipmi.GetSerialNo(bmcIP)
 		if err != nil {
 			logger.Logger.Println(err)
-			return nil, err
+			return "", err
 		}
 
 		result, err := ipmi.GetPowerState(bmcIP, serialNo)
 		if err != nil {
 			logger.Logger.Println(err)
-			return nil, err
+			return "", err
 		}
 
 		return result, nil
-	}
-
-	return nil, errors.New("need a uuid argument")
 }
 
-func checkUpdateNodeArgs(args map[string]interface{}) bool {
-	_, serverUUIDOk := args["server_uuid"].(string)
-	_, bmcMacAddrOk := args["bmc_mac_addr"].(string)
-	_, bmcIPOk := args["bmc_ip"].(string)
-	_, pxeMacAdrOk := args["pxe_mac_addr"].(string)
-	_, statusOk := args["status"].(string)
-	_, cpuCoresOk := args["cpu_cores"].(int)
-	_, memoryOk := args["memory"].(int)
-	_, descriptionOk := args["description"].(string)
-	_, activeOk := args["active"].(int)
+func checkUpdateNodeArgs(reqNode *pb.Node) bool {
+	serverUUIDOk := len(reqNode.ServerUUID) != 0
+	bmcMacAddrOk := len(reqNode.BmcMacAddr) != 0
+	bmcIPOk := len(reqNode.BmcIP) != 0
+	pxeMacAdrOk := len(reqNode.PXEMacAddr) != 0
+	statusOk := len(reqNode.Status) != 0
+	cpuCoresOk := reqNode.CPUCores != 0
+	memoryOk := reqNode.Memory != 0
+	descriptionOk := len(reqNode.Description) != 0
 
-	return !serverUUIDOk && !bmcMacAddrOk && !bmcIPOk && !pxeMacAdrOk && !statusOk && !cpuCoresOk && !memoryOk && !descriptionOk && !activeOk
+	return !serverUUIDOk && !bmcMacAddrOk && !bmcIPOk && !pxeMacAdrOk && !statusOk && !cpuCoresOk && !memoryOk && !descriptionOk
 }
 
 // UpdateNode : Update infos of a node.
-func UpdateNode(args map[string]interface{}) (interface{}, error) {
-	requestUUIDD, requestUUIDDOK := args["uuid"].(string)
-	serverUUID, serverUUIDOk := args["server_uuid"].(string)
-	bmcMacAddr, bmcMacAddrOk := args["bmc_mac_addr"].(string)
-	bmcIP, bmcIPOk := args["bmc_ip"].(string)
-	pxeMacAdr, pxeMacAdrOk := args["pxe_mac_addr"].(string)
-	status, statusOk := args["status"].(string)
-	cpuCores, cpuCoresOk := args["cpu_cores"].(int)
-	memory, memoryOk := args["memory"].(int)
-	description, descriptionOk := args["description"].(string)
-	active, activeOk := args["active"].(int)
+func UpdateNode(in *pb.ReqUpdateNode) (*pb.Node, error) {
+	if in.Node == nil {
+		return nil, errors.New("node is nil")
+	}
+	reqNode := in.Node
 
-	node := new(model.Node)
+	requestedUUID := reqNode.GetUUID()
+	requestedUUIDOk := len(requestedUUID) != 0
+	if !requestedUUIDOk {
+		return nil, errors.New("need a uuid argument")
+	}
+
+	if checkUpdateNodeArgs(reqNode) {
+		return nil, errors.New("need some arguments")
+	}
+
+	var serverUUID string
+	var bmcMacAddr string
+	var bmcIP string
+	var pxeMacAdr string
+	var status string
+	var cpuCores int
+	var memory int
+	var description string
+	var active int
+
+	serverUUID = in.GetNode().ServerUUID
+	serverUUIDOk := len(serverUUID) != 0
+	bmcMacAddr = in.GetNode().BmcMacAddr
+	bmcMacAddrOk := len(bmcMacAddr) != 0
+	bmcIP = in.GetNode().BmcIP
+	bmcIPOk := len(bmcIP) != 0
+	pxeMacAdr = in.GetNode().PXEMacAddr
+	pxeMacAdrOk := len(pxeMacAdr) != 0
+	status = in.GetNode().Status
+	statusOk := len(status) != 0
+	cpuCores = int(in.GetNode().CPUCores)
+	cpuCoresOk := cpuCores != 0
+	memory = int(in.GetNode().Memory)
+	memoryOk := memory != 0
+	description = in.GetNode().Description
+	descriptionOk := len(description) != 0
+	active = int(in.GetNode().Active)
+
+	oldNode, err := ReadNode(requestedUUID)
+	if err != nil {
+		return nil, err
+	}
+	activeOk := active != int(oldNode.Active)
+
+	node := new(pb.Node)
 	node.ServerUUID = serverUUID
-	node.UUID = requestUUIDD
+	node.UUID = requestedUUID
 	node.BmcMacAddr = bmcMacAddr
 	node.BmcIP = bmcIP
 	node.PXEMacAddr = pxeMacAdr
 	node.Status = status
-	node.CPUCores = cpuCores
-	node.Memory = memory
+	node.CPUCores = int32(cpuCores)
+	node.Memory = int32(memory)
 	node.Description = description
-	node.Active = active
+	node.Active = int32(active)
 
-	if requestUUIDDOK {
-		if checkUpdateNodeArgs(args) {
-			return nil, errors.New("need some arguments")
-		}
-
-		sql := "update node set"
-		var updateSet = ""
-		if serverUUIDOk {
-			updateSet += " server_uuid = '" + serverUUID + "', "
-		}
-		if bmcMacAddrOk {
-			updateSet += " bmc_mac_addr = '" + bmcMacAddr + "', "
-		}
-		if bmcIPOk {
-			updateSet += " bmc_ip = '" + bmcIP + "', "
-		}
-		if pxeMacAdrOk {
-			updateSet += " pxe_mac_addr = '" + pxeMacAdr + "', "
-		}
-		if statusOk {
-			updateSet += " status = '" + status + "', "
-		}
-		if cpuCoresOk {
-			updateSet += " cpu_cores = " + strconv.Itoa(cpuCores) + ", "
-		}
-		if memoryOk {
-			updateSet += " memory = " + strconv.Itoa(memory) + ", "
-		}
-		if descriptionOk {
-			updateSet += " description = '" + description + "', "
-		}
-		if activeOk {
-			updateSet += " active = " + strconv.Itoa(active) + ", "
-		}
-		sql += updateSet[0:len(updateSet)-2] + " where uuid = ?"
-
-		logger.Logger.Println("update_node sql : ", sql)
-
-		stmt, err := mysql.Db.Prepare(sql)
-		if err != nil {
-			logger.Logger.Println(err.Error())
-			return nil, err
-		}
-		defer func() {
-			_ = stmt.Close()
-		}()
-
-		result, err2 := stmt.Exec(node.UUID)
-		if err2 != nil {
-			logger.Logger.Println(err2)
-			return nil, err2
-		}
-		logger.Logger.Println(result.LastInsertId())
-		return node, nil
+	sql := "update node set"
+	var updateSet = ""
+	if serverUUIDOk {
+		updateSet += " server_uuid = '" + serverUUID + "', "
 	}
-	return nil, nil
+	if bmcMacAddrOk {
+		updateSet += " bmc_mac_addr = '" + bmcMacAddr + "', "
+	}
+	if bmcIPOk {
+		updateSet += " bmc_ip = '" + bmcIP + "', "
+	}
+	if pxeMacAdrOk {
+		updateSet += " pxe_mac_addr = '" + pxeMacAdr + "', "
+	}
+	if statusOk {
+		updateSet += " status = '" + status + "', "
+	}
+	if cpuCoresOk {
+		updateSet += " cpu_cores = " + strconv.Itoa(cpuCores) + ", "
+	}
+	if memoryOk {
+		updateSet += " memory = " + strconv.Itoa(memory) + ", "
+	}
+	if descriptionOk {
+		updateSet += " description = '" + description + "', "
+	}
+	if activeOk {
+		updateSet += " active = " + strconv.Itoa(active) + ", "
+	}
+	sql += updateSet[0:len(updateSet)-2] + " where uuid = ?"
+
+	logger.Logger.Println("update_node sql : ", sql)
+
+	stmt, err := mysql.Db.Prepare(sql)
+	if err != nil {
+		logger.Logger.Println(err.Error())
+		return nil, err
+	}
+	defer func() {
+		_ = stmt.Close()
+	}()
+
+	result, err2 := stmt.Exec(node.UUID)
+	if err2 != nil {
+		logger.Logger.Println(err2)
+		return nil, err2
+	}
+	logger.Logger.Println(result.LastInsertId())
+	return node, nil
 }
 
 // DeleteNode : Delete a node from database.
-func DeleteNode(args map[string]interface{}) (interface{}, error) {
+func DeleteNode(in *pb.ReqDeleteNode) (string, error) {
 	var err error
 
-	requestedUUID, ok := args["uuid"].(string)
-	if ok {
-		sql := "delete from node where uuid = ?"
-		stmt, err := mysql.Db.Prepare(sql)
-		if err != nil {
-			logger.Logger.Println(err.Error())
-			return nil, err
-		}
-		defer func() {
-			_ = stmt.Close()
-		}()
-		result, err2 := stmt.Exec(requestedUUID)
-		if err2 != nil {
-			logger.Logger.Println(err2)
-			return nil, err
-		}
-		logger.Logger.Println(result.RowsAffected())
-
-		return requestedUUID, nil
+	requestedUUID := in.GetUUID()
+	requestedUUIDOk := len(requestedUUID) != 0
+	if !requestedUUIDOk {
+		return "", errors.New("need a uuid argument")
 	}
 
-	return requestedUUID, err
+	sql := "delete from node where uuid = ?"
+	stmt, err := mysql.Db.Prepare(sql)
+	if err != nil {
+		logger.Logger.Println(err.Error())
+		return "", err
+	}
+	defer func() {
+		_ = stmt.Close()
+	}()
+	result, err2 := stmt.Exec(requestedUUID)
+	if err2 != nil {
+		logger.Logger.Println(err2)
+		return "", err
+	}
+	logger.Logger.Println(result.RowsAffected())
+
+	return requestedUUID, nil
 }
