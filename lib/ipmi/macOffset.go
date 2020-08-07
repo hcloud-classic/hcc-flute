@@ -11,9 +11,9 @@ func intToHEXChar(input int, isUpperCase bool) string {
 		input += 48
 	} else if input >= 10 && input <= 15 { // A~F or a~f
 		if isUpperCase { // A~F
-			input += 87
-		} else { // a~f
 			input += 55
+		} else { // a~f
+			input += 87
 		}
 	} else {
 		logger.Logger.Fatal("input must be in range from 0 to 15")
