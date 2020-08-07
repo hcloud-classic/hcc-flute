@@ -230,7 +230,7 @@ func UpdateStatusNodes() (interface{}, error) {
 			logger.Logger.Println("UpdateStatusNodes(): " + bmcIP + " Power State: " + powerState)
 		}
 
-		node := model.Node {
+		node := model.Node{
 			UUID:   fmt.Sprintf("%s", uuid),
 			Status: powerState,
 		}

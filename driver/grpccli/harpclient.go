@@ -33,7 +33,7 @@ func CleanGRPCHarp() {
 	conn.Close()
 }
 
-func GetSubnet(req *rpcharp.ReqHarp) (*rpcharp.ResHarp, error) {
+func GetSubnet(req *rpcharp.ReqGetSubnet) (*rpcharp.ResGetSubnet, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(10)*time.Second /* 10 secs */)
 	defer cancel()
 	r, err := harp.GetSubnet(ctx, req)

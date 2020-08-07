@@ -6,7 +6,7 @@ var configLocation = "/etc/hcc/flute/flute.conf"
 
 type fluteConfig struct {
 	MysqlConfig *goconf.Section
-	HTTPConfig  *goconf.Section
+	GrpcConfig  *goconf.Section
 	IpmiConfig  *goconf.Section
 }
 
@@ -20,7 +20,7 @@ address 192.168.110.240
 port 3306
 database flute
 
-[http]
+[grpc]
 port 7000
 
 [ipmi]

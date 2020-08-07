@@ -4,6 +4,7 @@ import (
 	dbsql "database/sql"
 	"errors"
 	gouuid "github.com/nu7hatch/gouuid"
+	pb "hcc/flute/action/grpc/rpcflute"
 	"hcc/flute/lib/ipmi"
 	"hcc/flute/lib/logger"
 	"hcc/flute/lib/mysql"
@@ -186,7 +187,7 @@ func ReadNodeAll(args map[string]interface{}) (interface{}, error) {
 	} else if rowOk && pageOk {
 		sql = "select " + nodeSelectColumns + " from node order by created_at desc limit ? offset ?"
 		if activeOk {
-			sql = "select " + nodeSelectColumns + " from node where available = 1 and active = " + strconv.Itoa(active) +" order by created_at desc limit ? offset ?"
+			sql = "select " + nodeSelectColumns + " from node where available = 1 and active = " + strconv.Itoa(active) + " order by created_at desc limit ? offset ?"
 		}
 		stmt, err = mysql.Db.Query(sql, row, row*(page-1))
 	} else {
@@ -271,112 +272,84 @@ func CreateNode(args map[string]interface{}) (interface{}, error) {
 	return node, nil
 }
 
-func OnNode(args map[string]interface{}) (interface{}, error) {
-	uuid, uuidOk := args["uuid"].(string)
-
-	if uuidOk {
-		var bmcIP string
-
-		sql := "select bmc_ip from node where uuid = ?"
-		err := mysql.Db.QueryRow(sql, uuid).Scan(&bmcIP)
-		if err != nil {
-			logger.Logger.Println(err)
-			return nil, err
-		}
-
-		serialNo, err := ipmi.GetSerialNo(bmcIP)
-		if err != nil {
-			logger.Logger.Println(err)
-			return nil, err
-		}
-
-		state, _ := ipmi.GetPowerState(bmcIP, serialNo)
-		if state == "On" {
-			return "Already turned on", nil
-		}
-
-		result, err := ipmi.ChangePowerState(bmcIP, serialNo, "On")
-		if err != nil {
-			logger.Logger.Println(err)
-			return nil, err
-		}
-
-		return result, nil
+func NodePowerControl(in *pb.ReqNodePowerControl) ([]string, error) {
+	nodes := in.GetNodes()
+	if nodes == nil {
+		return nil, errors.New("need some Nodes")
 	}
 
-	return nil, errors.New("need a uuid argument")
-}
+	var results []string
 
-func OffNode(args map[string]interface{}) (interface{}, error) {
-	uuid, uuidOk := args["uuid"].(string)
-	forceOff, _ := args["force_off"].(bool)
-
-	if uuidOk {
-		var bmcIP string
-
-		sql := "select bmc_ip from node where uuid = ?"
-		err := mysql.Db.QueryRow(sql, uuid).Scan(&bmcIP)
-		if err != nil {
-			logger.Logger.Println(err)
-			return nil, err
-		}
-
-		serialNo, err := ipmi.GetSerialNo(bmcIP)
-		if err != nil {
-			logger.Logger.Println(err)
-			return nil, err
-		}
-
-		state, _ := ipmi.GetPowerState(bmcIP, serialNo)
-		if state == "Off" {
-			return "Already turned off", nil
-		}
-
-		changeState := "GracefulShutdown"
-		if forceOff {
-			changeState = "ForceOff"
-		}
-		result, err := ipmi.ChangePowerState(bmcIP, serialNo, changeState)
-		if err != nil {
-			logger.Logger.Println(err)
-			return nil, err
-		}
-
-		return result, nil
+	var changeState string
+	switch in.GetPowerState() {
+	case pb.ReqNodePowerControl_ON:
+		changeState = "On"
+		break
+	case pb.ReqNodePowerControl_OFF:
+		changeState = "GracefulShutdown"
+		break
+	case pb.ReqNodePowerControl_FORCE_OFF:
+		changeState = "ForceOff"
+		break
+	case pb.ReqNodePowerControl_FORCE_RESTART:
+		changeState = "ForceRestart"
+		break
 	}
 
-	return nil, errors.New("need a uuid argument")
-}
+	for _, node := range nodes {
+		if len(node.UUID) == 0 {
+			continue
+		}
 
-func ForceRestartNode(args map[string]interface{}) (interface{}, error) {
-	uuid, uuidOk := args["uuid"].(string)
-
-	if uuidOk {
 		var bmcIP string
+		var result string
+		var serialNo string
 
 		sql := "select bmc_ip from node where uuid = ?"
-		err := mysql.Db.QueryRow(sql, uuid).Scan(&bmcIP)
+		err := mysql.Db.QueryRow(sql, node.UUID).Scan(&bmcIP)
 		if err != nil {
-			logger.Logger.Println(err)
-			return nil, err
+			result = err.Error()
+			logger.Logger.Println("NodePowerControl(): "+err.Error())
+			goto APPEND
 		}
 
-		serialNo, err := ipmi.GetSerialNo(bmcIP)
+		serialNo, err = ipmi.GetSerialNo(bmcIP)
 		if err != nil {
-			logger.Logger.Println(err)
-			return nil, err
+			result = "["+bmcIP+"]: "+err.Error()
+			logger.Logger.Println("NodePowerControl(): "+result)
+			goto APPEND
 		}
 
-		result, err := ipmi.ChangePowerState(bmcIP, serialNo, "ForceRestart")
-		if err != nil {
-			logger.Logger.Println(err)
-			return nil, err
+		if changeState == "On" {
+			state, _ := ipmi.GetPowerState(bmcIP, serialNo)
+			if state == "On" {
+				result = "["+bmcIP+"]: Already turned on"
+				logger.Logger.Println("NodePowerControl(): "+result)
+				goto APPEND
+			}
+		} else if changeState == "GracefulShutdown" ||
+			changeState == "ForceOff" {
+			state, _ := ipmi.GetPowerState(bmcIP, serialNo)
+			if state == "Off" {
+				result = "["+bmcIP+"]: Already turned off"
+				logger.Logger.Println("NodePowerControl(): "+result)
+				goto APPEND
+			}
 		}
 
-		return result, nil
+		result, err = ipmi.ChangePowerState(bmcIP, serialNo, changeState)
+		if err != nil {
+			result = "["+bmcIP+"]: "+err.Error()
+			logger.Logger.Println("NodePowerControl(): "+result)
+			goto APPEND
+		}
+		result = "["+bmcIP+"]: "+result
+
+	APPEND:
+		results = append(results, result)
 	}
 
-	return nil, errors.New("need a uuid argument")
+	return results, nil
 }
 
 func GetPowerStateNode(args map[string]interface{}) (interface{}, error) {
