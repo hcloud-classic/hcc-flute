@@ -16,6 +16,7 @@ const (
 var harp rpcharp.HarpClient
 var conn grpc.ClientConn
 
+// InitGRPCHarp : Initialize gRPC client for harp
 func InitGRPCHarp() error {
 	conn, err := grpc.Dial(address, grpc.WithInsecure(), grpc.WithBlock())
 	if err != nil {
@@ -28,11 +29,13 @@ func InitGRPCHarp() error {
 	return nil
 }
 
+// CleanGRPCHarp : Close gRPC client for harp
 func CleanGRPCHarp() {
 
 	conn.Close()
 }
 
+// GetSubnet : Get subnet from harp
 func GetSubnet(req *rpcharp.ReqGetSubnet) (*rpcharp.ResGetSubnet, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(10)*time.Second /* 10 secs */)
 	defer cancel()

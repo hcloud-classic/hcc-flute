@@ -283,6 +283,7 @@ func CreateNode(in *pb.ReqCreateNode) (*pb.Node, error) {
 	return &node, nil
 }
 
+// NodePowerControl : Change power state of nodes
 func NodePowerControl(in *pb.ReqNodePowerControl) ([]string, error) {
 	nodes := in.GetNodes()
 	if nodes == nil {
@@ -363,6 +364,7 @@ func NodePowerControl(in *pb.ReqNodePowerControl) ([]string, error) {
 	return results, nil
 }
 
+// GetNodePowerState : Get power state of the node
 func GetNodePowerState(in *pb.ReqNodePowerState) (string, error) {
 	uuid := in.GetUUID()
 	uuidOk := len(uuid) != 0
