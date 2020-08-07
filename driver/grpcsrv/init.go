@@ -10,6 +10,7 @@ import (
 	"strconv"
 )
 
+// Init : Initialize gRPC server
 func Init() {
 	lis, err := net.Listen("tcp", ":"+strconv.Itoa(int(config.Grpc.Port)))
 	if err != nil {
