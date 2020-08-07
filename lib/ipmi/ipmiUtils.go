@@ -522,7 +522,7 @@ func GetNICMac(bmcIP string, nicNO int, isBMC bool) (string, error) {
 					return "", errors.New("GetNICMac(): Invalid mac address")
 				}
 
-				lastPart := lastMacOffset(macParts[len(macParts)-1])
+				lastPart := lastMacOffset(macParts[len(macParts)-1], nicNO+1)
 				for i, part := range macParts {
 					if i == len(macParts)-1 {
 						break

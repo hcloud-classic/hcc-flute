@@ -23,7 +23,7 @@ func intToHEXChar(input int, isUpperCase bool) string {
 	return string(input)
 }
 
-func lastMacOffset(input string) string {
+func lastMacOffset(input string, offset int) string {
 	if len(input) != 2 {
 		logger.Logger.Fatal("wrong input of last mac")
 		return ""
@@ -53,7 +53,7 @@ func lastMacOffset(input string) string {
 	}
 
 	// Apply offset
-	sum -= 3
+	sum -= offset
 
 	// Get 2 int value for last part of MAC address
 	part1 := sum / 16
