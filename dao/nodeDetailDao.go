@@ -37,7 +37,7 @@ func ReadNodeDetail(nodeUUID string) (*pb.NodeDetail, error) {
 // CreateNodeDetail : Create detail infos of the node
 func CreateNodeDetail(in *pb.ReqCreateNodeDetail) (*pb.NodeDetail, error) {
 	reqNodeDetail := in.GetNodeDetail()
-	if reqNodeDetail == nil{
+	if reqNodeDetail == nil {
 		return nil, errors.New("nodeDetail is nil")
 	}
 

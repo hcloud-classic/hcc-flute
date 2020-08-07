@@ -12,25 +12,25 @@ type fluteServer struct {
 
 func returnNode(node *pb.Node) *pb.Node {
 	return &pb.Node{
-		ServerUUID: node.ServerUUID,
-		BmcMacAddr: node.BmcMacAddr,
-		BmcIP: node.BmcIP,
-		PXEMacAddr: node.PXEMacAddr,
-		Status: node.Status,
-		CPUCores: node.CPUCores,
-		Memory: node.Memory,
+		ServerUUID:  node.ServerUUID,
+		BmcMacAddr:  node.BmcMacAddr,
+		BmcIP:       node.BmcIP,
+		PXEMacAddr:  node.PXEMacAddr,
+		Status:      node.Status,
+		CPUCores:    node.CPUCores,
+		Memory:      node.Memory,
 		Description: node.Description,
-		Active: node.Active,
-		CreatedAt: node.CreatedAt,
+		Active:      node.Active,
+		CreatedAt:   node.CreatedAt,
 	}
 }
 
 func returnNodeDetail(nodeDetail *pb.NodeDetail) *pb.NodeDetail {
 	return &pb.NodeDetail{
-		NodeUUID: nodeDetail.NodeUUID,
-		CPUModel: nodeDetail.CPUModel,
+		NodeUUID:      nodeDetail.NodeUUID,
+		CPUModel:      nodeDetail.CPUModel,
 		CPUProcessors: nodeDetail.CPUProcessors,
-		CPUThreads: nodeDetail.CPUThreads,
+		CPUThreads:    nodeDetail.CPUThreads,
 	}
 }
 
