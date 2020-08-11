@@ -120,8 +120,9 @@ func ReadNodeList(in *pb.ReqGetNodeList) (*pb.ResGetNodeList, error) {
 		memoryOk := memory != 0
 		description = reqNode.Description
 		descriptionOk := len(description) != 0
-
 		active = int(reqNode.Active)
+		// gRPC use 0 value for unset. So I will use 9 value for inactive. - ish
+		activeOk := active != 0
 
 		if serverUUIDOk {
 			sql += " and server_uuid = '" + serverUUID + "'"
@@ -147,8 +148,9 @@ func ReadNodeList(in *pb.ReqGetNodeList) (*pb.ResGetNodeList, error) {
 		if descriptionOk {
 			sql += " and description = '" + description + "'"
 		}
-
-		sql += " and active = " + strconv.Itoa(active)
+		if activeOk {
+			sql += " and active = " + strconv.Itoa(active)
+		}
 	}
 
 	var stmt *dbsql.Rows
@@ -405,8 +407,10 @@ func checkUpdateNodeArgs(reqNode *pb.Node) bool {
 	cpuCoresOk := reqNode.CPUCores != 0
 	memoryOk := reqNode.Memory != 0
 	descriptionOk := len(reqNode.Description) != 0
+	// gRPC use 0 value for unset. So I will use 9 value for inactive. - ish
+	activeOk := reqNode.Active != 0
 
-	return !serverUUIDOk && !bmcMacAddrOk && !bmcIPOk && !pxeMacAdrOk && !statusOk && !cpuCoresOk && !memoryOk && !descriptionOk
+	return !serverUUIDOk && !bmcMacAddrOk && !bmcIPOk && !pxeMacAdrOk && !statusOk && !cpuCoresOk && !memoryOk && !descriptionOk && !activeOk
 }
 
 // UpdateNode : Update infos of a node.
@@ -453,12 +457,8 @@ func UpdateNode(in *pb.ReqUpdateNode) (*pb.Node, error) {
 	description = in.GetNode().Description
 	descriptionOk := len(description) != 0
 	active = int(in.GetNode().Active)
-
-	oldNode, err := ReadNode(requestedUUID)
-	if err != nil {
-		return nil, err
-	}
-	activeOk := active != int(oldNode.Active)
+	// gRPC use 0 value for unset. So I will use 9 value for inactive. - ish
+	activeOk := active != 0
 
 	node := new(pb.Node)
 	node.ServerUUID = serverUUID
