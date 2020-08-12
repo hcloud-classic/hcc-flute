@@ -413,7 +413,7 @@ func checkUpdateNodeArgs(reqNode *pb.Node) bool {
 	return !serverUUIDOk && !bmcMacAddrOk && !bmcIPOk && !pxeMacAdrOk && !statusOk && !cpuCoresOk && !memoryOk && !descriptionOk && !activeOk
 }
 
-// UpdateNode : Update infos of a node.
+// UpdateNode : Update infos of the node.
 func UpdateNode(in *pb.ReqUpdateNode) (*pb.Node, error) {
 	if in.Node == nil {
 		return nil, errors.New("node is nil")
