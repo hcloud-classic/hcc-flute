@@ -22,7 +22,7 @@ func Test_DB_Prepare(t *testing.T) {
 
 	config.Parser()
 
-	err = Prepare()
+	err = prepare()
 	if err != nil {
 		t.Fatal(err)
 	}
