@@ -43,8 +43,6 @@ func init() {
 	ipmi.CheckStatus()
 	logger.Logger.Println("Starting ipmi.CheckNodesDetail(). Interval is " + strconv.Itoa(int(config.Ipmi.CheckNodesDetailIntervalMs)) + "ms")
 	ipmi.CheckNodesDetail()
-
-	go grpcsrv.Init()
 }
 
 func end() {
@@ -63,7 +61,5 @@ func main() {
 		os.Exit(0)
 	}()
 
-	// Prevent to exit main thread
-	mainChan := make(chan bool)
-	<-mainChan
+	grpcsrv.Init()
 }
