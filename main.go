@@ -1,13 +1,17 @@
 package main
 
 import (
+	"fmt"
 	"hcc/flute/driver/grpcsrv"
 	"hcc/flute/lib/config"
 	"hcc/flute/lib/ipmi"
 	"hcc/flute/lib/logger"
 	"hcc/flute/lib/mysql"
 	"hcc/flute/lib/syscheck"
+	"os"
+	"os/signal"
 	"strconv"
+	"syscall"
 )
 
 func init() {
@@ -39,13 +43,27 @@ func init() {
 	ipmi.CheckStatus()
 	logger.Logger.Println("Starting ipmi.CheckNodesDetail(). Interval is " + strconv.Itoa(int(config.Ipmi.CheckNodesDetailIntervalMs)) + "ms")
 	ipmi.CheckNodesDetail()
+
+	go grpcsrv.Init()
+}
+
+func end() {
+	mysql.End()
+	logger.End()
 }
 
 func main() {
-	defer func() {
-		mysql.End()
-		logger.End()
+	// Catch the exit signal
+	sigChan := make(chan os.Signal)
+	signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
+	go func(){
+		<- sigChan
+		end()
+		fmt.Println("Exiting flute module...")
+		os.Exit(0)
 	}()
 
-	grpcsrv.Init()
+	// Prevent to exit main thread
+	mainChan := make(chan bool)
+	<-mainChan
 }
