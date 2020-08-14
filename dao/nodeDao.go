@@ -296,16 +296,16 @@ func NodePowerControl(in *pb.ReqNodePowerControl) ([]string, error) {
 
 	var changeState string
 	switch in.GetPowerState() {
-	case pb.ReqNodePowerControl_ON:
+	case pb.PowerState_ON:
 		changeState = "On"
 		break
-	case pb.ReqNodePowerControl_OFF:
+	case pb.PowerState_OFF:
 		changeState = "GracefulShutdown"
 		break
-	case pb.ReqNodePowerControl_FORCE_OFF:
+	case pb.PowerState_FORCE_OFF:
 		changeState = "ForceOff"
 		break
-	case pb.ReqNodePowerControl_FORCE_RESTART:
+	case pb.PowerState_FORCE_RESTART:
 		changeState = "ForceRestart"
 		break
 	}
