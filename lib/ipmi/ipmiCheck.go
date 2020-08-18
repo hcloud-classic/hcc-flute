@@ -47,7 +47,7 @@ func UpdateAllNodes() (interface{}, error) {
 	var nodes []model.Node
 	var bmcIP string
 
-	sql := "select bmc_ip from node where active = 1"
+	sql := "select bmc_ip from node where available = 1"
 	stmt, err := mysql.Db.Query(sql)
 	if err != nil {
 		logger.Logger.Println(err)
@@ -182,7 +182,7 @@ func UpdateStatusNodes() (interface{}, error) {
 	var uuid interface{}
 	var bmcIP string
 
-	sql := "select uuid, bmc_ip from node where active = 1"
+	sql := "select uuid, bmc_ip from node where available = 1"
 	stmt, err := mysql.Db.Query(sql)
 	if err != nil {
 		logger.Logger.Println(err)
@@ -270,7 +270,7 @@ func UpdateNodesDetail() (interface{}, error) {
 	var uuid interface{}
 	var bmcIP string
 
-	sql := "select uuid, bmc_ip from node where active = 1"
+	sql := "select uuid, bmc_ip from node where available = 1"
 	stmt, err := mysql.Db.Query(sql)
 	if err != nil {
 		logger.Logger.Println(err)
