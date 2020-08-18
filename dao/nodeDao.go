@@ -268,7 +268,7 @@ func CreateNode(in *pb.ReqCreateNode) (*pb.Node, error) {
 		Description: reqNode.Description,
 	}
 
-	sql := "insert into node(uuid, bmc_mac_addr, bmc_ip, pxe_mac_addr, status, cpu_cores, memory, description, created_at) values (?, ?, ?, ?, ?, ?, ?, ?, now())"
+	sql := "insert into node(uuid, bmc_mac_addr, bmc_ip, pxe_mac_addr, status, cpu_cores, memory, description, created_at, available) values (?, ?, ?, ?, ?, ?, ?, ?, now(), 1)"
 	stmt, err := mysql.Db.Prepare(sql)
 	if err != nil {
 		logger.Logger.Println(err)
