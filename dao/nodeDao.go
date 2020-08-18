@@ -545,5 +545,10 @@ func DeleteNode(in *pb.ReqDeleteNode) (string, error) {
 	}
 	logger.Logger.Println(result.RowsAffected())
 
+	_, err = DeleteNodeDetail(&pb.ReqDeleteNodeDetail{NodeUUID: requestedUUID})
+	if err != nil {
+		logger.Logger.Println(err)
+	}
+
 	return requestedUUID, nil
 }
