@@ -515,6 +515,12 @@ func UpdateNode(in *pb.ReqUpdateNode) (*pb.Node, error) {
 		return nil, err2
 	}
 	logger.Logger.Println(result.LastInsertId())
+
+	node, err = ReadNode(node.UUID)
+	if err != nil {
+		logger.Logger.Println(err)
+	}
+
 	return node, nil
 }
 
