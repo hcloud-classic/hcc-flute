@@ -231,9 +231,8 @@ func checkCreateNodeArgs(reqNode *pb.Node) bool {
 	statusOk := len(reqNode.Status) != 0
 	cpuCoresOk := reqNode.CPUCores != 0
 	memoryOk := reqNode.Memory != 0
-	descriptionOk := len(reqNode.Description) != 0
 
-	return !(UUIDOk && serverUUIDOk && bmcMacAddrOk && pxeMacAdrOk && statusOk && cpuCoresOk && memoryOk && descriptionOk)
+	return !(UUIDOk && serverUUIDOk && bmcMacAddrOk && pxeMacAdrOk && statusOk && cpuCoresOk && memoryOk)
 }
 
 // CreateNode : Add a node to database.
@@ -244,8 +243,9 @@ func CreateNode(in *pb.ReqCreateNode) (*pb.Node, error) {
 	}
 
 	bmcIPOk := len(reqNode.BmcIP) != 0
-	if !bmcIPOk {
-		return nil, errors.New("need a bmcIP argument")
+	descriptionOk := len(reqNode.Description) != 0
+	if !bmcIPOk || !descriptionOk {
+		return nil, errors.New("need bmcIP and description arguments")
 	} else if !bmcIPOk && checkCreateNodeArgs(reqNode) {
 		return nil, errors.New("some of arguments are missing")
 	}
