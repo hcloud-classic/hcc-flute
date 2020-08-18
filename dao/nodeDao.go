@@ -227,14 +227,13 @@ func ReadNodeNum() (*pb.ResGetNodeNum, error) {
 func checkCreateNodeArgs(reqNode *pb.Node) bool {
 	serverUUIDOk := len(reqNode.ServerUUID) != 0
 	bmcMacAddrOk := len(reqNode.BmcMacAddr) != 0
-	bmcIPOk := len(reqNode.BmcIP) != 0
 	pxeMacAdrOk := len(reqNode.PXEMacAddr) != 0
 	statusOk := len(reqNode.Status) != 0
 	cpuCoresOk := reqNode.CPUCores != 0
 	memoryOk := reqNode.Memory != 0
 	descriptionOk := len(reqNode.Description) != 0
 
-	return !(serverUUIDOk && bmcMacAddrOk && bmcIPOk && pxeMacAdrOk && statusOk && cpuCoresOk && memoryOk && descriptionOk)
+	return !(serverUUIDOk && bmcMacAddrOk && pxeMacAdrOk && statusOk && cpuCoresOk && memoryOk && descriptionOk)
 }
 
 // CreateNode : Add a node to database.
@@ -251,7 +250,10 @@ func CreateNode(in *pb.ReqCreateNode) (*pb.Node, error) {
 	}
 	uuid := out.String()
 
-	if checkCreateNodeArgs(reqNode) {
+	bmcIPOk := len(reqNode.BmcIP) != 0
+	if !bmcIPOk {
+		return nil, errors.New("need a bmcIP argument")
+	} else if !bmcIPOk && checkCreateNodeArgs(reqNode) {
 		return nil, errors.New("some of arguments are missing")
 	}
 
@@ -401,7 +403,6 @@ func GetNodePowerState(in *pb.ReqNodePowerState) (string, error) {
 func checkUpdateNodeArgs(reqNode *pb.Node) bool {
 	serverUUIDOk := len(reqNode.ServerUUID) != 0
 	bmcMacAddrOk := len(reqNode.BmcMacAddr) != 0
-	bmcIPOk := len(reqNode.BmcIP) != 0
 	pxeMacAdrOk := len(reqNode.PXEMacAddr) != 0
 	statusOk := len(reqNode.Status) != 0
 	cpuCoresOk := reqNode.CPUCores != 0
@@ -410,7 +411,7 @@ func checkUpdateNodeArgs(reqNode *pb.Node) bool {
 	// gRPC use 0 value for unset. So I will use 9 value for inactive. - ish
 	activeOk := reqNode.Active != 0
 
-	return !serverUUIDOk && !bmcMacAddrOk && !bmcIPOk && !pxeMacAdrOk && !statusOk && !cpuCoresOk && !memoryOk && !descriptionOk && !activeOk
+	return !serverUUIDOk && !bmcMacAddrOk && !pxeMacAdrOk && !statusOk && !cpuCoresOk && !memoryOk && !descriptionOk && !activeOk
 }
 
 // UpdateNode : Update infos of the node.
@@ -426,7 +427,10 @@ func UpdateNode(in *pb.ReqUpdateNode) (*pb.Node, error) {
 		return nil, errors.New("need a uuid argument")
 	}
 
-	if checkUpdateNodeArgs(reqNode) {
+	bmcIPOk := len(reqNode.BmcIP) != 0
+	if !bmcIPOk {
+		return nil, errors.New("need a bmcIP argument")
+	} else if !bmcIPOk && checkUpdateNodeArgs(reqNode) {
 		return nil, errors.New("need some arguments")
 	}
 
@@ -445,7 +449,6 @@ func UpdateNode(in *pb.ReqUpdateNode) (*pb.Node, error) {
 	bmcMacAddr = in.GetNode().BmcMacAddr
 	bmcMacAddrOk := len(bmcMacAddr) != 0
 	bmcIP = in.GetNode().BmcIP
-	bmcIPOk := len(bmcIP) != 0
 	pxeMacAdr = in.GetNode().PXEMacAddr
 	pxeMacAdrOk := len(pxeMacAdr) != 0
 	status = in.GetNode().Status
