@@ -4,7 +4,6 @@ import (
 	dbsql "database/sql"
 	"errors"
 	"github.com/golang/protobuf/ptypes"
-	gouuid "github.com/nu7hatch/gouuid"
 	pb "hcc/flute/action/grpc/rpcflute"
 	"hcc/flute/lib/ipmi"
 	"hcc/flute/lib/logger"
@@ -225,6 +224,7 @@ func ReadNodeNum() (*pb.ResGetNodeNum, error) {
 }
 
 func checkCreateNodeArgs(reqNode *pb.Node) bool {
+	UUIDOk := len(reqNode.UUID) != 0
 	serverUUIDOk := len(reqNode.ServerUUID) != 0
 	bmcMacAddrOk := len(reqNode.BmcMacAddr) != 0
 	pxeMacAdrOk := len(reqNode.PXEMacAddr) != 0
@@ -233,7 +233,7 @@ func checkCreateNodeArgs(reqNode *pb.Node) bool {
 	memoryOk := reqNode.Memory != 0
 	descriptionOk := len(reqNode.Description) != 0
 
-	return !(serverUUIDOk && bmcMacAddrOk && pxeMacAdrOk && statusOk && cpuCoresOk && memoryOk && descriptionOk)
+	return !(UUIDOk && serverUUIDOk && bmcMacAddrOk && pxeMacAdrOk && statusOk && cpuCoresOk && memoryOk && descriptionOk)
 }
 
 // CreateNode : Add a node to database.
@@ -243,13 +243,6 @@ func CreateNode(in *pb.ReqCreateNode) (*pb.Node, error) {
 		return nil, errors.New("node is nil")
 	}
 
-	out, err := gouuid.NewV4()
-	if err != nil {
-		logger.Logger.Println(err)
-		return nil, err
-	}
-	uuid := out.String()
-
 	bmcIPOk := len(reqNode.BmcIP) != 0
 	if !bmcIPOk {
 		return nil, errors.New("need a bmcIP argument")
@@ -258,7 +251,7 @@ func CreateNode(in *pb.ReqCreateNode) (*pb.Node, error) {
 	}
 
 	node := pb.Node{
-		UUID:        uuid,
+		UUID:        reqNode.UUID,
 		BmcMacAddr:  reqNode.BmcMacAddr,
 		BmcIP:       reqNode.BmcIP,
 		PXEMacAddr:  reqNode.PXEMacAddr,
