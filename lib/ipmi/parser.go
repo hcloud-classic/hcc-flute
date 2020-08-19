@@ -74,37 +74,3 @@ func BMCIPParser() error {
 
 	return nil
 }
-
-// BMCIPParserCheckActive : Check BMC IP list from config file and change active flag of given BMC IP from database
-func BMCIPParserCheckActive(bmcIP string) error {
-	var ipMatched = false
-	for _, ip := range config.Ipmi.BMCIPListArray {
-		if bmcIP == ip {
-			ipMatched = true
-			break
-		}
-	}
-
-	var sqlStr string
-	if ipMatched {
-		sqlStr = "update node set active = 1 where bmc_ip = ?"
-	} else {
-		sqlStr = "update node set active = 0 where bmc_ip = ?"
-	}
-
-	stmt, err := mysql.Db.Prepare(sqlStr)
-	if err != nil {
-		logger.Logger.Println(err)
-		return err
-	}
-
-	_, err2 := stmt.Exec(bmcIP)
-	if err2 != nil {
-		logger.Logger.Println(err2)
-		return err2
-	}
-
-	_ = stmt.Close()
-
-	return nil
-}
