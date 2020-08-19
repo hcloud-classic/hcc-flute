@@ -282,7 +282,7 @@ func CreateNode(in *pb.ReqCreateNode) (*pb.Node, error) {
 
 // NodePowerControl : Change power state of nodes
 func NodePowerControl(in *pb.ReqNodePowerControl) ([]string, error) {
-	nodes := in.GetNodes()
+	nodes := in.GetNode()
 	if nodes == nil {
 		return nil, errors.New("need some Nodes")
 	}
