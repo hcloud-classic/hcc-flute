@@ -2,10 +2,10 @@ package ipmi
 
 import (
 	"fmt"
+	pb "hcc/flute/action/grpc/rpcflute"
 	"hcc/flute/lib/config"
 	"hcc/flute/lib/logger"
 	"hcc/flute/lib/mysql"
-	"hcc/flute/model"
 	"strconv"
 	"time"
 )
@@ -44,7 +44,7 @@ func checkNodesDetailUnlock() {
 
 // UpdateAllNodes : Get all infos from IPMI nodes and update database (except power state)
 func UpdateAllNodes() (interface{}, error) {
-	var nodes []model.Node
+	var nodes []pb.Node
 	var bmcIP string
 
 	sql := "select bmc_ip from node where available = 1"
@@ -138,13 +138,13 @@ func UpdateAllNodes() (interface{}, error) {
 			logger.Logger.Println("UpdateAllNodes(): " + bmcIP + " Memory: " + strconv.Itoa(memory))
 		}
 
-		node := model.Node{
+		node := pb.Node{
 			UUID:       uuid,
 			BmcMacAddr: bmcMAC,
 			BmcIP:      bmcIP,
 			PXEMacAddr: pxeMAC,
-			CPUCores:   cpuCores,
-			Memory:     memory,
+			CPUCores:   int32(cpuCores),
+			Memory:     int32(memory),
 		}
 
 		sql := "update node set uuid = ?, bmc_mac_addr = ?, pxe_mac_addr = ?, cpu_cores = ?, memory = ? where bmc_ip = ?"
@@ -178,7 +178,7 @@ func UpdateAllNodes() (interface{}, error) {
 
 // UpdateStatusNodes : Get status from IPMI nodes and update database
 func UpdateStatusNodes() (interface{}, error) {
-	var nodes []model.Node
+	var nodes []pb.Node
 	var uuid interface{}
 	var bmcIP string
 
@@ -230,7 +230,7 @@ func UpdateStatusNodes() (interface{}, error) {
 			logger.Logger.Println("UpdateStatusNodes(): " + bmcIP + " Power State: " + powerState)
 		}
 
-		node := model.Node{
+		node := pb.Node{
 			UUID:   fmt.Sprintf("%s", uuid),
 			Status: powerState,
 		}
@@ -266,7 +266,7 @@ func UpdateStatusNodes() (interface{}, error) {
 
 // UpdateNodesDetail : Get detail infos from IPMI nodes and update database
 func UpdateNodesDetail() (interface{}, error) {
-	var nodedetails []model.NodeDetail
+	var nodedetails []pb.NodeDetail
 	var uuid interface{}
 	var bmcIP string
 
@@ -339,11 +339,11 @@ func UpdateNodesDetail() (interface{}, error) {
 		}
 
 		nodeUUID := fmt.Sprintf("%s", uuid)
-		nodeDetail := model.NodeDetail{
+		nodeDetail := pb.NodeDetail{
 			NodeUUID:      nodeUUID,
 			CPUModel:      processorModel,
-			CPUProcessors: processors,
-			CPUThreads:    threads,
+			CPUProcessors: int32(processors),
+			CPUThreads:    int32(threads),
 		}
 
 		sql := "select node_uuid from node_detail where node_uuid = ?"
