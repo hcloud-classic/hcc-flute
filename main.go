@@ -54,8 +54,8 @@ func main() {
 	// Catch the exit signal
 	sigChan := make(chan os.Signal)
 	signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
-	go func(){
-		<- sigChan
+	go func() {
+		<-sigChan
 		end()
 		fmt.Println("Exiting flute module...")
 		os.Exit(0)
