@@ -8,6 +8,7 @@ import (
 	"hcc/flute/lib/logger"
 	"hcc/flute/lib/mysql"
 	"hcc/flute/lib/syscheck"
+	"log"
 	"os"
 	"os/signal"
 	"strconv"
@@ -17,24 +18,24 @@ import (
 func init() {
 	err := syscheck.CheckRoot()
 	if err != nil {
-		panic(err)
+		log.Fatalf("syscheck.CheckRoot(): %v", err.Error())
 	}
 
 	err = logger.Init()
 	if err != nil {
-		panic(err)
+		log.Fatalf("logger.Init(): %v", err.Error())
 	}
 
 	config.Init()
 
 	err = mysql.Init()
 	if err != nil {
-		panic(err)
+		logger.Logger.Fatalf("mysql.Init(): %v", err.Error())
 	}
 
 	err = ipmi.BMCIPParser()
 	if err != nil {
-		panic(err)
+		logger.Logger.Fatalf("ipmi.BMCIPParser(): %v", err.Error())
 	}
 
 	logger.Logger.Println("Starting ipmi.CheckAll(). Interval is " + strconv.Itoa(int(config.Ipmi.CheckAllIntervalMs)) + "ms")
