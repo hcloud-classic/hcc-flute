@@ -25,7 +25,7 @@ func init() {
 		panic(err)
 	}
 
-	config.Parser()
+	config.Init()
 
 	err = mysql.Init()
 	if err != nil {

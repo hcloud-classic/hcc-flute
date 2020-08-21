@@ -20,7 +20,7 @@ func Test_DB_Prepare(t *testing.T) {
 		_ = logger.FpLog.Close()
 	}()
 
-	config.Parser()
+	config.Init()
 
 	err = prepare()
 	if err != nil {
