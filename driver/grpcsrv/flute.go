@@ -13,6 +13,7 @@ type fluteServer struct {
 
 func returnNode(node *pb.Node) *pb.Node {
 	return &pb.Node{
+		UUID:        node.UUID,
 		ServerUUID:  node.ServerUUID,
 		BmcMacAddr:  node.BmcMacAddr,
 		BmcIP:       node.BmcIP,
