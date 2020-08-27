@@ -18,7 +18,8 @@ func Test_Logger_Prepare(t *testing.T) {
 		t.Fatal("Failed to get root permission!")
 	}
 
-	if !Prepare() {
+	err = Init()
+	if err != nil {
 		t.Fatal("Failed to prepare logger!")
 	}
 	defer func() {
