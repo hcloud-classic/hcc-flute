@@ -1,4 +1,4 @@
-package grpcsrv
+package server
 
 import (
 	"google.golang.org/grpc"

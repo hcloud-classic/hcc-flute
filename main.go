@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"hcc/flute/driver/grpcsrv"
+	"hcc/flute/action/grpc/server"
 	"hcc/flute/lib/config"
 	"hcc/flute/lib/ipmi"
 	"hcc/flute/lib/logger"
@@ -62,5 +62,5 @@ func main() {
 		os.Exit(0)
 	}()
 
-	grpcsrv.Init()
+	server.Init()
 }
