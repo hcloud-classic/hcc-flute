@@ -8,7 +8,19 @@ import (
 )
 
 func init() {
-	err := fluteInit.MainInit()
+	err := syscheck.CheckRoot()
+	if err != nil {
+		panic(err)
+	}
+
+	err = logger.Init()
+	if err != nil {
+		panic(err)
+	}
+
+	config.Init()
+
+	err = mysql.Init()
 	if err != nil {
 		panic(err)
 	}
@@ -16,7 +28,8 @@ func init() {
 
 func main() {
 	defer func() {
-		fluteEnd.MainEnd()
+		mysql.End()
+		logger.End()
 	}()
 
 	http.Handle("/graphql", graphql.GraphqlHandler)
