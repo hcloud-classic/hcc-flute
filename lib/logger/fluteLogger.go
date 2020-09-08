@@ -5,7 +5,6 @@ import (
 	"io"
 	"log"
 	"os"
-	"sync"
 	"time"
 )
 
@@ -14,7 +13,6 @@ var LogName = "flute"
 
 // Logger : Pointer of logger
 var Logger *log.Logger
-var once sync.Once
 
 // FpLog : File pointer of logger
 var FpLog *os.File
@@ -31,38 +29,37 @@ func CreateDirIfNotExist(dir string) error {
 	return nil
 }
 
-// Prepare : Prepare logger
-func Prepare() bool {
-	var err error
-	returnValue := false
-
-	once.Do(func() {
-		// Create directory if not exist
-		if _, err = os.Stat("/var/log/" + LogName); os.IsNotExist(err) {
-			err = CreateDirIfNotExist("/var/log/" + LogName)
-			if err != nil {
-				panic(err)
-			}
-		}
-
-		now := time.Now()
-
-		year := fmt.Sprintf("%d", now.Year())
-		month := fmt.Sprintf("%02d", now.Month())
-		day := fmt.Sprintf("%02d", now.Day())
-
-		date := year + month + day
-
-		FpLog, err := os.OpenFile("/var/log/"+LogName+"/"+
-			LogName+"_"+date+".log", os.O_CREATE|os.O_RDWR|os.O_APPEND, 0666)
+// Init : Initialize logger
+func Init() error {
+	// Create directory if not exist
+	if _, err := os.Stat("/var/log/" + LogName); os.IsNotExist(err) {
+		err = CreateDirIfNotExist("/var/log/" + LogName)
 		if err != nil {
-			panic(err)
+			return err
 		}
+	}
 
-		Logger = log.New(io.MultiWriter(FpLog, os.Stdout), LogName+"_logger: ", log.Ldate|log.Ltime)
+	now := time.Now()
 
-		returnValue = true
-	})
+	year := fmt.Sprintf("%d", now.Year())
+	month := fmt.Sprintf("%02d", now.Month())
+	day := fmt.Sprintf("%02d", now.Day())
 
-	return returnValue
+	date := year + month + day
+
+	FpLog, err := os.OpenFile("/var/log/"+LogName+"/"+
+		LogName+"_"+date+".log", os.O_CREATE|os.O_RDWR|os.O_APPEND, 0666)
+	if err != nil {
+		return err
+	}
+
+	Logger = log.New(io.MultiWriter(FpLog, os.Stdout), LogName+"_logger: ", log.Ldate|log.Ltime)
+
+	return nil
 }
+
+// End : Close logger
+func End() {
+	_ = FpLog.Close()
+}
+
