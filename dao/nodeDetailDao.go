@@ -69,3 +69,32 @@ func CreateNodeDetail(args map[string]interface{}) (interface{}, error) {
 
 	return nodeDetail, nil
 }
+
+func DeleteNodeDetail(args map[string]interface{}) (interface{}, error) {
+	var err error
+
+	requestedUUID, ok := args["node_uuid"].(string)
+	if ok {
+		sql := "delete from node_detail where node_uuid = ?"
+		stmt, err := mysql.Db.Prepare(sql)
+		if err != nil {
+			logger.Logger.Println(err.Error())
+			return nil, err
+		}
+
+		defer func() {
+			_ = stmt.Close()
+		}()
+
+		result, err2 := stmt.Exec(requestedUUID)
+		if err2 != nil {
+			logger.Logger.Println(err2)
+			return nil, err
+		}
+		logger.Logger.Println(result.RowsAffected())
+
+		return requestedUUID, nil
+	}
+
+	return requestedUUID, err
+}
