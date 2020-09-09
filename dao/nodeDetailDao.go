@@ -62,7 +62,7 @@ func CreateNodeDetail(in *pb.ReqCreateNodeDetail) (*pb.NodeDetail, uint64, strin
 	sql := "insert into node_detail(node_uuid, cpu_model, cpu_processors, cpu_threads) values (?, ?, ?, ?)"
 	stmt, err := mysql.Db.Prepare(sql)
 	if err != nil {
-		errStr := "CreateNodeDetail(): "+err.Error()
+		errStr := "CreateNodeDetail(): " + err.Error()
 		logger.Logger.Println(errStr)
 		return nil, hccerr.FluteSQLOperationFail, errStr
 	}
@@ -73,7 +73,7 @@ func CreateNodeDetail(in *pb.ReqCreateNodeDetail) (*pb.NodeDetail, uint64, strin
 
 	_, err = stmt.Exec(nodeDetail.NodeUUID, nodeDetail.CPUModel, nodeDetail.CPUProcessors, nodeDetail.CPUThreads)
 	if err != nil {
-		errStr := "CreateNodeDetail(): "+err.Error()
+		errStr := "CreateNodeDetail(): " + err.Error()
 		logger.Logger.Println(errStr)
 		return nil, hccerr.FluteSQLOperationFail, errStr
 	}
@@ -92,7 +92,7 @@ func DeleteNodeDetail(in *pb.ReqDeleteNodeDetail) (string, uint64, string) {
 	sql := "delete from node_detail where node_uuid = ?"
 	stmt, err := mysql.Db.Prepare(sql)
 	if err != nil {
-		errStr := "DeleteNodeDetail(): "+err.Error()
+		errStr := "DeleteNodeDetail(): " + err.Error()
 		logger.Logger.Println(errStr)
 		return "", hccerr.FluteSQLOperationFail, errStr
 	}
@@ -103,7 +103,7 @@ func DeleteNodeDetail(in *pb.ReqDeleteNodeDetail) (string, uint64, string) {
 
 	result, err2 := stmt.Exec(nodeUUID)
 	if err2 != nil {
-		errStr := "DeleteNodeDetail(): "+err2.Error()
+		errStr := "DeleteNodeDetail(): " + err2.Error()
 		logger.Logger.Println(errStr)
 		return "", hccerr.FluteSQLOperationFail, errStr
 	}
