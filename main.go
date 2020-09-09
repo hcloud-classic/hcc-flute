@@ -4,11 +4,10 @@ import (
 	"fmt"
 	"hcc/flute/action/grpc/server"
 	"hcc/flute/lib/config"
+	"hcc/flute/lib/errors"
 	"hcc/flute/lib/ipmi"
 	"hcc/flute/lib/logger"
 	"hcc/flute/lib/mysql"
-	"hcc/flute/lib/syscheck"
-	"log"
 	"os"
 	"os/signal"
 	"strconv"
@@ -16,26 +15,23 @@ import (
 )
 
 func init() {
-	err := syscheck.CheckRoot()
+	err := logger.Init()
 	if err != nil {
-		log.Fatalf("syscheck.CheckRoot(): %v", err.Error())
+		errors.SetErrLogger(logger.Logger)
+		errors.NewHccError(errors.HarpInternalInitFail, "logger.Init(): "+err.Error()).Fatal()
 	}
-
-	err = logger.Init()
-	if err != nil {
-		log.Fatalf("logger.Init(): %v", err.Error())
-	}
+	errors.SetErrLogger(logger.Logger)
 
 	config.Init()
 
 	err = mysql.Init()
 	if err != nil {
-		logger.Logger.Fatalf("mysql.Init(): %v", err.Error())
+		errors.NewHccError(errors.HarpInternalInitFail, "mysql.Init(): "+err.Error()).Fatal()
 	}
 
 	err = ipmi.BMCIPParser()
 	if err != nil {
-		logger.Logger.Fatalf("ipmi.BMCIPParser(): %v", err.Error())
+		errors.NewHccError(errors.HarpInternalInitFail, "ipmi.BMCIPParser(): "+err.Error()).Fatal()
 	}
 
 	logger.Logger.Println("Starting ipmi.CheckAll(). Interval is " + strconv.Itoa(int(config.Ipmi.CheckAllIntervalMs)) + "ms")

@@ -2,7 +2,7 @@ package ipmi
 
 import (
 	"fmt"
-	pb "hcc/flute/action/grpc/rpcflute"
+	pb "hcc/flute/action/grpc/pb/rpcflute"
 	"hcc/flute/lib/config"
 	"hcc/flute/lib/logger"
 	"hcc/flute/lib/mysql"

@@ -3,7 +3,7 @@ package server
 import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
-	pb "hcc/flute/action/grpc/rpcflute"
+	pb "hcc/flute/action/grpc/pb/rpcflute"
 	"hcc/flute/lib/config"
 	"hcc/flute/lib/logger"
 	"net"

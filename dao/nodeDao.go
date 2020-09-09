@@ -2,20 +2,21 @@ package dao
 
 import (
 	dbsql "database/sql"
-	"errors"
 	"github.com/golang/protobuf/ptypes"
-	pb "hcc/flute/action/grpc/rpcflute"
+	pb "hcc/flute/action/grpc/pb/rpcflute"
+	hccerr "hcc/flute/lib/errors"
 	"hcc/flute/lib/ipmi"
 	"hcc/flute/lib/logger"
 	"hcc/flute/lib/mysql"
 	"strconv"
+	"strings"
 	"time"
 )
 
 var nodeSelectColumns = "uuid, server_uuid, bmc_mac_addr, bmc_ip, pxe_mac_addr, status, cpu_cores, memory, description, active, created_at"
 
 // ReadNode : Get all of infos of a node by UUID from database.
-func ReadNode(uuid string) (*pb.Node, error) {
+func ReadNode(uuid string) (*pb.Node, uint64, string) {
 	var node pb.Node
 
 	var serverUUID string
@@ -43,8 +44,12 @@ func ReadNode(uuid string) (*pb.Node, error) {
 		&active,
 		&createdAt)
 	if err != nil {
-		logger.Logger.Println(err)
-		return nil, err
+		errStr := "ReadNode(): " + err.Error()
+		logger.Logger.Println(errStr)
+		if strings.Contains(err.Error(), "no rows in result set") {
+			return nil, hccerr.FluteSQLNoResult, errStr
+		}
+		return nil, hccerr.FluteSQLOperationFail, errStr
 	}
 
 	node.UUID = uuid
@@ -60,15 +65,16 @@ func ReadNode(uuid string) (*pb.Node, error) {
 
 	node.CreatedAt, err = ptypes.TimestampProto(createdAt)
 	if err != nil {
-		logger.Logger.Println(err)
-		return nil, err
+		errStr := "ReadNode(): "+err.Error()
+		logger.Logger.Println(errStr)
+		return nil, hccerr.FluteInternalTimeStampConversionError, errStr
 	}
 
-	return &node, nil
+	return &node, 0, ""
 }
 
 // ReadNodeList : Get selected infos of nodes from database.
-func ReadNodeList(in *pb.ReqGetNodeList) (*pb.ResGetNodeList, error) {
+func ReadNodeList(in *pb.ReqGetNodeList) (*pb.ResGetNodeList, uint64, string) {
 	var nodeList pb.ResGetNodeList
 	var nodes []pb.Node
 	var pnodes []*pb.Node
@@ -95,7 +101,7 @@ func ReadNodeList(in *pb.ReqGetNodeList) (*pb.ResGetNodeList, error) {
 	} else if rowOk && pageOk {
 		isLimit = true
 	} else {
-		return nil, errors.New("please insert row and page arguments or leave arguments as empty state")
+		return nil, hccerr.FluteGrpcArgumentError, "ReadNodeList(): please insert row and page arguments or leave arguments as empty state"
 	}
 
 	sql := "select " + nodeSelectColumns + " from node where available = 1"
@@ -163,8 +169,9 @@ func ReadNodeList(in *pb.ReqGetNodeList) (*pb.ResGetNodeList, error) {
 	}
 
 	if err != nil {
-		logger.Logger.Println(err)
-		return nil, err
+		errStr := "ReadNode(): "+err.Error()
+		logger.Logger.Println(errStr)
+		return nil, hccerr.FluteSQLOperationFail, errStr
 	}
 	defer func() {
 		_ = stmt.Close()
@@ -173,14 +180,19 @@ func ReadNodeList(in *pb.ReqGetNodeList) (*pb.ResGetNodeList, error) {
 	for stmt.Next() {
 		err := stmt.Scan(&uuid, &serverUUID, &bmcMacAddr, &bmcIP, &pxeMacAdr, &status, &cpuCores, &memory, &description, &active, &createdAt)
 		if err != nil {
-			logger.Logger.Println(err)
-			return nil, err
+			errStr := "ReadNodeList(): " + err.Error()
+			logger.Logger.Println(errStr)
+			if strings.Contains(err.Error(), "no rows in result set") {
+				return nil, hccerr.FluteSQLNoResult, errStr
+			}
+			return nil, hccerr.FluteSQLOperationFail, errStr
 		}
 
 		_createdAt, err := ptypes.TimestampProto(createdAt)
 		if err != nil {
-			logger.Logger.Println(err)
-			return nil, err
+			errStr := "ReadNodeList(): "+err.Error()
+			logger.Logger.Println(errStr)
+			return nil, hccerr.FluteInternalTimeStampConversionError, errStr
 		}
 
 		nodes = append(nodes, pb.Node{
@@ -204,23 +216,27 @@ func ReadNodeList(in *pb.ReqGetNodeList) (*pb.ResGetNodeList, error) {
 
 	nodeList.Node = pnodes
 
-	return &nodeList, nil
+	return &nodeList, 0, ""
 }
 
 // ReadNodeNum : Get count of nodes from database.
-func ReadNodeNum() (*pb.ResGetNodeNum, error) {
+func ReadNodeNum() (*pb.ResGetNodeNum, uint64, string) {
 	var resNodeNum pb.ResGetNodeNum
 	var nodeNr int64
 
 	sql := "select count(*) from node where available = 1"
 	err := mysql.Db.QueryRow(sql).Scan(&nodeNr)
 	if err != nil {
-		logger.Logger.Println(err)
-		return nil, err
+		errStr := "ReadNodeNum(): " + err.Error()
+		logger.Logger.Println(errStr)
+		if strings.Contains(err.Error(), "no rows in result set") {
+			return nil, hccerr.FluteSQLNoResult, errStr
+		}
+		return nil, hccerr.FluteSQLOperationFail, errStr
 	}
 	resNodeNum.Num = nodeNr
 
-	return &resNodeNum, nil
+	return &resNodeNum, 0, ""
 }
 
 func checkCreateNodeArgs(reqNode *pb.Node) bool {
@@ -236,18 +252,18 @@ func checkCreateNodeArgs(reqNode *pb.Node) bool {
 }
 
 // CreateNode : Add a node to database.
-func CreateNode(in *pb.ReqCreateNode) (*pb.Node, error) {
+func CreateNode(in *pb.ReqCreateNode) (*pb.Node, uint64, string) {
 	reqNode := in.GetNode()
 	if reqNode == nil {
-		return nil, errors.New("node is nil")
+		return nil, hccerr.FluteGrpcRequestError, "CreateNode(): node is nil"
 	}
 
 	bmcIPOk := len(reqNode.BmcIP) != 0
 	descriptionOk := len(reqNode.Description) != 0
 	if !bmcIPOk || !descriptionOk {
-		return nil, errors.New("need bmcIP and description arguments")
+		return nil, hccerr.FluteGrpcRequestError, "CreateNode(): need bmcIP and description arguments"
 	} else if !bmcIPOk && checkCreateNodeArgs(reqNode) {
-		return nil, errors.New("some of arguments are missing")
+		return nil, hccerr.FluteGrpcRequestError, "CreateNode(): some of arguments are missing"
 	}
 
 	node := pb.Node{
@@ -264,27 +280,28 @@ func CreateNode(in *pb.ReqCreateNode) (*pb.Node, error) {
 	sql := "insert into node(uuid, bmc_mac_addr, bmc_ip, pxe_mac_addr, status, cpu_cores, memory, description, created_at, available) values (?, ?, ?, ?, ?, ?, ?, ?, now(), 1)"
 	stmt, err := mysql.Db.Prepare(sql)
 	if err != nil {
-		logger.Logger.Println(err)
-		return nil, err
+		errStr := "CreateNode(): "+err.Error()
+		logger.Logger.Println(errStr)
+		return nil, hccerr.FluteSQLOperationFail, errStr
 	}
 	defer func() {
 		_ = stmt.Close()
 	}()
-	result, err := stmt.Exec(node.UUID, node.BmcMacAddr, node.BmcIP, node.PXEMacAddr, node.Status, node.CPUCores, node.Memory, node.Description)
+	_, err = stmt.Exec(node.UUID, node.BmcMacAddr, node.BmcIP, node.PXEMacAddr, node.Status, node.CPUCores, node.Memory, node.Description)
 	if err != nil {
-		logger.Logger.Println(err)
-		return nil, err
+		errStr := "CreateNode(): "+err.Error()
+		logger.Logger.Println(errStr)
+		return nil, hccerr.FluteSQLOperationFail, errStr
 	}
-	logger.Logger.Println(result.LastInsertId())
 
-	return &node, nil
+	return &node, 0, ""
 }
 
 // NodePowerControl : Change power state of nodes
-func NodePowerControl(in *pb.ReqNodePowerControl) ([]string, error) {
+func NodePowerControl(in *pb.ReqNodePowerControl) ([]string, uint64, string) {
 	nodes := in.GetNode()
 	if nodes == nil {
-		return nil, errors.New("need some Nodes")
+		return nil, hccerr.FluteGrpcArgumentError, "NodePowerControl(): need some Nodes"
 	}
 
 	var results []string
@@ -358,15 +375,15 @@ func NodePowerControl(in *pb.ReqNodePowerControl) ([]string, error) {
 		results = append(results, result)
 	}
 
-	return results, nil
+	return results, 0, ""
 }
 
 // GetNodePowerState : Get power state of the node
-func GetNodePowerState(in *pb.ReqNodePowerState) (string, error) {
+func GetNodePowerState(in *pb.ReqNodePowerState) (string, uint64, string) {
 	uuid := in.GetUUID()
 	uuidOk := len(uuid) != 0
 	if !uuidOk {
-		return "", errors.New("need a uuid argument")
+		return "", hccerr.FluteGrpcArgumentError, "GetNodePowerState(): need a uuid argument"
 	}
 
 	var bmcIP string
@@ -374,23 +391,24 @@ func GetNodePowerState(in *pb.ReqNodePowerState) (string, error) {
 	sql := "select bmc_ip from node where uuid = ?"
 	err := mysql.Db.QueryRow(sql, uuid).Scan(&bmcIP)
 	if err != nil {
-		logger.Logger.Println(err)
-		return "", err
+		errStr := "GetNodePowerState(): "+err.Error()
+		logger.Logger.Println(errStr)
+		return "", hccerr.FluteSQLOperationFail, errStr
 	}
 
 	serialNo, err := ipmi.GetSerialNo(bmcIP)
 	if err != nil {
 		logger.Logger.Println(err)
-		return "", err
+		return "", hccerr.FluteInternalIPMIError, "GetNodePowerState(): "+err.Error()
 	}
 
 	result, err := ipmi.GetPowerState(bmcIP, serialNo)
 	if err != nil {
 		logger.Logger.Println(err)
-		return "", err
+		return "", hccerr.FluteInternalIPMIError, "GetNodePowerState(): "+err.Error()
 	}
 
-	return result, nil
+	return result, 0, ""
 }
 
 func checkUpdateNodeArgs(reqNode *pb.Node) bool {
@@ -409,20 +427,20 @@ func checkUpdateNodeArgs(reqNode *pb.Node) bool {
 }
 
 // UpdateNode : Update infos of the node.
-func UpdateNode(in *pb.ReqUpdateNode) (*pb.Node, error) {
+func UpdateNode(in *pb.ReqUpdateNode) (*pb.Node, uint64, string) {
 	if in.Node == nil {
-		return nil, errors.New("node is nil")
+		return nil, hccerr.FluteGrpcArgumentError, "UpdateNode(): node is nil"
 	}
 	reqNode := in.Node
 
 	requestedUUID := reqNode.GetUUID()
 	requestedUUIDOk := len(requestedUUID) != 0
 	if !requestedUUIDOk {
-		return nil, errors.New("need a uuid argument")
+		return nil, hccerr.FluteGrpcArgumentError, "UpdateNode(): need a uuid argument"
 	}
 
 	if checkUpdateNodeArgs(reqNode) {
-		return nil, errors.New("need some arguments")
+		return nil, hccerr.FluteGrpcArgumentError, "UpdateNode(): need some arguments"
 	}
 
 	var serverUUID string
@@ -502,8 +520,9 @@ func UpdateNode(in *pb.ReqUpdateNode) (*pb.Node, error) {
 
 	stmt, err := mysql.Db.Prepare(sql)
 	if err != nil {
-		logger.Logger.Println(err.Error())
-		return nil, err
+		errStr := "UpdateNode(): "+err.Error()
+		logger.Logger.Println(errStr)
+		return nil, hccerr.FluteSQLOperationFail, errStr
 	}
 	defer func() {
 		_ = stmt.Close()
@@ -511,49 +530,52 @@ func UpdateNode(in *pb.ReqUpdateNode) (*pb.Node, error) {
 
 	result, err2 := stmt.Exec(node.UUID)
 	if err2 != nil {
-		logger.Logger.Println(err2)
-		return nil, err2
+		errStr := "UpdateNode(): "+err2.Error()
+		logger.Logger.Println(errStr)
+		return nil, hccerr.FluteSQLOperationFail, errStr
 	}
 	logger.Logger.Println(result.LastInsertId())
 
-	node, err = ReadNode(node.UUID)
-	if err != nil {
-		logger.Logger.Println(err)
+	node, errCode, errStr := ReadNode(node.UUID)
+	if errCode != 0 {
+		logger.Logger.Println("UpdateNode(): " + errStr)
 	}
 
-	return node, nil
+	return node, 0, ""
 }
 
 // DeleteNode : Delete a node from database.
-func DeleteNode(in *pb.ReqDeleteNode) (string, error) {
+func DeleteNode(in *pb.ReqDeleteNode) (string, uint64, string) {
 	var err error
 
 	requestedUUID := in.GetUUID()
 	requestedUUIDOk := len(requestedUUID) != 0
 	if !requestedUUIDOk {
-		return "", errors.New("need a uuid argument")
+		return "", hccerr.FluteGrpcArgumentError, "DeleteNode(): need a uuid argument"
 	}
 
 	sql := "delete from node where uuid = ?"
 	stmt, err := mysql.Db.Prepare(sql)
 	if err != nil {
-		logger.Logger.Println(err.Error())
-		return "", err
+		errStr := "DeleteNode(): "+err.Error()
+		logger.Logger.Println(errStr)
+		return "", hccerr.FluteSQLOperationFail, errStr
 	}
 	defer func() {
 		_ = stmt.Close()
 	}()
 	result, err2 := stmt.Exec(requestedUUID)
 	if err2 != nil {
-		logger.Logger.Println(err2)
-		return "", err
+		errStr := "DeleteNode(): "+err2.Error()
+		logger.Logger.Println(errStr)
+		return "", hccerr.FluteSQLOperationFail, errStr
 	}
 	logger.Logger.Println(result.RowsAffected())
 
-	_, err = DeleteNodeDetail(&pb.ReqDeleteNodeDetail{NodeUUID: requestedUUID})
-	if err != nil {
-		logger.Logger.Println(err)
+	_, errCode, errStr := DeleteNodeDetail(&pb.ReqDeleteNodeDetail{NodeUUID: requestedUUID})
+	if errCode != 0 {
+		logger.Logger.Println("DeleteNode(): " + errStr)
 	}
 
-	return requestedUUID, nil
+	return requestedUUID, 0, ""
 }

@@ -1,14 +1,15 @@
 package dao
 
 import (
-	"errors"
-	pb "hcc/flute/action/grpc/rpcflute"
+	pb "hcc/flute/action/grpc/pb/rpcflute"
+	hccerr "hcc/flute/lib/errors"
 	"hcc/flute/lib/logger"
 	"hcc/flute/lib/mysql"
+	"strings"
 )
 
 // ReadNodeDetail : Get detail infos of the node
-func ReadNodeDetail(nodeUUID string) (*pb.NodeDetail, error) {
+func ReadNodeDetail(nodeUUID string) (*pb.NodeDetail, uint64, string) {
 	var nodeDetail pb.NodeDetail
 
 	var cpuModel string
@@ -22,8 +23,12 @@ func ReadNodeDetail(nodeUUID string) (*pb.NodeDetail, error) {
 		&cpuProcessors,
 		&cpuThreads)
 	if err != nil {
-		logger.Logger.Println(err)
-		return nil, err
+		errStr := "ReadNodeDetail(): " + err.Error()
+		logger.Logger.Println(errStr)
+		if strings.Contains(err.Error(), "no rows in result set") {
+			return nil, hccerr.FluteSQLNoResult, errStr
+		}
+		return nil, hccerr.FluteSQLOperationFail, errStr
 	}
 
 	nodeDetail.NodeUUID = nodeUUID
@@ -31,20 +36,20 @@ func ReadNodeDetail(nodeUUID string) (*pb.NodeDetail, error) {
 	nodeDetail.CPUProcessors = int32(cpuProcessors)
 	nodeDetail.CPUThreads = int32(cpuThreads)
 
-	return &nodeDetail, nil
+	return &nodeDetail, 0, ""
 }
 
 // CreateNodeDetail : Create detail infos of the node
-func CreateNodeDetail(in *pb.ReqCreateNodeDetail) (*pb.NodeDetail, error) {
+func CreateNodeDetail(in *pb.ReqCreateNodeDetail) (*pb.NodeDetail, uint64, string) {
 	reqNodeDetail := in.GetNodeDetail()
 	if reqNodeDetail == nil {
-		return nil, errors.New("nodeDetail is nil")
+		return nil, hccerr.FluteGrpcRequestError, "CreateNodeDetail(): nodeDetail is nil"
 	}
 
 	nodeUUID := reqNodeDetail.GetNodeUUID()
 	nodeUUIDOk := len(nodeUUID) != 0
 	if !nodeUUIDOk {
-		return nil, errors.New("need a nodeUUID argument")
+		return nil, hccerr.FluteGrpcRequestError, "CreateNodeDetail(): need a nodeUUID argument"
 	}
 
 	nodeDetail := pb.NodeDetail{
@@ -57,37 +62,39 @@ func CreateNodeDetail(in *pb.ReqCreateNodeDetail) (*pb.NodeDetail, error) {
 	sql := "insert into node_detail(node_uuid, cpu_model, cpu_processors, cpu_threads) values (?, ?, ?, ?)"
 	stmt, err := mysql.Db.Prepare(sql)
 	if err != nil {
-		logger.Logger.Println(err.Error())
-		return nil, err
+		errStr := "CreateNodeDetail(): "+err.Error()
+		logger.Logger.Println(errStr)
+		return nil, hccerr.FluteSQLOperationFail, errStr
 	}
 
 	defer func() {
 		_ = stmt.Close()
 	}()
 
-	result, err := stmt.Exec(nodeDetail.NodeUUID, nodeDetail.CPUModel, nodeDetail.CPUProcessors, nodeDetail.CPUThreads)
+	_, err = stmt.Exec(nodeDetail.NodeUUID, nodeDetail.CPUModel, nodeDetail.CPUProcessors, nodeDetail.CPUThreads)
 	if err != nil {
-		logger.Logger.Println(err)
-		return nil, err
+		errStr := "CreateNodeDetail(): "+err.Error()
+		logger.Logger.Println(errStr)
+		return nil, hccerr.FluteSQLOperationFail, errStr
 	}
-	logger.Logger.Println(result.LastInsertId())
 
-	return &nodeDetail, nil
+	return &nodeDetail, 0, ""
 }
 
 // DeleteNodeDetail : Delete detail infos of the node
-func DeleteNodeDetail(in *pb.ReqDeleteNodeDetail) (string, error) {
+func DeleteNodeDetail(in *pb.ReqDeleteNodeDetail) (string, uint64, string) {
 	nodeUUID := in.GetNodeUUID()
 	nodeUUIDOk := len(nodeUUID) != 0
 	if !nodeUUIDOk {
-		return "", errors.New("need a nodeUUID argument")
+		return "", hccerr.FluteGrpcRequestError, "DeleteNodeDetail(): need a nodeUUID argument"
 	}
 
 	sql := "delete from node_detail where node_uuid = ?"
 	stmt, err := mysql.Db.Prepare(sql)
 	if err != nil {
-		logger.Logger.Println(err.Error())
-		return "", err
+		errStr := "DeleteNodeDetail(): "+err.Error()
+		logger.Logger.Println(errStr)
+		return "", hccerr.FluteSQLOperationFail, errStr
 	}
 
 	defer func() {
@@ -96,10 +103,11 @@ func DeleteNodeDetail(in *pb.ReqDeleteNodeDetail) (string, error) {
 
 	result, err2 := stmt.Exec(nodeUUID)
 	if err2 != nil {
-		logger.Logger.Println(err2)
-		return "", err
+		errStr := "DeleteNodeDetail(): "+err2.Error()
+		logger.Logger.Println(errStr)
+		return "", hccerr.FluteSQLOperationFail, errStr
 	}
 	logger.Logger.Println(result.RowsAffected())
 
-	return nodeUUID, nil
+	return nodeUUID, 0, ""
 }
