@@ -273,6 +273,7 @@ func CreateNode(in *pb.ReqCreateNode) (*pb.Node, uint64, string) {
 
 	node := pb.Node{
 		UUID:        reqNode.UUID,
+		ServerUUID:  "",
 		BmcMacAddr:  reqNode.BmcMacAddr,
 		BmcIP:       reqNode.BmcIP,
 		PXEMacAddr:  reqNode.PXEMacAddr,
@@ -282,7 +283,7 @@ func CreateNode(in *pb.ReqCreateNode) (*pb.Node, uint64, string) {
 		Description: reqNode.Description,
 	}
 
-	sql := "insert into node(uuid, bmc_mac_addr, bmc_ip, pxe_mac_addr, status, cpu_cores, memory, description, created_at, available) values (?, ?, ?, ?, ?, ?, ?, ?, now(), 1)"
+	sql := "insert into node(uuid, server_uuid, bmc_mac_addr, bmc_ip, pxe_mac_addr, status, cpu_cores, memory, description, created_at, available) values (?, ?, ?, ?, ?, ?, ?, ?, ?, now(), 1)"
 	stmt, err := mysql.Db.Prepare(sql)
 	if err != nil {
 		errStr := "CreateNode(): " + err.Error()
@@ -292,7 +293,7 @@ func CreateNode(in *pb.ReqCreateNode) (*pb.Node, uint64, string) {
 	defer func() {
 		_ = stmt.Close()
 	}()
-	_, err = stmt.Exec(node.UUID, node.BmcMacAddr, node.BmcIP, node.PXEMacAddr, node.Status, node.CPUCores, node.Memory, node.Description)
+	_, err = stmt.Exec(node.UUID, node.ServerUUID, node.BmcMacAddr, node.BmcIP, node.PXEMacAddr, node.Status, node.CPUCores, node.Memory, node.Description)
 	if err != nil {
 		errStr := "CreateNode(): " + err.Error()
 		logger.Logger.Println(errStr)
