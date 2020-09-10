@@ -87,7 +87,11 @@ const (
 	// violin-novnc specific
 
 	// violin specific
-
+	createServerFailed
+	createServerRoutineError
+	getAvailableNodesError
+	getNodesError
+	serverNodePresentError
 )
 
 var actionList = [...]string{
@@ -122,26 +126,30 @@ var actionList = [...]string{
 	// violin-scheduler specific
 
 	// flute specific
-	"IPMI error ->",
 
 	// viola specific
 
 	// piano specific
 
 	// harp specific
-	"interface address lookup error",
-	"PF error",
-	"DHCPD error",
-	"file error",
-	"ifconfig error",
-	"IP address error",
-	"Subnet In Use error",
-	"Subnet not allocated error",
-	"AdaptiveIP allocated error",
+	"interface address lookup error -> ",
+	"PF error -> ",
+	"DHCPD error -> ",
+	"file error -> ",
+	"ifconfig error -> ",
+	"IP address error -> ",
+	"Subnet In Use error -> ",
+	"Subnet not allocated error -> ",
+	"AdaptiveIP allocated error -> ",
 
 	// violin-novnc specific
 
 	// violin specific
+	"Create Server failed -> ",
+	"Create Server routine error ->",
+	"Get available nodes error ->",
+	"Get nodes error ->",
+	"ServerNode present error ->",
 }
 
 var errlogger *log.Logger
