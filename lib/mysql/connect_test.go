@@ -11,7 +11,7 @@ func Test_DB_Prepare(t *testing.T) {
 	err := logger.Init()
 	if err != nil {
 		errors.SetErrLogger(logger.Logger)
-		errors.NewHccError(errors.HarpInternalInitFail, "logger.Init(): "+err.Error()).Fatal()
+		errors.NewHccError(errors.FluteInternalInitFail, "logger.Init(): "+err.Error()).Fatal()
 	}
 	errors.SetErrLogger(logger.Logger)
 	defer func() {
