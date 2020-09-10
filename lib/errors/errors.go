@@ -122,6 +122,7 @@ var actionList = [...]string{
 	// violin-scheduler specific
 
 	// flute specific
+	"IPMI error ->",
 
 	// viola specific
 
