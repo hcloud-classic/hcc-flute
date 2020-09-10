@@ -18,7 +18,7 @@ func init() {
 	err := logger.Init()
 	if err != nil {
 		errors.SetErrLogger(logger.Logger)
-		errors.NewHccError(errors.HarpInternalInitFail, "logger.Init(): "+err.Error()).Fatal()
+		errors.NewHccError(errors.FluteInternalInitFail, "logger.Init(): "+err.Error()).Fatal()
 	}
 	errors.SetErrLogger(logger.Logger)
 
@@ -26,12 +26,12 @@ func init() {
 
 	err = mysql.Init()
 	if err != nil {
-		errors.NewHccError(errors.HarpInternalInitFail, "mysql.Init(): "+err.Error()).Fatal()
+		errors.NewHccError(errors.FluteInternalInitFail, "mysql.Init(): "+err.Error()).Fatal()
 	}
 
 	err = ipmi.BMCIPParser()
 	if err != nil {
-		errors.NewHccError(errors.HarpInternalInitFail, "ipmi.BMCIPParser(): "+err.Error()).Fatal()
+		errors.NewHccError(errors.FluteInternalInitFail, "ipmi.BMCIPParser(): "+err.Error()).Fatal()
 	}
 
 	logger.Logger.Println("Starting ipmi.CheckAll(). Interval is " + strconv.Itoa(int(config.Ipmi.CheckAllIntervalMs)) + "ms")
