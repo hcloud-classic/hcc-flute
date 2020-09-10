@@ -5,10 +5,10 @@ const (
 	ViolinInternalOperationFail            = violin + internal + operationFail
 	ViolinInternalUUIDGenerationError      = violin + internal + UUIDGenerationError
 	ViolinInternalTimeStampConversionError = violin + internal + timestampConversionError
-	ViolinInternalCreateServerFailed                = violin + internal + createServerFailed
-	ViolinInternalCreateServerRoutineError                = violin + internal + createServerRoutineError
-	ViolinInternalGetAvailableNodesError = violin + internal + getAvailableNodesError
-	ViolinInternalServerNodePresentError = violin + internal + serverNodePresentError
+	ViolinInternalCreateServerFailed       = violin + internal + createServerFailed
+	ViolinInternalCreateServerRoutineError = violin + internal + createServerRoutineError
+	ViolinInternalGetAvailableNodesError   = violin + internal + getAvailableNodesError
+	ViolinInternalServerNodePresentError   = violin + internal + serverNodePresentError
 
 	ViolinGrpcArgumentError = violin + grpc + argumentError
 	ViolinGrpcRequestError  = violin + grpc + requestError
