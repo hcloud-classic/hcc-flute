@@ -1,8 +1,8 @@
 package errors
 
 const (
-	PianoInternalInitFail                 = piano + internal + initFail
-	PianoInternalOperationFail            = piano + internal + operationFail
+	PianoInternalInitFail      = piano + internal + initFail
+	PianoInternalOperationFail = piano + internal + operationFail
 
 	PianoGrpcArgumentError = piano + grpc + argumentError
 

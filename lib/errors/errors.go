@@ -63,6 +63,7 @@ const (
 	executeError
 	tokenGenerationError
 	loginFailed
+	userExist
 
 	// cello specific
 
@@ -124,6 +125,7 @@ var actionList = [...]string{
 	"Execute error -> ",
 	"Token Generation Error -> ",
 	"Login failed -> ",
+	"User exist -> ",
 
 	// cello specific
 
