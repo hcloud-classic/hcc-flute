@@ -534,13 +534,12 @@ func UpdateNode(in *pb.ReqUpdateNode) (*pb.Node, uint64, string) {
 		_ = stmt.Close()
 	}()
 
-	result, err2 := stmt.Exec(node.UUID)
+	_, err2 := stmt.Exec(node.UUID)
 	if err2 != nil {
 		errStr := "UpdateNode(): " + err2.Error()
 		logger.Logger.Println(errStr)
 		return nil, hccerr.FluteSQLOperationFail, errStr
 	}
-	logger.Logger.Println(result.LastInsertId())
 
 	node, errCode, errStr := ReadNode(node.UUID)
 	if errCode != 0 {
