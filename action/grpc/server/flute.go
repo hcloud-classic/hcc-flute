@@ -23,6 +23,7 @@ func returnNode(node *pb.Node) *pb.Node {
 		Status:      node.Status,
 		CPUCores:    node.CPUCores,
 		Memory:      node.Memory,
+		RackNumber: node.RackNumber,
 		Description: node.Description,
 		Active:      node.Active,
 		CreatedAt:   node.CreatedAt,

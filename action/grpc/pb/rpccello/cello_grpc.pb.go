@@ -17,7 +17,7 @@ const _ = grpc.SupportPackageIsVersion6
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type CelloClient interface {
-	Cello(ctx context.Context, in *ReqCello, opts ...grpc.CallOption) (*ResCello, error)
+	VolumeHandler(ctx context.Context, in *ReqVolumeHandler, opts ...grpc.CallOption) (*ResVolumeHandler, error)
 }
 
 type celloClient struct {
@@ -28,9 +28,9 @@ func NewCelloClient(cc grpc.ClientConnInterface) CelloClient {
 	return &celloClient{cc}
 }
 
-func (c *celloClient) Cello(ctx context.Context, in *ReqCello, opts ...grpc.CallOption) (*ResCello, error) {
-	out := new(ResCello)
-	err := c.cc.Invoke(ctx, "/RpcCello.Cello/Cello", in, out, opts...)
+func (c *celloClient) VolumeHandler(ctx context.Context, in *ReqVolumeHandler, opts ...grpc.CallOption) (*ResVolumeHandler, error) {
+	out := new(ResVolumeHandler)
+	err := c.cc.Invoke(ctx, "/RpcCello.Cello/VolumeHandler", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -41,7 +41,7 @@ func (c *celloClient) Cello(ctx context.Context, in *ReqCello, opts ...grpc.Call
 // All implementations must embed UnimplementedCelloServer
 // for forward compatibility
 type CelloServer interface {
-	Cello(context.Context, *ReqCello) (*ResCello, error)
+	VolumeHandler(context.Context, *ReqVolumeHandler) (*ResVolumeHandler, error)
 	mustEmbedUnimplementedCelloServer()
 }
 
@@ -49,8 +49,8 @@ type CelloServer interface {
 type UnimplementedCelloServer struct {
 }
 
-func (*UnimplementedCelloServer) Cello(context.Context, *ReqCello) (*ResCello, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method Cello not implemented")
+func (*UnimplementedCelloServer) VolumeHandler(context.Context, *ReqVolumeHandler) (*ResVolumeHandler, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method VolumeHandler not implemented")
 }
 func (*UnimplementedCelloServer) mustEmbedUnimplementedCelloServer() {}
 
@@ -58,20 +58,20 @@ func RegisterCelloServer(s *grpc.Server, srv CelloServer) {
 	s.RegisterService(&_Cello_serviceDesc, srv)
 }
 
-func _Cello_Cello_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ReqCello)
+func _Cello_VolumeHandler_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ReqVolumeHandler)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(CelloServer).Cello(ctx, in)
+		return srv.(CelloServer).VolumeHandler(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/RpcCello.Cello/Cello",
+		FullMethod: "/RpcCello.Cello/VolumeHandler",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(CelloServer).Cello(ctx, req.(*ReqCello))
+		return srv.(CelloServer).VolumeHandler(ctx, req.(*ReqVolumeHandler))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -81,8 +81,8 @@ var _Cello_serviceDesc = grpc.ServiceDesc{
 	HandlerType: (*CelloServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
-			MethodName: "Cello",
-			Handler:    _Cello_Cello_Handler,
+			MethodName: "VolumeHandler",
+			Handler:    _Cello_VolumeHandler_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
