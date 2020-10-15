@@ -64,7 +64,6 @@ func makeRackNumber(bmcIPCIDR string) (int, error) {
 	}
 
 	networkIPStr := netIPNet.IP.String()
-	fmt.Println(networkIPStr)
 	networkIPSplit := strings.Split(networkIPStr, ".")
 
 	var ipSum = 0
