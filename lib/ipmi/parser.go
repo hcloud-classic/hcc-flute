@@ -1,20 +1,27 @@
 package ipmi
 
 import (
-	"errors"
 	pb "hcc/flute/action/grpc/pb/rpcflute"
 	"hcc/flute/lib/config"
+	"hcc/flute/lib/iputil"
 	"hcc/flute/lib/logger"
 	"hcc/flute/lib/mysql"
-	"strings"
+	"net"
 )
 
 // BMCIPParser : Parse IP list of BMC and set active flags to database
 func BMCIPParser() error {
-	for _, ip := range config.Ipmi.BMCIPListArray {
-		ipPart := strings.Split(ip, ".")
-		if len(ipPart) != 4 {
-			return errors.New("BMC IP list contains invalid IP address")
+	logger.Logger.Println("Parsing 'bmc_ip_list' from 'flute.conf'...")
+
+	for _, cidr := range config.Ipmi.BMCIPListArray {
+		err := iputil.CheckCIDRStr(cidr)
+		if err != nil {
+			return err
+		}
+
+		_, _, err = net.ParseCIDR(cidr)
+		if err != nil {
+			return err
 		}
 	}
 

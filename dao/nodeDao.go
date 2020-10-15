@@ -6,14 +6,16 @@ import (
 	pb "hcc/flute/action/grpc/pb/rpcflute"
 	hccerr "hcc/flute/lib/errors"
 	"hcc/flute/lib/ipmi"
+	"hcc/flute/lib/iputil"
 	"hcc/flute/lib/logger"
 	"hcc/flute/lib/mysql"
+	"net"
 	"strconv"
 	"strings"
 	"time"
 )
 
-var nodeSelectColumns = "uuid, server_uuid, bmc_mac_addr, bmc_ip, pxe_mac_addr, status, cpu_cores, memory, description, active, created_at"
+var nodeSelectColumns = "uuid, server_uuid, bmc_mac_addr, bmc_ip, pxe_mac_addr, status, cpu_cores, memory, description, rack_number, active, created_at"
 
 // ReadNode : Get all of infos of a node by UUID from database.
 func ReadNode(uuid string) (*pb.Node, uint64, string) {
@@ -21,12 +23,13 @@ func ReadNode(uuid string) (*pb.Node, uint64, string) {
 
 	var serverUUID string
 	var bmcMacAddr string
-	var bmcIP string
+	var bmcIPCIDR string
 	var pxeMacAdr string
 	var status string
 	var cpuCores int
 	var memory int
 	var description string
+	var rackNumber int
 	var createdAt time.Time
 	var active int
 
@@ -35,12 +38,13 @@ func ReadNode(uuid string) (*pb.Node, uint64, string) {
 		&uuid,
 		&serverUUID,
 		&bmcMacAddr,
-		&bmcIP,
+		&bmcIPCIDR,
 		&pxeMacAdr,
 		&status,
 		&cpuCores,
 		&memory,
 		&description,
+		&rackNumber,
 		&active,
 		&createdAt)
 	if err != nil {
@@ -52,15 +56,24 @@ func ReadNode(uuid string) (*pb.Node, uint64, string) {
 		return nil, hccerr.FluteSQLOperationFail, errStr
 	}
 
+	netIP, netIPNet, err := net.ParseCIDR(bmcIPCIDR)
+	if err != nil {
+		return nil, hccerr.FluteGrpcRequestError, "ReadNode(): " + err.Error()
+	}
+	bmcIP := netIP.String()
+	bmcIPSubnetMask := netIPNet.Mask.String()
+
 	node.UUID = uuid
 	node.ServerUUID = serverUUID
 	node.BmcMacAddr = bmcMacAddr
 	node.BmcIP = bmcIP
+	node.BmcIPSubnetMask = bmcIPSubnetMask
 	node.PXEMacAddr = pxeMacAdr
 	node.Status = status
 	node.CPUCores = int32(cpuCores)
 	node.Memory = int32(memory)
 	node.Description = description
+	node.RackNumber = int32(rackNumber)
 	node.Active = int32(active)
 
 	node.CreatedAt, err = ptypes.TimestampProto(createdAt)
@@ -82,12 +95,13 @@ func ReadNodeList(in *pb.ReqGetNodeList) (*pb.ResGetNodeList, uint64, string) {
 	var uuid string
 	var serverUUID string
 	var bmcMacAddr string
-	var bmcIP string
+	var bmcIPCIDR string
 	var pxeMacAdr string
 	var status string
 	var cpuCores int
 	var memory int
 	var description string
+	var rackNumber int
 	var createdAt time.Time
 	var active int
 
@@ -115,8 +129,8 @@ func ReadNodeList(in *pb.ReqGetNodeList) (*pb.ResGetNodeList, uint64, string) {
 		serverUUIDOk := len(serverUUID) != 0
 		bmcMacAddr = reqNode.BmcMacAddr
 		bmcMacAddrOk := len(bmcMacAddr) != 0
-		bmcIP = reqNode.BmcIP
-		bmcIPOk := len(bmcIP) != 0
+		bmcIPCIDR = reqNode.BmcIP
+		bmcIPOk := len(bmcIPCIDR) != 0
 		pxeMacAdr = reqNode.PXEMacAddr
 		pxeMacAdrOk := len(pxeMacAdr) != 0
 		status = reqNode.Status
@@ -127,6 +141,7 @@ func ReadNodeList(in *pb.ReqGetNodeList) (*pb.ResGetNodeList, uint64, string) {
 		memoryOk := memory != 0
 		description = reqNode.Description
 		descriptionOk := len(description) != 0
+		rackNumberOk := rackNumber != 0
 		active = int(reqNode.Active)
 		// gRPC use 0 value for unset. So I will use 9 value for inactive. - ish
 		activeOk := active != 0
@@ -141,7 +156,7 @@ func ReadNodeList(in *pb.ReqGetNodeList) (*pb.ResGetNodeList, uint64, string) {
 			sql += " and bmc_mac_addr = '" + bmcMacAddr + "'"
 		}
 		if bmcIPOk {
-			sql += " and bmc_ip = '" + bmcIP + "'"
+			sql += " and bmc_ip = '" + bmcIPCIDR + "'"
 		}
 		if pxeMacAdrOk {
 			sql += " and pxe_mac_addr = '" + pxeMacAdr + "'"
@@ -157,6 +172,9 @@ func ReadNodeList(in *pb.ReqGetNodeList) (*pb.ResGetNodeList, uint64, string) {
 		}
 		if descriptionOk {
 			sql += " and description = '" + description + "'"
+		}
+		if rackNumberOk {
+			sql += " and rack_number = " + strconv.Itoa(rackNumber)
 		}
 		if activeOk {
 			sql += " and active = " + strconv.Itoa(active)
@@ -183,7 +201,7 @@ func ReadNodeList(in *pb.ReqGetNodeList) (*pb.ResGetNodeList, uint64, string) {
 	}()
 
 	for stmt.Next() {
-		err := stmt.Scan(&uuid, &serverUUID, &bmcMacAddr, &bmcIP, &pxeMacAdr, &status, &cpuCores, &memory, &description, &active, &createdAt)
+		err := stmt.Scan(&uuid, &serverUUID, &bmcMacAddr, &bmcIPCIDR, &pxeMacAdr, &status, &cpuCores, &memory, &description, &rackNumber, &active, &createdAt)
 		if err != nil {
 			errStr := "ReadNodeList(): " + err.Error()
 			logger.Logger.Println(errStr)
@@ -200,18 +218,27 @@ func ReadNodeList(in *pb.ReqGetNodeList) (*pb.ResGetNodeList, uint64, string) {
 			return nil, hccerr.FluteInternalTimeStampConversionError, errStr
 		}
 
+		netIP, netIPNet, err := net.ParseCIDR(bmcIPCIDR)
+		if err != nil {
+			return nil, hccerr.FluteGrpcRequestError, "ReadNodeList(): " + err.Error()
+		}
+		bmcIP := netIP.String()
+		bmcIPSubnetMask := net.IPv4(netIPNet.Mask[0], netIPNet.Mask[1], netIPNet.Mask[2], netIPNet.Mask[3]).To4().String()
+
 		nodes = append(nodes, pb.Node{
-			UUID:        uuid,
-			ServerUUID:  serverUUID,
-			BmcMacAddr:  bmcMacAddr,
-			BmcIP:       bmcIP,
-			PXEMacAddr:  pxeMacAdr,
-			Status:      status,
-			CPUCores:    int32(cpuCores),
-			Memory:      int32(memory),
-			Description: description,
-			Active:      int32(active),
-			CreatedAt:   _createdAt,
+			UUID:            uuid,
+			ServerUUID:      serverUUID,
+			BmcMacAddr:      bmcMacAddr,
+			BmcIP:           bmcIP,
+			BmcIPSubnetMask: bmcIPSubnetMask,
+			PXEMacAddr:      pxeMacAdr,
+			Status:          status,
+			CPUCores:        int32(cpuCores),
+			Memory:          int32(memory),
+			Description:     description,
+			RackNumber:      int32(rackNumber),
+			Active:          int32(active),
+			CreatedAt:       _createdAt,
 		})
 	}
 
@@ -271,6 +298,16 @@ func CreateNode(in *pb.ReqCreateNode) (*pb.Node, uint64, string) {
 		return nil, hccerr.FluteGrpcRequestError, "CreateNode(): some of arguments are missing"
 	}
 
+	err := iputil.CheckCIDRStr(reqNode.BmcIP)
+	if err != nil {
+		return nil, hccerr.FluteGrpcRequestError, "CreateNode(): " + err.Error()
+	}
+
+	_, _, err = net.ParseCIDR(reqNode.BmcIP)
+	if err != nil {
+		return nil, hccerr.FluteGrpcRequestError, "CreateNode(): " + err.Error()
+	}
+
 	node := pb.Node{
 		UUID:        reqNode.UUID,
 		ServerUUID:  "",
@@ -281,9 +318,10 @@ func CreateNode(in *pb.ReqCreateNode) (*pb.Node, uint64, string) {
 		CPUCores:    reqNode.CPUCores,
 		Memory:      reqNode.Memory,
 		Description: reqNode.Description,
+		RackNumber:  reqNode.RackNumber,
 	}
 
-	sql := "insert into node(uuid, server_uuid, bmc_mac_addr, bmc_ip, pxe_mac_addr, status, cpu_cores, memory, description, created_at, available) values (?, ?, ?, ?, ?, ?, ?, ?, ?, now(), 1)"
+	sql := "insert into node(uuid, server_uuid, bmc_mac_addr, bmc_ip, pxe_mac_addr, status, cpu_cores, memory, description, rack_number, created_at, available) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, now(), 1)"
 	stmt, err := mysql.Db.Prepare(sql)
 	if err != nil {
 		errStr := "CreateNode(): " + err.Error()
@@ -293,7 +331,7 @@ func CreateNode(in *pb.ReqCreateNode) (*pb.Node, uint64, string) {
 	defer func() {
 		_ = stmt.Close()
 	}()
-	_, err = stmt.Exec(node.UUID, node.ServerUUID, node.BmcMacAddr, node.BmcIP, node.PXEMacAddr, node.Status, node.CPUCores, node.Memory, node.Description)
+	_, err = stmt.Exec(node.UUID, node.ServerUUID, node.BmcMacAddr, node.BmcIP, node.PXEMacAddr, node.Status, node.CPUCores, node.Memory, node.Description, node.RackNumber)
 	if err != nil {
 		errStr := "CreateNode(): " + err.Error()
 		logger.Logger.Println(errStr)
@@ -333,17 +371,25 @@ func NodePowerControl(in *pb.ReqNodePowerControl) ([]string, uint64, string) {
 			continue
 		}
 
+		var bmcIPCIDR string
 		var bmcIP string
+		var netIP net.IP
 		var result string
 		var serialNo string
 
 		sql := "select bmc_ip from node where uuid = ?"
-		err := mysql.Db.QueryRow(sql, node.UUID).Scan(&bmcIP)
+		err := mysql.Db.QueryRow(sql, node.UUID).Scan(&bmcIPCIDR)
 		if err != nil {
 			result = err.Error()
 			logger.Logger.Println("NodePowerControl(): " + err.Error())
 			goto APPEND
 		}
+
+		netIP, _, err = net.ParseCIDR(bmcIPCIDR)
+		if err != nil {
+			return nil, hccerr.FluteGrpcRequestError, "NodePowerControl(): " + err.Error()
+		}
+		bmcIP = netIP.String()
 
 		serialNo, err = ipmi.GetSerialNo(bmcIP)
 		if err != nil {
@@ -392,15 +438,21 @@ func GetNodePowerState(in *pb.ReqNodePowerState) (string, uint64, string) {
 		return "", hccerr.FluteGrpcArgumentError, "GetNodePowerState(): need a uuid argument"
 	}
 
-	var bmcIP string
+	var bmcIPCIDR string
 
 	sql := "select bmc_ip from node where uuid = ?"
-	err := mysql.Db.QueryRow(sql, uuid).Scan(&bmcIP)
+	err := mysql.Db.QueryRow(sql, uuid).Scan(&bmcIPCIDR)
 	if err != nil {
 		errStr := "GetNodePowerState(): " + err.Error()
 		logger.Logger.Println(errStr)
 		return "", hccerr.FluteSQLOperationFail, errStr
 	}
+
+	netIP, _, err := net.ParseCIDR(bmcIPCIDR)
+	if err != nil {
+		return "", hccerr.FluteGrpcRequestError, "GetNodePowerState(): " + err.Error()
+	}
+	bmcIP := netIP.String()
 
 	serialNo, err := ipmi.GetSerialNo(bmcIP)
 	if err != nil {
@@ -426,10 +478,11 @@ func checkUpdateNodeArgs(reqNode *pb.Node) bool {
 	cpuCoresOk := reqNode.CPUCores != 0
 	memoryOk := reqNode.Memory != 0
 	descriptionOk := len(reqNode.Description) != 0
+	rackNumberOk := reqNode.RackNumber != 0
 	// gRPC use 0 value for unset. So I will use 9 value for inactive. - ish
 	activeOk := reqNode.Active != 0
 
-	return !serverUUIDOk && !bmcMacAddrOk && !bmcIPOk && !pxeMacAdrOk && !statusOk && !cpuCoresOk && !memoryOk && !descriptionOk && !activeOk
+	return !serverUUIDOk && !bmcMacAddrOk && !bmcIPOk && !pxeMacAdrOk && !statusOk && !cpuCoresOk && !memoryOk && !descriptionOk && !rackNumberOk && !activeOk
 }
 
 // UpdateNode : Update infos of the node.
@@ -457,6 +510,7 @@ func UpdateNode(in *pb.ReqUpdateNode) (*pb.Node, uint64, string) {
 	var cpuCores int
 	var memory int
 	var description string
+	var rackNumber int
 	var active int
 
 	serverUUID = in.GetNode().ServerUUID
@@ -475,9 +529,20 @@ func UpdateNode(in *pb.ReqUpdateNode) (*pb.Node, uint64, string) {
 	memoryOk := memory != 0
 	description = in.GetNode().Description
 	descriptionOk := len(description) != 0
+	rackNumberOk := rackNumber != 0
 	active = int(in.GetNode().Active)
 	// gRPC use 0 value for unset. So I will use 9 value for inactive. - ish
 	activeOk := active != 0
+
+	err := iputil.CheckCIDRStr(bmcIP)
+	if err != nil {
+		return nil, hccerr.FluteGrpcRequestError, "UpdateNode(): " + err.Error()
+	}
+
+	_, _, err = net.ParseCIDR(bmcIP)
+	if err != nil {
+		return nil, hccerr.FluteGrpcRequestError, "UpdateNode(): " + err.Error()
+	}
 
 	node := new(pb.Node)
 	node.ServerUUID = serverUUID
@@ -489,6 +554,7 @@ func UpdateNode(in *pb.ReqUpdateNode) (*pb.Node, uint64, string) {
 	node.CPUCores = int32(cpuCores)
 	node.Memory = int32(memory)
 	node.Description = description
+	node.RackNumber = int32(rackNumber)
 	node.Active = int32(active)
 
 	sql := "update node set"
@@ -516,6 +582,9 @@ func UpdateNode(in *pb.ReqUpdateNode) (*pb.Node, uint64, string) {
 	}
 	if descriptionOk {
 		updateSet += " description = '" + description + "', "
+	}
+	if rackNumberOk {
+		updateSet += " rack_number = " + strconv.Itoa(rackNumber) + ", "
 	}
 	if activeOk {
 		updateSet += " active = " + strconv.Itoa(active) + ", "
