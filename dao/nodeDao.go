@@ -211,6 +211,11 @@ func ReadNodeList(in *pb.ReqGetNodeList) (*pb.ResGetNodeList, uint64, string) {
 			return nil, hccerr.FluteSQLOperationFail, errStr
 		}
 
+		if uuid == "" || pxeMacAdr == "" || cpuCores == 0 || memory == 0 {
+			logger.Logger.Println("ReadNodeList(): " + bmcIPCIDR + "'s fields have not yet been filled.")
+			continue
+		}
+
 		_createdAt, err := ptypes.TimestampProto(createdAt)
 		if err != nil {
 			errStr := "ReadNodeList(): " + err.Error()
