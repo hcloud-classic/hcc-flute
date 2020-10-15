@@ -597,6 +597,10 @@ func UpdateNode(in *pb.ReqUpdateNode) (*pb.Node, uint64, string) {
 		updateSet += " rack_number = " + strconv.Itoa(rackNumber) + ", "
 	}
 	if activeOk {
+		// gRPC use 0 value for unset. So I will use 9 value for inactive. - ish
+		if active != 1 && active != 9 {
+			return nil, hccerr.FluteGrpcRequestError, "active value should be 1 for active or 9 for inactive"
+		}
 		updateSet += " active = " + strconv.Itoa(active) + ", "
 	}
 	sql += updateSet[0:len(updateSet)-2] + " where uuid = ?"
