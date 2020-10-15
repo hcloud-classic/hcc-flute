@@ -29,7 +29,7 @@ func Init() error {
 		return err
 	}
 
-	logger.Logger.Println("db is connected")
+	logger.Logger.Println("Connected to MySQL database")
 
 	return nil
 }
