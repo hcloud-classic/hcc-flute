@@ -223,6 +223,11 @@ func ReadNodeList(in *pb.ReqGetNodeList) (*pb.ResGetNodeList, uint64, string) {
 			return nil, hccerr.FluteInternalTimeStampConversionError, errStr
 		}
 
+		// gRPC use 0 value for unset. So I will use 9 value for inactive. - ish
+		if active == 9 {
+			active = 0
+		}
+
 		netIP, netIPNet, err := net.ParseCIDR(bmcIPCIDR)
 		if err != nil {
 			return nil, hccerr.FluteGrpcRequestError, "ReadNodeList(): " + err.Error()
