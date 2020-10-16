@@ -28,7 +28,7 @@ func GrpcStackToHcc(esg *[]*errg.HccError) *errh.HccErrorStack {
 
 func HccStackToGrpc(esh *errh.HccErrorStack) []*errg.HccError {
 	ges := []*errg.HccError{}
-	for i := esh.Len(); i >= 0; i-- {
+	for i := 0; i <= esh.Len(); i++ {
 		ge := &errg.HccError{ErrCode: (*esh)[i].ErrCode, ErrText: (*esh)[i].ErrText}
 		ges = append(ges, ge)
 	}
