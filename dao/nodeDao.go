@@ -544,16 +544,6 @@ func UpdateNode(in *pb.ReqUpdateNode) (*pb.Node, uint64, string) {
 	// gRPC use 0 value for unset. So I will use 9 value for inactive. - ish
 	activeOk := active != 0
 
-	err := iputil.CheckCIDRStr(bmcIP)
-	if err != nil {
-		return nil, hccerr.FluteGrpcRequestError, "UpdateNode(): " + err.Error()
-	}
-
-	_, _, err = net.ParseCIDR(bmcIP)
-	if err != nil {
-		return nil, hccerr.FluteGrpcRequestError, "UpdateNode(): " + err.Error()
-	}
-
 	node := new(pb.Node)
 	node.ServerUUID = serverUUID
 	node.UUID = requestedUUID
@@ -576,6 +566,16 @@ func UpdateNode(in *pb.ReqUpdateNode) (*pb.Node, uint64, string) {
 		updateSet += " bmc_mac_addr = '" + bmcMacAddr + "', "
 	}
 	if bmcIPOk {
+		err := iputil.CheckCIDRStr(bmcIP)
+		if err != nil {
+			return nil, hccerr.FluteGrpcRequestError, "UpdateNode(): " + err.Error()
+		}
+
+		_, _, err = net.ParseCIDR(bmcIP)
+		if err != nil {
+			return nil, hccerr.FluteGrpcRequestError, "UpdateNode(): " + err.Error()
+		}
+
 		updateSet += " bmc_ip = '" + bmcIP + "', "
 	}
 	if pxeMacAdrOk {
