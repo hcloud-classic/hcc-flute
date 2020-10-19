@@ -1452,7 +1452,7 @@ func (x *ResDeleteAdaptiveIPServer) GetHccErrorStack() []*rpcmsgType.HccError {
 }
 
 // DHCPD
-type ReqCreateDHPCDConf struct {
+type ReqCreateDHCPDConf struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
@@ -1461,8 +1461,8 @@ type ReqCreateDHPCDConf struct {
 	NodeUUIDs  string `protobuf:"bytes,2,opt,name=nodeUUIDs,proto3" json:"nodeUUIDs,omitempty"`
 }
 
-func (x *ReqCreateDHPCDConf) Reset() {
-	*x = ReqCreateDHPCDConf{}
+func (x *ReqCreateDHCPDConf) Reset() {
+	*x = ReqCreateDHCPDConf{}
 	if protoimpl.UnsafeEnabled {
 		mi := &file_harp_proto_msgTypes[26]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -1470,13 +1470,13 @@ func (x *ReqCreateDHPCDConf) Reset() {
 	}
 }
 
-func (x *ReqCreateDHPCDConf) String() string {
+func (x *ReqCreateDHCPDConf) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*ReqCreateDHPCDConf) ProtoMessage() {}
+func (*ReqCreateDHCPDConf) ProtoMessage() {}
 
-func (x *ReqCreateDHPCDConf) ProtoReflect() protoreflect.Message {
+func (x *ReqCreateDHCPDConf) ProtoReflect() protoreflect.Message {
 	mi := &file_harp_proto_msgTypes[26]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -1488,26 +1488,26 @@ func (x *ReqCreateDHPCDConf) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use ReqCreateDHPCDConf.ProtoReflect.Descriptor instead.
-func (*ReqCreateDHPCDConf) Descriptor() ([]byte, []int) {
+// Deprecated: Use ReqCreateDHCPDConf.ProtoReflect.Descriptor instead.
+func (*ReqCreateDHCPDConf) Descriptor() ([]byte, []int) {
 	return file_harp_proto_rawDescGZIP(), []int{26}
 }
 
-func (x *ReqCreateDHPCDConf) GetSubnetUUID() string {
+func (x *ReqCreateDHCPDConf) GetSubnetUUID() string {
 	if x != nil {
 		return x.SubnetUUID
 	}
 	return ""
 }
 
-func (x *ReqCreateDHPCDConf) GetNodeUUIDs() string {
+func (x *ReqCreateDHCPDConf) GetNodeUUIDs() string {
 	if x != nil {
 		return x.NodeUUIDs
 	}
 	return ""
 }
 
-type ResCreateDHPCDConf struct {
+type ResCreateDHCPDConf struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
@@ -1516,8 +1516,8 @@ type ResCreateDHPCDConf struct {
 	HccErrorStack []*rpcmsgType.HccError `protobuf:"bytes,2,rep,name=hccErrorStack,proto3" json:"hccErrorStack,omitempty"`
 }
 
-func (x *ResCreateDHPCDConf) Reset() {
-	*x = ResCreateDHPCDConf{}
+func (x *ResCreateDHCPDConf) Reset() {
+	*x = ResCreateDHCPDConf{}
 	if protoimpl.UnsafeEnabled {
 		mi := &file_harp_proto_msgTypes[27]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -1525,13 +1525,13 @@ func (x *ResCreateDHPCDConf) Reset() {
 	}
 }
 
-func (x *ResCreateDHPCDConf) String() string {
+func (x *ResCreateDHCPDConf) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*ResCreateDHPCDConf) ProtoMessage() {}
+func (*ResCreateDHCPDConf) ProtoMessage() {}
 
-func (x *ResCreateDHPCDConf) ProtoReflect() protoreflect.Message {
+func (x *ResCreateDHCPDConf) ProtoReflect() protoreflect.Message {
 	mi := &file_harp_proto_msgTypes[27]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -1543,26 +1543,26 @@ func (x *ResCreateDHPCDConf) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use ResCreateDHPCDConf.ProtoReflect.Descriptor instead.
-func (*ResCreateDHPCDConf) Descriptor() ([]byte, []int) {
+// Deprecated: Use ResCreateDHCPDConf.ProtoReflect.Descriptor instead.
+func (*ResCreateDHCPDConf) Descriptor() ([]byte, []int) {
 	return file_harp_proto_rawDescGZIP(), []int{27}
 }
 
-func (x *ResCreateDHPCDConf) GetResult() string {
+func (x *ResCreateDHCPDConf) GetResult() string {
 	if x != nil {
 		return x.Result
 	}
 	return ""
 }
 
-func (x *ResCreateDHPCDConf) GetHccErrorStack() []*rpcmsgType.HccError {
+func (x *ResCreateDHCPDConf) GetHccErrorStack() []*rpcmsgType.HccError {
 	if x != nil {
 		return x.HccErrorStack
 	}
 	return nil
 }
 
-type ReqDeleteDHPCDConf struct {
+type ReqDeleteDHCPDConf struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
@@ -1570,8 +1570,8 @@ type ReqDeleteDHPCDConf struct {
 	SubnetUUID string `protobuf:"bytes,1,opt,name=subnetUUID,proto3" json:"subnetUUID,omitempty"`
 }
 
-func (x *ReqDeleteDHPCDConf) Reset() {
-	*x = ReqDeleteDHPCDConf{}
+func (x *ReqDeleteDHCPDConf) Reset() {
+	*x = ReqDeleteDHCPDConf{}
 	if protoimpl.UnsafeEnabled {
 		mi := &file_harp_proto_msgTypes[28]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -1579,13 +1579,13 @@ func (x *ReqDeleteDHPCDConf) Reset() {
 	}
 }
 
-func (x *ReqDeleteDHPCDConf) String() string {
+func (x *ReqDeleteDHCPDConf) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*ReqDeleteDHPCDConf) ProtoMessage() {}
+func (*ReqDeleteDHCPDConf) ProtoMessage() {}
 
-func (x *ReqDeleteDHPCDConf) ProtoReflect() protoreflect.Message {
+func (x *ReqDeleteDHCPDConf) ProtoReflect() protoreflect.Message {
 	mi := &file_harp_proto_msgTypes[28]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -1597,19 +1597,19 @@ func (x *ReqDeleteDHPCDConf) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use ReqDeleteDHPCDConf.ProtoReflect.Descriptor instead.
-func (*ReqDeleteDHPCDConf) Descriptor() ([]byte, []int) {
+// Deprecated: Use ReqDeleteDHCPDConf.ProtoReflect.Descriptor instead.
+func (*ReqDeleteDHCPDConf) Descriptor() ([]byte, []int) {
 	return file_harp_proto_rawDescGZIP(), []int{28}
 }
 
-func (x *ReqDeleteDHPCDConf) GetSubnetUUID() string {
+func (x *ReqDeleteDHCPDConf) GetSubnetUUID() string {
 	if x != nil {
 		return x.SubnetUUID
 	}
 	return ""
 }
 
-type ResDeleteDHPCDConf struct {
+type ResDeleteDHCPDConf struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
@@ -1618,8 +1618,8 @@ type ResDeleteDHPCDConf struct {
 	HccErrorStack []*rpcmsgType.HccError `protobuf:"bytes,2,rep,name=hccErrorStack,proto3" json:"hccErrorStack,omitempty"`
 }
 
-func (x *ResDeleteDHPCDConf) Reset() {
-	*x = ResDeleteDHPCDConf{}
+func (x *ResDeleteDHCPDConf) Reset() {
+	*x = ResDeleteDHCPDConf{}
 	if protoimpl.UnsafeEnabled {
 		mi := &file_harp_proto_msgTypes[29]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -1627,13 +1627,13 @@ func (x *ResDeleteDHPCDConf) Reset() {
 	}
 }
 
-func (x *ResDeleteDHPCDConf) String() string {
+func (x *ResDeleteDHCPDConf) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*ResDeleteDHPCDConf) ProtoMessage() {}
+func (*ResDeleteDHCPDConf) ProtoMessage() {}
 
-func (x *ResDeleteDHPCDConf) ProtoReflect() protoreflect.Message {
+func (x *ResDeleteDHCPDConf) ProtoReflect() protoreflect.Message {
 	mi := &file_harp_proto_msgTypes[29]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -1645,19 +1645,19 @@ func (x *ResDeleteDHPCDConf) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use ResDeleteDHPCDConf.ProtoReflect.Descriptor instead.
-func (*ResDeleteDHPCDConf) Descriptor() ([]byte, []int) {
+// Deprecated: Use ResDeleteDHCPDConf.ProtoReflect.Descriptor instead.
+func (*ResDeleteDHCPDConf) Descriptor() ([]byte, []int) {
 	return file_harp_proto_rawDescGZIP(), []int{29}
 }
 
-func (x *ResDeleteDHPCDConf) GetResult() string {
+func (x *ResDeleteDHCPDConf) GetResult() string {
 	if x != nil {
 		return x.Result
 	}
 	return ""
 }
 
-func (x *ResDeleteDHPCDConf) GetHccErrorStack() []*rpcmsgType.HccError {
+func (x *ResDeleteDHCPDConf) GetHccErrorStack() []*rpcmsgType.HccError {
 	if x != nil {
 		return x.HccErrorStack
 	}
@@ -1844,23 +1844,23 @@ var file_harp_proto_rawDesc = []byte{
 	0x6f, 0x72, 0x53, 0x74, 0x61, 0x63, 0x6b, 0x18, 0x02, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x11, 0x2e,
 	0x4d, 0x73, 0x67, 0x54, 0x79, 0x70, 0x65, 0x2e, 0x48, 0x63, 0x63, 0x45, 0x72, 0x72, 0x6f, 0x72,
 	0x52, 0x0d, 0x68, 0x63, 0x63, 0x45, 0x72, 0x72, 0x6f, 0x72, 0x53, 0x74, 0x61, 0x63, 0x6b, 0x22,
-	0x52, 0x0a, 0x12, 0x52, 0x65, 0x71, 0x43, 0x72, 0x65, 0x61, 0x74, 0x65, 0x44, 0x48, 0x50, 0x43,
+	0x52, 0x0a, 0x12, 0x52, 0x65, 0x71, 0x43, 0x72, 0x65, 0x61, 0x74, 0x65, 0x44, 0x48, 0x43, 0x50,
 	0x44, 0x43, 0x6f, 0x6e, 0x66, 0x12, 0x1e, 0x0a, 0x0a, 0x73, 0x75, 0x62, 0x6e, 0x65, 0x74, 0x55,
 	0x55, 0x49, 0x44, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x0a, 0x73, 0x75, 0x62, 0x6e, 0x65,
 	0x74, 0x55, 0x55, 0x49, 0x44, 0x12, 0x1c, 0x0a, 0x09, 0x6e, 0x6f, 0x64, 0x65, 0x55, 0x55, 0x49,
 	0x44, 0x73, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x52, 0x09, 0x6e, 0x6f, 0x64, 0x65, 0x55, 0x55,
 	0x49, 0x44, 0x73, 0x22, 0x65, 0x0a, 0x12, 0x52, 0x65, 0x73, 0x43, 0x72, 0x65, 0x61, 0x74, 0x65,
-	0x44, 0x48, 0x50, 0x43, 0x44, 0x43, 0x6f, 0x6e, 0x66, 0x12, 0x16, 0x0a, 0x06, 0x72, 0x65, 0x73,
+	0x44, 0x48, 0x43, 0x50, 0x44, 0x43, 0x6f, 0x6e, 0x66, 0x12, 0x16, 0x0a, 0x06, 0x72, 0x65, 0x73,
 	0x75, 0x6c, 0x74, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x06, 0x72, 0x65, 0x73, 0x75, 0x6c,
 	0x74, 0x12, 0x37, 0x0a, 0x0d, 0x68, 0x63, 0x63, 0x45, 0x72, 0x72, 0x6f, 0x72, 0x53, 0x74, 0x61,
 	0x63, 0x6b, 0x18, 0x02, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x11, 0x2e, 0x4d, 0x73, 0x67, 0x54, 0x79,
 	0x70, 0x65, 0x2e, 0x48, 0x63, 0x63, 0x45, 0x72, 0x72, 0x6f, 0x72, 0x52, 0x0d, 0x68, 0x63, 0x63,
 	0x45, 0x72, 0x72, 0x6f, 0x72, 0x53, 0x74, 0x61, 0x63, 0x6b, 0x22, 0x34, 0x0a, 0x12, 0x52, 0x65,
-	0x71, 0x44, 0x65, 0x6c, 0x65, 0x74, 0x65, 0x44, 0x48, 0x50, 0x43, 0x44, 0x43, 0x6f, 0x6e, 0x66,
+	0x71, 0x44, 0x65, 0x6c, 0x65, 0x74, 0x65, 0x44, 0x48, 0x43, 0x50, 0x44, 0x43, 0x6f, 0x6e, 0x66,
 	0x12, 0x1e, 0x0a, 0x0a, 0x73, 0x75, 0x62, 0x6e, 0x65, 0x74, 0x55, 0x55, 0x49, 0x44, 0x18, 0x01,
 	0x20, 0x01, 0x28, 0x09, 0x52, 0x0a, 0x73, 0x75, 0x62, 0x6e, 0x65, 0x74, 0x55, 0x55, 0x49, 0x44,
-	0x22, 0x65, 0x0a, 0x12, 0x52, 0x65, 0x73, 0x44, 0x65, 0x6c, 0x65, 0x74, 0x65, 0x44, 0x48, 0x50,
-	0x43, 0x44, 0x43, 0x6f, 0x6e, 0x66, 0x12, 0x16, 0x0a, 0x06, 0x72, 0x65, 0x73, 0x75, 0x6c, 0x74,
+	0x22, 0x65, 0x0a, 0x12, 0x52, 0x65, 0x73, 0x44, 0x65, 0x6c, 0x65, 0x74, 0x65, 0x44, 0x48, 0x43,
+	0x50, 0x44, 0x43, 0x6f, 0x6e, 0x66, 0x12, 0x16, 0x0a, 0x06, 0x72, 0x65, 0x73, 0x75, 0x6c, 0x74,
 	0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x06, 0x72, 0x65, 0x73, 0x75, 0x6c, 0x74, 0x12, 0x37,
 	0x0a, 0x0d, 0x68, 0x63, 0x63, 0x45, 0x72, 0x72, 0x6f, 0x72, 0x53, 0x74, 0x61, 0x63, 0x6b, 0x18,
 	0x02, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x11, 0x2e, 0x4d, 0x73, 0x67, 0x54, 0x79, 0x70, 0x65, 0x2e,
@@ -1943,16 +1943,16 @@ var file_harp_proto_rawDesc = []byte{
 	0x74, 0x69, 0x76, 0x65, 0x49, 0x50, 0x53, 0x65, 0x72, 0x76, 0x65, 0x72, 0x1a, 0x22, 0x2e, 0x52,
 	0x70, 0x63, 0x48, 0x61, 0x72, 0x70, 0x2e, 0x52, 0x65, 0x73, 0x44, 0x65, 0x6c, 0x65, 0x74, 0x65,
 	0x41, 0x64, 0x61, 0x70, 0x74, 0x69, 0x76, 0x65, 0x49, 0x50, 0x53, 0x65, 0x72, 0x76, 0x65, 0x72,
-	0x22, 0x00, 0x12, 0x4d, 0x0a, 0x0f, 0x43, 0x72, 0x65, 0x61, 0x74, 0x65, 0x44, 0x48, 0x50, 0x43,
+	0x22, 0x00, 0x12, 0x4d, 0x0a, 0x0f, 0x43, 0x72, 0x65, 0x61, 0x74, 0x65, 0x44, 0x48, 0x43, 0x50,
 	0x44, 0x43, 0x6f, 0x6e, 0x66, 0x12, 0x1b, 0x2e, 0x52, 0x70, 0x63, 0x48, 0x61, 0x72, 0x70, 0x2e,
-	0x52, 0x65, 0x71, 0x43, 0x72, 0x65, 0x61, 0x74, 0x65, 0x44, 0x48, 0x50, 0x43, 0x44, 0x43, 0x6f,
+	0x52, 0x65, 0x71, 0x43, 0x72, 0x65, 0x61, 0x74, 0x65, 0x44, 0x48, 0x43, 0x50, 0x44, 0x43, 0x6f,
 	0x6e, 0x66, 0x1a, 0x1b, 0x2e, 0x52, 0x70, 0x63, 0x48, 0x61, 0x72, 0x70, 0x2e, 0x52, 0x65, 0x73,
-	0x43, 0x72, 0x65, 0x61, 0x74, 0x65, 0x44, 0x48, 0x50, 0x43, 0x44, 0x43, 0x6f, 0x6e, 0x66, 0x22,
-	0x00, 0x12, 0x4d, 0x0a, 0x0f, 0x44, 0x65, 0x6c, 0x65, 0x74, 0x65, 0x44, 0x48, 0x50, 0x43, 0x44,
+	0x43, 0x72, 0x65, 0x61, 0x74, 0x65, 0x44, 0x48, 0x43, 0x50, 0x44, 0x43, 0x6f, 0x6e, 0x66, 0x22,
+	0x00, 0x12, 0x4d, 0x0a, 0x0f, 0x44, 0x65, 0x6c, 0x65, 0x74, 0x65, 0x44, 0x48, 0x43, 0x50, 0x44,
 	0x43, 0x6f, 0x6e, 0x66, 0x12, 0x1b, 0x2e, 0x52, 0x70, 0x63, 0x48, 0x61, 0x72, 0x70, 0x2e, 0x52,
-	0x65, 0x71, 0x44, 0x65, 0x6c, 0x65, 0x74, 0x65, 0x44, 0x48, 0x50, 0x43, 0x44, 0x43, 0x6f, 0x6e,
+	0x65, 0x71, 0x44, 0x65, 0x6c, 0x65, 0x74, 0x65, 0x44, 0x48, 0x43, 0x50, 0x44, 0x43, 0x6f, 0x6e,
 	0x66, 0x1a, 0x1b, 0x2e, 0x52, 0x70, 0x63, 0x48, 0x61, 0x72, 0x70, 0x2e, 0x52, 0x65, 0x73, 0x44,
-	0x65, 0x6c, 0x65, 0x74, 0x65, 0x44, 0x48, 0x50, 0x43, 0x44, 0x43, 0x6f, 0x6e, 0x66, 0x22, 0x00,
+	0x65, 0x6c, 0x65, 0x74, 0x65, 0x44, 0x48, 0x43, 0x50, 0x44, 0x43, 0x6f, 0x6e, 0x66, 0x22, 0x00,
 	0x42, 0x22, 0x5a, 0x20, 0x68, 0x63, 0x63, 0x2f, 0x66, 0x6c, 0x75, 0x74, 0x65, 0x2f, 0x61, 0x63,
 	0x74, 0x69, 0x6f, 0x6e, 0x2f, 0x67, 0x72, 0x70, 0x63, 0x2f, 0x70, 0x62, 0x2f, 0x72, 0x70, 0x63,
 	0x68, 0x61, 0x72, 0x70, 0x50, 0x00, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
@@ -1998,10 +1998,10 @@ var file_harp_proto_goTypes = []interface{}{
 	(*ResGetAdaptiveIPServerNum)(nil),            // 23: RpcHarp.ResGetAdaptiveIPServerNum
 	(*ReqDeleteAdaptiveIPServer)(nil),            // 24: RpcHarp.ReqDeleteAdaptiveIPServer
 	(*ResDeleteAdaptiveIPServer)(nil),            // 25: RpcHarp.ResDeleteAdaptiveIPServer
-	(*ReqCreateDHPCDConf)(nil),                   // 26: RpcHarp.ReqCreateDHPCDConf
-	(*ResCreateDHPCDConf)(nil),                   // 27: RpcHarp.ResCreateDHPCDConf
-	(*ReqDeleteDHPCDConf)(nil),                   // 28: RpcHarp.ReqDeleteDHPCDConf
-	(*ResDeleteDHPCDConf)(nil),                   // 29: RpcHarp.ResDeleteDHPCDConf
+	(*ReqCreateDHCPDConf)(nil),                   // 26: RpcHarp.ReqCreateDHCPDConf
+	(*ResCreateDHCPDConf)(nil),                   // 27: RpcHarp.ResCreateDHCPDConf
+	(*ReqDeleteDHCPDConf)(nil),                   // 28: RpcHarp.ReqDeleteDHCPDConf
+	(*ResDeleteDHCPDConf)(nil),                   // 29: RpcHarp.ResDeleteDHCPDConf
 	(*rpcmsgType.Subnet)(nil),                    // 30: MsgType.Subnet
 	(*rpcmsgType.HccError)(nil),                  // 31: MsgType.HccError
 	(*rpcmsgType.AdaptiveIPSetting)(nil),         // 32: MsgType.AdaptiveIPSetting
@@ -2041,8 +2041,8 @@ var file_harp_proto_depIdxs = []int32{
 	31, // 28: RpcHarp.ResGetAdaptiveIPServerList.hccErrorStack:type_name -> MsgType.HccError
 	31, // 29: RpcHarp.ResGetAdaptiveIPServerNum.hccErrorStack:type_name -> MsgType.HccError
 	31, // 30: RpcHarp.ResDeleteAdaptiveIPServer.hccErrorStack:type_name -> MsgType.HccError
-	31, // 31: RpcHarp.ResCreateDHPCDConf.hccErrorStack:type_name -> MsgType.HccError
-	31, // 32: RpcHarp.ResDeleteDHPCDConf.hccErrorStack:type_name -> MsgType.HccError
+	31, // 31: RpcHarp.ResCreateDHCPDConf.hccErrorStack:type_name -> MsgType.HccError
+	31, // 32: RpcHarp.ResDeleteDHCPDConf.hccErrorStack:type_name -> MsgType.HccError
 	0,  // 33: RpcHarp.Harp.CreateSubnet:input_type -> RpcHarp.ReqCreateSubnet
 	2,  // 34: RpcHarp.Harp.GetSubnet:input_type -> RpcHarp.ReqGetSubnet
 	4,  // 35: RpcHarp.Harp.GetSubnetByServer:input_type -> RpcHarp.ReqGetSubnetByServer
@@ -2058,8 +2058,8 @@ var file_harp_proto_depIdxs = []int32{
 	21, // 45: RpcHarp.Harp.GetAdaptiveIPServerList:input_type -> RpcHarp.ReqGetAdaptiveIPServerList
 	35, // 46: RpcHarp.Harp.GetAdaptiveIPServerNum:input_type -> MsgType.Empty
 	24, // 47: RpcHarp.Harp.DeleteAdaptiveIPServer:input_type -> RpcHarp.ReqDeleteAdaptiveIPServer
-	26, // 48: RpcHarp.Harp.CreateDHPCDConf:input_type -> RpcHarp.ReqCreateDHPCDConf
-	28, // 49: RpcHarp.Harp.DeleteDHPCDConf:input_type -> RpcHarp.ReqDeleteDHPCDConf
+	26, // 48: RpcHarp.Harp.CreateDHCPDConf:input_type -> RpcHarp.ReqCreateDHCPDConf
+	28, // 49: RpcHarp.Harp.DeleteDHCPDConf:input_type -> RpcHarp.ReqDeleteDHCPDConf
 	1,  // 50: RpcHarp.Harp.CreateSubnet:output_type -> RpcHarp.ResCreateSubnet
 	3,  // 51: RpcHarp.Harp.GetSubnet:output_type -> RpcHarp.ResGetSubnet
 	5,  // 52: RpcHarp.Harp.GetSubnetByServer:output_type -> RpcHarp.ResGetSubnetByServer
@@ -2075,8 +2075,8 @@ var file_harp_proto_depIdxs = []int32{
 	22, // 62: RpcHarp.Harp.GetAdaptiveIPServerList:output_type -> RpcHarp.ResGetAdaptiveIPServerList
 	23, // 63: RpcHarp.Harp.GetAdaptiveIPServerNum:output_type -> RpcHarp.ResGetAdaptiveIPServerNum
 	25, // 64: RpcHarp.Harp.DeleteAdaptiveIPServer:output_type -> RpcHarp.ResDeleteAdaptiveIPServer
-	27, // 65: RpcHarp.Harp.CreateDHPCDConf:output_type -> RpcHarp.ResCreateDHPCDConf
-	29, // 66: RpcHarp.Harp.DeleteDHPCDConf:output_type -> RpcHarp.ResDeleteDHPCDConf
+	27, // 65: RpcHarp.Harp.CreateDHCPDConf:output_type -> RpcHarp.ResCreateDHCPDConf
+	29, // 66: RpcHarp.Harp.DeleteDHCPDConf:output_type -> RpcHarp.ResDeleteDHCPDConf
 	50, // [50:67] is the sub-list for method output_type
 	33, // [33:50] is the sub-list for method input_type
 	33, // [33:33] is the sub-list for extension type_name
@@ -2403,7 +2403,7 @@ func file_harp_proto_init() {
 			}
 		}
 		file_harp_proto_msgTypes[26].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*ReqCreateDHPCDConf); i {
+			switch v := v.(*ReqCreateDHCPDConf); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -2415,7 +2415,7 @@ func file_harp_proto_init() {
 			}
 		}
 		file_harp_proto_msgTypes[27].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*ResCreateDHPCDConf); i {
+			switch v := v.(*ResCreateDHCPDConf); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -2427,7 +2427,7 @@ func file_harp_proto_init() {
 			}
 		}
 		file_harp_proto_msgTypes[28].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*ReqDeleteDHPCDConf); i {
+			switch v := v.(*ReqDeleteDHCPDConf); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -2439,7 +2439,7 @@ func file_harp_proto_init() {
 			}
 		}
 		file_harp_proto_msgTypes[29].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*ResDeleteDHPCDConf); i {
+			switch v := v.(*ResDeleteDHCPDConf); i {
 			case 0:
 				return &v.state
 			case 1:
