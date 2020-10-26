@@ -281,18 +281,6 @@ func ReadNodeNum() (*pb.ResGetNodeNum, uint64, string) {
 	return &resNodeNum, 0, ""
 }
 
-func checkCreateNodeArgs(reqNode *pb.Node) bool {
-	UUIDOk := len(reqNode.UUID) != 0
-	serverUUIDOk := len(reqNode.ServerUUID) != 0
-	bmcMacAddrOk := len(reqNode.BmcMacAddr) != 0
-	pxeMacAdrOk := len(reqNode.PXEMacAddr) != 0
-	statusOk := len(reqNode.Status) != 0
-	cpuCoresOk := reqNode.CPUCores != 0
-	memoryOk := reqNode.Memory != 0
-
-	return !(UUIDOk && serverUUIDOk && bmcMacAddrOk && pxeMacAdrOk && statusOk && cpuCoresOk && memoryOk)
-}
-
 // CreateNode : Add a node to database.
 func CreateNode(in *pb.ReqCreateNode) (*pb.Node, uint64, string) {
 	reqNode := in.GetNode()
@@ -304,8 +292,6 @@ func CreateNode(in *pb.ReqCreateNode) (*pb.Node, uint64, string) {
 	descriptionOk := len(reqNode.Description) != 0
 	if !bmcIPOk || !descriptionOk {
 		return nil, hccerr.FluteGrpcRequestError, "CreateNode(): need bmcIP and description arguments"
-	} else if !bmcIPOk && checkCreateNodeArgs(reqNode) {
-		return nil, hccerr.FluteGrpcRequestError, "CreateNode(): some of arguments are missing"
 	}
 
 	err := iputil.CheckCIDRStr(reqNode.BmcIP)
@@ -319,16 +305,16 @@ func CreateNode(in *pb.ReqCreateNode) (*pb.Node, uint64, string) {
 	}
 
 	node := pb.Node{
-		UUID:        reqNode.UUID,
+		UUID:        "",
 		ServerUUID:  "",
-		BmcMacAddr:  reqNode.BmcMacAddr,
+		BmcMacAddr:  "",
 		BmcIP:       reqNode.BmcIP,
-		PXEMacAddr:  reqNode.PXEMacAddr,
-		Status:      reqNode.Status,
-		CPUCores:    reqNode.CPUCores,
-		Memory:      reqNode.Memory,
+		PXEMacAddr:  "",
+		Status:      "",
+		CPUCores:    0,
+		Memory:      0,
 		Description: reqNode.Description,
-		RackNumber:  reqNode.RackNumber,
+		RackNumber:  0,
 	}
 
 	sql := "insert into node(uuid, server_uuid, bmc_mac_addr, bmc_ip, pxe_mac_addr, status, cpu_cores, memory, description, rack_number, created_at, available) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, now(), 1)"
