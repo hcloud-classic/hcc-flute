@@ -53,6 +53,7 @@ type Quota = rpcmsgType.Quota
 type VNC = rpcmsgType.VNC
 type Volume = rpcmsgType.Volume
 type VolumeAttachment = rpcmsgType.VolumeAttachment
+type Pool = rpcmsgType.Pool
 type AdaptiveIPSetting = rpcmsgType.AdaptiveIPSetting
 type AdaptiveIPAvailableIPList = rpcmsgType.AdaptiveIPAvailableIPList
 type AdaptiveIPServer = rpcmsgType.AdaptiveIPServer

@@ -18,6 +18,7 @@ const _ = grpc.SupportPackageIsVersion6
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type CelloClient interface {
 	VolumeHandler(ctx context.Context, in *ReqVolumeHandler, opts ...grpc.CallOption) (*ResVolumeHandler, error)
+	PoolHandler(ctx context.Context, in *ReqPoolHandler, opts ...grpc.CallOption) (*ResPoolHandler, error)
 }
 
 type celloClient struct {
@@ -37,11 +38,21 @@ func (c *celloClient) VolumeHandler(ctx context.Context, in *ReqVolumeHandler, o
 	return out, nil
 }
 
+func (c *celloClient) PoolHandler(ctx context.Context, in *ReqPoolHandler, opts ...grpc.CallOption) (*ResPoolHandler, error) {
+	out := new(ResPoolHandler)
+	err := c.cc.Invoke(ctx, "/RpcCello.Cello/PoolHandler", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // CelloServer is the server API for Cello service.
 // All implementations must embed UnimplementedCelloServer
 // for forward compatibility
 type CelloServer interface {
 	VolumeHandler(context.Context, *ReqVolumeHandler) (*ResVolumeHandler, error)
+	PoolHandler(context.Context, *ReqPoolHandler) (*ResPoolHandler, error)
 	mustEmbedUnimplementedCelloServer()
 }
 
@@ -51,6 +62,9 @@ type UnimplementedCelloServer struct {
 
 func (*UnimplementedCelloServer) VolumeHandler(context.Context, *ReqVolumeHandler) (*ResVolumeHandler, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method VolumeHandler not implemented")
+}
+func (*UnimplementedCelloServer) PoolHandler(context.Context, *ReqPoolHandler) (*ResPoolHandler, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method PoolHandler not implemented")
 }
 func (*UnimplementedCelloServer) mustEmbedUnimplementedCelloServer() {}
 
@@ -76,6 +90,24 @@ func _Cello_VolumeHandler_Handler(srv interface{}, ctx context.Context, dec func
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Cello_PoolHandler_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ReqPoolHandler)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(CelloServer).PoolHandler(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/RpcCello.Cello/PoolHandler",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(CelloServer).PoolHandler(ctx, req.(*ReqPoolHandler))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 var _Cello_serviceDesc = grpc.ServiceDesc{
 	ServiceName: "RpcCello.Cello",
 	HandlerType: (*CelloServer)(nil),
@@ -83,6 +115,10 @@ var _Cello_serviceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "VolumeHandler",
 			Handler:    _Cello_VolumeHandler_Handler,
+		},
+		{
+			MethodName: "PoolHandler",
+			Handler:    _Cello_PoolHandler_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
