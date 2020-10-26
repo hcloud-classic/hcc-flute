@@ -672,13 +672,12 @@ func DeleteNode(in *pb.ReqDeleteNode) (string, uint64, string) {
 	defer func() {
 		_ = stmt.Close()
 	}()
-	result, err2 := stmt.Exec(requestedUUID)
+	_, err2 := stmt.Exec(requestedUUID)
 	if err2 != nil {
 		errStr := "DeleteNode(): " + err2.Error()
 		logger.Logger.Println(errStr)
 		return "", hccerr.FluteSQLOperationFail, errStr
 	}
-	logger.Logger.Println(result.RowsAffected())
 
 	_, errCode, errStr := DeleteNodeDetail(&pb.ReqDeleteNodeDetail{NodeUUID: requestedUUID})
 	if errCode != 0 {
