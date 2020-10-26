@@ -78,7 +78,7 @@ func makeRackNumber(bmcIPCIDR string) (int, error) {
 }
 
 // DoUpdateAllNodes : Update the database of a specific node by getting bmcIP
-func DoUpdateAllNodes(bmcIPCIDR string) {
+func DoUpdateAllNodes(bmcIPCIDR string) (string, error) {
 	if config.Ipmi.Debug == "on" {
 		logger.Logger.Println("DoUpdateAllNodes(): Updating for bmc IP " + bmcIPCIDR)
 	}
@@ -86,20 +86,20 @@ func DoUpdateAllNodes(bmcIPCIDR string) {
 	rackNumber, err := makeRackNumber(bmcIPCIDR)
 	if err != nil {
 		logger.Logger.Println("DoUpdateAllNodes(): " + err.Error())
-		return
+		return "", err
 	}
 
 	netIP, _, err := net.ParseCIDR(bmcIPCIDR)
 	if err != nil {
 		logger.Logger.Println("DoUpdateAllNodes(): " + err.Error())
-		return
+		return "", err
 	}
 	bmcIP := netIP.String()
 
 	serialNo, err := GetSerialNo(bmcIP)
 	if err != nil {
 		logger.Logger.Println(err)
-		return
+		return "", err
 	}
 
 	if config.Ipmi.Debug == "on" {
@@ -109,7 +109,7 @@ func DoUpdateAllNodes(bmcIPCIDR string) {
 	uuid, err := GetUUID(bmcIP, serialNo)
 	if err != nil {
 		logger.Logger.Println(err)
-		return
+		return "", err
 	}
 
 	if config.Ipmi.Debug == "on" {
@@ -119,7 +119,7 @@ func DoUpdateAllNodes(bmcIPCIDR string) {
 	bmcMAC, err := GetNICMac(bmcIP, int(config.Ipmi.BaseboardNICNumBMC), true)
 	if err != nil {
 		logger.Logger.Println(err)
-		return
+		return "", err
 	}
 
 	if config.Ipmi.Debug == "on" {
@@ -129,7 +129,7 @@ func DoUpdateAllNodes(bmcIPCIDR string) {
 	pxeMAC, err := GetNICMac(bmcIP, int(config.Ipmi.BaseboardNICNumPXE), false)
 	if err != nil {
 		logger.Logger.Println(err)
-		return
+		return "", err
 	}
 
 	if config.Ipmi.Debug == "on" {
@@ -139,7 +139,7 @@ func DoUpdateAllNodes(bmcIPCIDR string) {
 	processors, err := GetProcessors(bmcIP, serialNo)
 	if err != nil {
 		logger.Logger.Println(err)
-		return
+		return "", err
 	}
 
 	if config.Ipmi.Debug == "on" {
@@ -149,7 +149,7 @@ func DoUpdateAllNodes(bmcIPCIDR string) {
 	cpuCores, err := GetProcessorsCores(bmcIP, serialNo, processors)
 	if err != nil {
 		logger.Logger.Println(err)
-		return
+		return "", err
 	}
 
 	if config.Ipmi.Debug == "on" {
@@ -159,7 +159,7 @@ func DoUpdateAllNodes(bmcIPCIDR string) {
 	memory, err := GetTotalSystemMemory(bmcIP, serialNo)
 	if err != nil {
 		logger.Logger.Println(err)
-		return
+		return "", err
 	}
 
 	if config.Ipmi.Debug == "on" {
@@ -180,14 +180,14 @@ func DoUpdateAllNodes(bmcIPCIDR string) {
 	stmt, err := mysql.Db.Prepare(sql)
 	if err != nil {
 		logger.Logger.Println(err)
-		return
+		return "", err
 	}
 
 	result, err2 := stmt.Exec(node.UUID, node.BmcMacAddr, node.PXEMacAddr, node.CPUCores, node.Memory, node.RackNumber, node.BmcIP)
 	if err2 != nil {
 		logger.Logger.Println(err2)
 		_ = stmt.Close()
-		return
+		return "", err
 	}
 	_ = stmt.Close()
 
@@ -199,6 +199,8 @@ func DoUpdateAllNodes(bmcIPCIDR string) {
 			logger.Logger.Print("DoUpdateAllNodes(): result=" + strconv.Itoa(int(result)))
 		}
 	}
+
+	return uuid, nil
 }
 
 // UpdateAllNodes : Get all infos from IPMI nodes and update the database (except power state)
@@ -222,22 +224,24 @@ func UpdateAllNodes() {
 			continue
 		}
 
-		go DoUpdateAllNodes(bmcIPCIDR)
+		go func() {
+			_, _ = DoUpdateAllNodes(bmcIPCIDR)
+		}()
 	}
 }
 
 // DoUpdateStatusNodes : Get status from a specific node and update the database
-func DoUpdateStatusNodes(uuid interface{}, bmcIPCIDR string) {
+func DoUpdateStatusNodes(uuid interface{}, bmcIPCIDR string) error {
 	err := iputil.CheckCIDRStr(bmcIPCIDR)
 	if err != nil {
 		logger.Logger.Println("DoUpdateStatusNodes(): " + err.Error())
-		return
+		return err
 	}
 
 	netIP, _, err := net.ParseCIDR(bmcIPCIDR)
 	if err != nil {
 		logger.Logger.Println("DoUpdateStatusNodes(): " + err.Error())
-		return
+		return err
 	}
 	bmcIP := netIP.String()
 
@@ -245,7 +249,7 @@ func DoUpdateStatusNodes(uuid interface{}, bmcIPCIDR string) {
 		if config.Ipmi.Debug == "on" {
 			logger.Logger.Println("DoUpdateStatusNodes(): " + bmcIP + "'s UUID is currently empty. Skipping...")
 		}
-		return
+		return err
 	}
 
 	if config.Ipmi.Debug == "on" {
@@ -255,7 +259,7 @@ func DoUpdateStatusNodes(uuid interface{}, bmcIPCIDR string) {
 	serialNo, err := GetSerialNo(bmcIP)
 	if err != nil {
 		logger.Logger.Println(err)
-		return
+		return err
 	}
 
 	if config.Ipmi.Debug == "on" {
@@ -265,7 +269,7 @@ func DoUpdateStatusNodes(uuid interface{}, bmcIPCIDR string) {
 	powerState, err := GetPowerState(bmcIP, serialNo)
 	if err != nil {
 		logger.Logger.Println(err)
-		return
+		return err
 	}
 
 	if config.Ipmi.Debug == "on" {
@@ -281,14 +285,14 @@ func DoUpdateStatusNodes(uuid interface{}, bmcIPCIDR string) {
 	stmt, err := mysql.Db.Prepare(sql)
 	if err != nil {
 		logger.Logger.Println(err)
-		return
+		return err
 	}
 
 	result, err2 := stmt.Exec(node.Status, node.UUID)
 	if err2 != nil {
 		logger.Logger.Println(err2)
 		_ = stmt.Close()
-		return
+		return err
 	}
 	_ = stmt.Close()
 
@@ -300,6 +304,8 @@ func DoUpdateStatusNodes(uuid interface{}, bmcIPCIDR string) {
 			logger.Logger.Print("DoUpdateStatusNodes(): result=" + strconv.Itoa(int(result)))
 		}
 	}
+
+	return nil
 }
 
 // UpdateStatusNodes : Get status from IPMI nodes and update the database
@@ -324,22 +330,24 @@ func UpdateStatusNodes() {
 			continue
 		}
 
-		go DoUpdateStatusNodes(uuid, bmcIPCIDR)
+		go func() {
+			_ = DoUpdateStatusNodes(uuid, bmcIPCIDR)
+		}()
 	}
 }
 
 // DoUpdateNodesDetail : Get detail infos from a specific node and update the database
-func DoUpdateNodesDetail(uuid interface{}, bmcIPCIDR string) {
+func DoUpdateNodesDetail(uuid interface{}, bmcIPCIDR string) error {
 	err := iputil.CheckCIDRStr(bmcIPCIDR)
 	if err != nil {
 		logger.Logger.Println("DoUpdateNodesDetail(): " + err.Error())
-		return
+		return err
 	}
 
 	netIP, _, err := net.ParseCIDR(bmcIPCIDR)
 	if err != nil {
 		logger.Logger.Println("DoUpdateNodesDetail(): " + err.Error())
-		return
+		return err
 	}
 	bmcIP := netIP.String()
 
@@ -347,7 +355,7 @@ func DoUpdateNodesDetail(uuid interface{}, bmcIPCIDR string) {
 		if config.Ipmi.Debug == "on" {
 			logger.Logger.Println("DoUpdateNodesDetail(): " + bmcIP + "'s UUID is currently empty. Skipping...")
 		}
-		return
+		return err
 	}
 
 	if config.Ipmi.Debug == "on" {
@@ -357,7 +365,7 @@ func DoUpdateNodesDetail(uuid interface{}, bmcIPCIDR string) {
 	serialNo, err := GetSerialNo(bmcIP)
 	if err != nil {
 		logger.Logger.Println(err)
-		return
+		return err
 	}
 
 	if config.Ipmi.Debug == "on" {
@@ -367,7 +375,7 @@ func DoUpdateNodesDetail(uuid interface{}, bmcIPCIDR string) {
 	processorModel, err := GetProcessorModel(bmcIP, serialNo)
 	if err != nil {
 		logger.Logger.Println(err)
-		return
+		return err
 	}
 
 	if config.Ipmi.Debug == "on" {
@@ -377,7 +385,7 @@ func DoUpdateNodesDetail(uuid interface{}, bmcIPCIDR string) {
 	processors, err := GetProcessors(bmcIP, serialNo)
 	if err != nil {
 		logger.Logger.Println(err)
-		return
+		return err
 	}
 
 	if config.Ipmi.Debug == "on" {
@@ -387,7 +395,7 @@ func DoUpdateNodesDetail(uuid interface{}, bmcIPCIDR string) {
 	threads, err := GetProcessorsThreads(bmcIP, serialNo, processors)
 	if err != nil {
 		logger.Logger.Println(err)
-		return
+		return err
 	}
 
 	if config.Ipmi.Debug == "on" {
@@ -411,14 +419,14 @@ func DoUpdateNodesDetail(uuid interface{}, bmcIPCIDR string) {
 		stmt, err := mysql.Db.Prepare(sql)
 		if err != nil {
 			logger.Logger.Println(err)
-			return
+			return err
 		}
 
 		result, err2 := stmt.Exec(nodeDetail.NodeUUID, nodeDetail.CPUModel, nodeDetail.CPUProcessors, nodeDetail.CPUThreads)
 		if err2 != nil {
 			logger.Logger.Println(err2)
 			_ = stmt.Close()
-			return
+			return err
 		}
 		_ = stmt.Close()
 
@@ -435,14 +443,14 @@ func DoUpdateNodesDetail(uuid interface{}, bmcIPCIDR string) {
 		stmt, err := mysql.Db.Prepare(sql)
 		if err != nil {
 			logger.Logger.Println(err)
-			return
+			return err
 		}
 
 		result, err2 := stmt.Exec(nodeDetail.CPUModel, nodeDetail.CPUProcessors, nodeDetail.CPUThreads, nodeDetail.NodeUUID)
 		if err2 != nil {
 			logger.Logger.Println(err2)
 			_ = stmt.Close()
-			return
+			return err
 		}
 		_ = stmt.Close()
 
@@ -455,6 +463,8 @@ func DoUpdateNodesDetail(uuid interface{}, bmcIPCIDR string) {
 			}
 		}
 	}
+
+	return nil
 }
 
 // UpdateNodesDetail : Get detail infos from IPMI nodes and update the database
@@ -479,7 +489,9 @@ func UpdateNodesDetail() {
 			continue
 		}
 
-		go DoUpdateNodesDetail(uuid, bmcIPCIDR)
+		go func() {
+			_ = DoUpdateNodesDetail(uuid, bmcIPCIDR)
+		}()
 	}
 }
 

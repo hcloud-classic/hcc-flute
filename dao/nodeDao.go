@@ -334,7 +334,41 @@ func CreateNode(in *pb.ReqCreateNode) (*pb.Node, uint64, string) {
 		return nil, hccerr.FluteSQLOperationFail, errStr
 	}
 
-	return &node, 0, ""
+	var pbNode *pb.Node
+	var errCode uint64
+	var errText string
+
+	uuid, err := ipmi.DoUpdateAllNodes(reqNode.BmcIP)
+	if err != nil {
+		goto IPMIError
+	}
+
+	err = ipmi.DoUpdateStatusNodes(uuid, reqNode.BmcIP)
+	if err != nil {
+		goto IPMIError
+	}
+
+	err = ipmi.DoUpdateNodesDetail(uuid, reqNode.BmcIP)
+	if err != nil {
+		goto IPMIError
+	}
+
+	pbNode, errCode, errText = ReadNode(uuid)
+	if errCode != 0 {
+		return nil, errCode, "CreateNode(): ReadNode(): " + errText
+	}
+
+	return pbNode, 0, ""
+
+IPMIError:
+	sql = "delete from node where bmc_ip = ?"
+	stmt, _ = mysql.Db.Prepare(sql)
+	defer func() {
+		_ = stmt.Close()
+	}()
+	_, _ = stmt.Exec(reqNode.BmcIP)
+
+	return nil, hccerr.FluteInternalIPMIError, "CreateNode(): " + err.Error()
 }
 
 // NodePowerControl : Change power state of nodes
