@@ -82,11 +82,16 @@ func CreateNodeDetail(in *pb.ReqCreateNodeDetail) (*pb.NodeDetail, uint64, strin
 }
 
 // DeleteNodeDetail : Delete detail infos of the node
-func DeleteNodeDetail(in *pb.ReqDeleteNodeDetail) (string, uint64, string) {
+func DeleteNodeDetail(in *pb.ReqDeleteNodeDetail) (*pb.NodeDetail, uint64, string) {
 	nodeUUID := in.GetNodeUUID()
 	nodeUUIDOk := len(nodeUUID) != 0
 	if !nodeUUIDOk {
-		return "", hccerr.FluteGrpcRequestError, "DeleteNodeDetail(): need a nodeUUID argument"
+		return nil, hccerr.FluteGrpcRequestError, "DeleteNodeDetail(): need a nodeUUID argument"
+	}
+
+	nodeDetail, errCode, errText := ReadNodeDetail(nodeUUID)
+	if errCode != 0 {
+		return nil, hccerr.FluteGrpcRequestError, "DeleteNodeDetail(): " + errText
 	}
 
 	sql := "delete from node_detail where node_uuid = ?"
@@ -94,7 +99,7 @@ func DeleteNodeDetail(in *pb.ReqDeleteNodeDetail) (string, uint64, string) {
 	if err != nil {
 		errStr := "DeleteNodeDetail(): " + err.Error()
 		logger.Logger.Println(errStr)
-		return "", hccerr.FluteSQLOperationFail, errStr
+		return nil, hccerr.FluteSQLOperationFail, errStr
 	}
 
 	defer func() {
@@ -105,9 +110,9 @@ func DeleteNodeDetail(in *pb.ReqDeleteNodeDetail) (string, uint64, string) {
 	if err2 != nil {
 		errStr := "DeleteNodeDetail(): " + err2.Error()
 		logger.Logger.Println(errStr)
-		return "", hccerr.FluteSQLOperationFail, errStr
+		return nil, hccerr.FluteSQLOperationFail, errStr
 	}
 	logger.Logger.Println(result.RowsAffected())
 
-	return nodeUUID, 0, ""
+	return nodeDetail, 0, ""
 }

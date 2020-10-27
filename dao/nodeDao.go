@@ -601,13 +601,18 @@ func UpdateNode(in *pb.ReqUpdateNode) (*pb.Node, uint64, string) {
 }
 
 // DeleteNode : Delete a node from database.
-func DeleteNode(in *pb.ReqDeleteNode) (string, uint64, string) {
+func DeleteNode(in *pb.ReqDeleteNode) (*pb.Node, uint64, string) {
 	var err error
 
 	requestedUUID := in.GetUUID()
 	requestedUUIDOk := len(requestedUUID) != 0
 	if !requestedUUIDOk {
-		return "", hccerr.FluteGrpcArgumentError, "DeleteNode(): need a uuid argument"
+		return nil, hccerr.FluteGrpcArgumentError, "DeleteNode(): need a uuid argument"
+	}
+
+	node, errCode, errText := ReadNode(requestedUUID)
+	if errCode != 0 {
+		return nil, hccerr.FluteGrpcRequestError, "DeleteNode(): " + errText
 	}
 
 	sql := "delete from node where uuid = ?"
@@ -615,7 +620,7 @@ func DeleteNode(in *pb.ReqDeleteNode) (string, uint64, string) {
 	if err != nil {
 		errStr := "DeleteNode(): " + err.Error()
 		logger.Logger.Println(errStr)
-		return "", hccerr.FluteSQLOperationFail, errStr
+		return nil, hccerr.FluteSQLOperationFail, errStr
 	}
 	defer func() {
 		_ = stmt.Close()
@@ -624,7 +629,7 @@ func DeleteNode(in *pb.ReqDeleteNode) (string, uint64, string) {
 	if err2 != nil {
 		errStr := "DeleteNode(): " + err2.Error()
 		logger.Logger.Println(errStr)
-		return "", hccerr.FluteSQLOperationFail, errStr
+		return nil, hccerr.FluteSQLOperationFail, errStr
 	}
 
 	_, errCode, errStr := DeleteNodeDetail(&pb.ReqDeleteNodeDetail{NodeUUID: requestedUUID})
@@ -632,5 +637,5 @@ func DeleteNode(in *pb.ReqDeleteNode) (string, uint64, string) {
 		logger.Logger.Println("DeleteNode(): " + errStr)
 	}
 
-	return requestedUUID, 0, ""
+	return node, 0, ""
 }
