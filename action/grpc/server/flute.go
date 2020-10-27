@@ -5,6 +5,7 @@ import (
 	"hcc/flute/action/grpc/errconv"
 	pb "hcc/flute/action/grpc/pb/rpcflute"
 	"hcc/flute/dao"
+	"hcc/flute/daoext"
 	"hcc/flute/lib/errors"
 	"hcc/flute/lib/logger"
 )
@@ -78,7 +79,7 @@ func (s *fluteServer) GetNodeList(_ context.Context, in *pb.ReqGetNodeList) (*pb
 func (s *fluteServer) GetNodeNum(_ context.Context, _ *pb.Empty) (*pb.ResGetNodeNum, error) {
 	logger.Logger.Println("Request received: GetNodeNum()")
 
-	nodeNum, errCode, errStr := dao.ReadNodeNum()
+	nodeNum, errCode, errStr := daoext.ReadNodeNum()
 	if errCode != 0 {
 		errStack := errors.ReturnHccError(errCode, errStr)
 		return &pb.ResGetNodeNum{Num: 0, HccErrorStack: errconv.HccStackToGrpc(&errStack)}, nil

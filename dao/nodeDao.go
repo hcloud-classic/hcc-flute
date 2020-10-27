@@ -12,6 +12,7 @@ import (
 	"net"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -261,26 +262,6 @@ func ReadNodeList(in *pb.ReqGetNodeList) (*pb.ResGetNodeList, uint64, string) {
 	return &nodeList, 0, ""
 }
 
-// ReadNodeNum : Get count of nodes from database.
-func ReadNodeNum() (*pb.ResGetNodeNum, uint64, string) {
-	var resNodeNum pb.ResGetNodeNum
-	var nodeNr int64
-
-	sql := "select count(*) from node where available = 1"
-	err := mysql.Db.QueryRow(sql).Scan(&nodeNr)
-	if err != nil {
-		errStr := "ReadNodeNum(): " + err.Error()
-		logger.Logger.Println(errStr)
-		if strings.Contains(err.Error(), "no rows in result set") {
-			return nil, hccerr.FluteSQLNoResult, errStr
-		}
-		return nil, hccerr.FluteSQLOperationFail, errStr
-	}
-	resNodeNum.Num = nodeNr
-
-	return &resNodeNum, 0, ""
-}
-
 // CreateNode : Add a node to database.
 func CreateNode(in *pb.ReqCreateNode) (*pb.Node, uint64, string) {
 	reqNode := in.GetNode()
@@ -304,54 +285,31 @@ func CreateNode(in *pb.ReqCreateNode) (*pb.Node, uint64, string) {
 		return nil, hccerr.FluteGrpcRequestError, "CreateNode(): " + err.Error()
 	}
 
-	node := pb.Node{
-		UUID:        "",
-		ServerUUID:  "",
-		BmcMacAddr:  "",
-		BmcIP:       reqNode.BmcIP,
-		PXEMacAddr:  "",
-		Status:      "",
-		CPUCores:    0,
-		Memory:      0,
-		Description: reqNode.Description,
-		RackNumber:  0,
-	}
-
-	sql := "insert into node(uuid, server_uuid, bmc_mac_addr, bmc_ip, pxe_mac_addr, status, cpu_cores, memory, description, rack_number, created_at, available) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, now(), 1)"
-	stmt, err := mysql.Db.Prepare(sql)
-	if err != nil {
-		errStr := "CreateNode(): " + err.Error()
-		logger.Logger.Println(errStr)
-		return nil, hccerr.FluteSQLOperationFail, errStr
-	}
-	defer func() {
-		_ = stmt.Close()
-	}()
-	_, err = stmt.Exec(node.UUID, node.ServerUUID, node.BmcMacAddr, node.BmcIP, node.PXEMacAddr, node.Status, node.CPUCores, node.Memory, node.Description, node.RackNumber)
-	if err != nil {
-		errStr := "CreateNode(): " + err.Error()
-		logger.Logger.Println(errStr)
-		return nil, hccerr.FluteSQLOperationFail, errStr
-	}
-
 	var pbNode *pb.Node
 	var errCode uint64
 	var errText string
+	var wait sync.WaitGroup
+	wait.Add(3)
 
-	uuid, err := ipmi.DoUpdateAllNodes(reqNode.BmcIP)
+	uuid, err := ipmi.DoUpdateAllNodes(reqNode.BmcIP, &wait, true, reqNode.Description)
 	if err != nil {
-		goto IPMIError
+		return nil, hccerr.FluteInternalIPMIError, "CreateNode(): Error occurred while updating node information"
 	}
 
-	err = ipmi.DoUpdateStatusNodes(uuid, reqNode.BmcIP)
-	if err != nil {
-		goto IPMIError
-	}
+	go func(uuid string, bmcIP string, wait *sync.WaitGroup) {
+		err := ipmi.DoUpdateStatusNodes(uuid, bmcIP, wait)
+		if err != nil {
+			logger.Logger.Println("CreateNode(): " + err.Error())
+		}
+	}(uuid, reqNode.BmcIP, &wait)
+	go func(uuid string, bmcIP string, wait *sync.WaitGroup) {
+		err := ipmi.DoUpdateNodesDetail(uuid, bmcIP, wait)
+		if err != nil {
+			logger.Logger.Println("CreateNode(): " + err.Error())
+		}
+	}(uuid, reqNode.BmcIP, &wait)
 
-	err = ipmi.DoUpdateNodesDetail(uuid, reqNode.BmcIP)
-	if err != nil {
-		goto IPMIError
-	}
+	wait.Wait()
 
 	pbNode, errCode, errText = ReadNode(uuid)
 	if errCode != 0 {
@@ -359,16 +317,6 @@ func CreateNode(in *pb.ReqCreateNode) (*pb.Node, uint64, string) {
 	}
 
 	return pbNode, 0, ""
-
-IPMIError:
-	sql = "delete from node where bmc_ip = ?"
-	stmt, _ = mysql.Db.Prepare(sql)
-	defer func() {
-		_ = stmt.Close()
-	}()
-	_, _ = stmt.Exec(reqNode.BmcIP)
-
-	return nil, hccerr.FluteInternalIPMIError, "CreateNode(): " + err.Error()
 }
 
 // NodePowerControl : Change power state of nodes
