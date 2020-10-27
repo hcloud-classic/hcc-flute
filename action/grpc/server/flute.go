@@ -104,13 +104,13 @@ func (s *fluteServer) UpdateNode(_ context.Context, in *pb.ReqUpdateNode) (*pb.R
 func (s *fluteServer) DeleteNode(_ context.Context, in *pb.ReqDeleteNode) (*pb.ResDeleteNode, error) {
 	logger.Logger.Println("Request received: DeleteNode()")
 
-	uuid, errCode, errStr := dao.DeleteNode(in)
+	deleteNode, errCode, errStr := dao.DeleteNode(in)
 	if errCode != 0 {
 		errStack := errors.ReturnHccError(errCode, errStr)
-		return &pb.ResDeleteNode{UUID: "", HccErrorStack: errconv.HccStackToGrpc(&errStack)}, nil
+		return &pb.ResDeleteNode{Node: &pb.Node{}, HccErrorStack: errconv.HccStackToGrpc(&errStack)}, nil
 	}
 
-	return &pb.ResDeleteNode{UUID: uuid}, nil
+	return &pb.ResDeleteNode{Node: deleteNode}, nil
 }
 
 func (s *fluteServer) NodePowerControl(_ context.Context, in *pb.ReqNodePowerControl) (*pb.ResNodePowerControl, error) {
@@ -164,11 +164,11 @@ func (s *fluteServer) GetNodeDetail(_ context.Context, in *pb.ReqGetNodeDetail) 
 func (s *fluteServer) DeleteNodeDetail(_ context.Context, in *pb.ReqDeleteNodeDetail) (*pb.ResDeleteNodeDetail, error) {
 	logger.Logger.Println("Request received: DeleteNodeDetail()")
 
-	nodeUUID, errCode, errStr := dao.DeleteNodeDetail(in)
+	nodeDetail, errCode, errStr := dao.DeleteNodeDetail(in)
 	if errCode != 0 {
 		errStack := errors.ReturnHccError(errCode, errStr)
-		return &pb.ResDeleteNodeDetail{NodeUUID: "", HccErrorStack: errconv.HccStackToGrpc(&errStack)}, nil
+		return &pb.ResDeleteNodeDetail{NodeDetail: &pb.NodeDetail{}, HccErrorStack: errconv.HccStackToGrpc(&errStack)}, nil
 	}
 
-	return &pb.ResDeleteNodeDetail{NodeUUID: nodeUUID}, nil
+	return &pb.ResDeleteNodeDetail{NodeDetail: nodeDetail}, nil
 }
