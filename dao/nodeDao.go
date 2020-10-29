@@ -285,9 +285,19 @@ func CreateNode(in *pb.ReqCreateNode) (*pb.Node, uint64, string) {
 		return nil, hccerr.FluteGrpcRequestError, "CreateNode(): " + err.Error()
 	}
 
+	resGetNodeList, errCode, errText := ReadNodeList(&pb.ReqGetNodeList{
+		Node: &pb.Node{
+			BmcIP: reqNode.BmcIP,
+		},
+	})
+	if errCode != 0 {
+		return nil, hccerr.FluteGrpcRequestError, "CreateNode(): " + errText
+	}
+	if len(resGetNodeList.Node) != 0 {
+		return nil, hccerr.FluteGrpcRequestError, "CreateNode(): " + reqNode.BmcIP + " is already registered"
+	}
+
 	var pbNode *pb.Node
-	var errCode uint64
-	var errText string
 	var wait sync.WaitGroup
 	wait.Add(3)
 
