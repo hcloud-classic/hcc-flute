@@ -67,6 +67,7 @@ type Control = rpcmsgType.Control
 type Controls = rpcmsgType.Controls
 type ScheduledNodes = rpcmsgType.ScheduledNodes
 type ScheduleServer = rpcmsgType.ScheduleServer
+type ServerAction = rpcmsgType.ServerAction
 
 type ReqNoVNC struct {
 	state         protoimpl.MessageState
