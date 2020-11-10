@@ -37,4 +37,11 @@ check_server_status_interval_ms 5000
 check_node_detail_interval_ms 15000
 baseboard_nic_num_pxe 2
 baseboard_nic_num_bmc 3
+
+[violin]
+violin_server_address 192.168.110.240
+violin_server_port 7500
+violin_connection_timeout_ms 5000
+violin_connection_retry_count 10
+violin_request_timeout_ms 5000
 -----------------------------------*/
