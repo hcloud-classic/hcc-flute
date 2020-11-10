@@ -42,6 +42,6 @@ baseboard_nic_num_bmc 3
 violin_server_address 192.168.110.240
 violin_server_port 7500
 violin_connection_timeout_ms 5000
-violin_connection_retry_count 10
+violin_connection_retry_count 5
 violin_request_timeout_ms 5000
 -----------------------------------*/

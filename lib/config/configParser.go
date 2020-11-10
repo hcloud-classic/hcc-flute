@@ -124,6 +124,39 @@ func parseIpmi() {
 	}
 }
 
+func parseViolin() {
+	config.ViolinConfig = conf.Get("violin")
+	if config.ViolinConfig == nil {
+		logger.Logger.Panicln("no violin section")
+	}
+
+	Violin = violin{}
+	Violin.ServerAddress, err = config.ViolinConfig.String("violin_server_address")
+	if err != nil {
+		logger.Logger.Panicln(err)
+	}
+
+	Violin.ServerPort, err = config.ViolinConfig.Int("violin_server_port")
+	if err != nil {
+		logger.Logger.Panicln(err)
+	}
+
+	Violin.ConnectionTimeOutMs, err = config.ViolinConfig.Int("violin_connection_timeout_ms")
+	if err != nil {
+		logger.Logger.Panicln(err)
+	}
+
+	Violin.ConnectionRetryCount, err = config.ViolinConfig.Int("violin_connection_retry_count")
+	if err != nil {
+		logger.Logger.Panicln(err)
+	}
+
+	Violin.RequestTimeoutMs, err = config.ViolinConfig.Int("violin_request_timeout_ms")
+	if err != nil {
+		logger.Logger.Panicln(err)
+	}
+}
+
 // Init : Parse config file and initialize config structure
 func Init() {
 	if err = conf.Parse(configLocation); err != nil {
@@ -133,4 +166,5 @@ func Init() {
 	parseMysql()
 	parseGrpc()
 	parseIpmi()
+	parseViolin()
 }
