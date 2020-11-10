@@ -32,7 +32,7 @@ password qwe1212!Q
 request_timeout_ms 5000
 request_retry 3
 check_node_all_interval_ms 10000
-check_node_status_interval_ms 5000
+check_node_status_interval_ms 1000
 check_server_status_interval_ms 5000
 check_node_detail_interval_ms 15000
 baseboard_nic_num_pxe 2
