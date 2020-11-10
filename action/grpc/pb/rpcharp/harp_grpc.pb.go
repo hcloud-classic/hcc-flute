@@ -23,6 +23,7 @@ type HarpClient interface {
 	GetSubnet(ctx context.Context, in *ReqGetSubnet, opts ...grpc.CallOption) (*ResGetSubnet, error)
 	GetSubnetByServer(ctx context.Context, in *ReqGetSubnetByServer, opts ...grpc.CallOption) (*ResGetSubnetByServer, error)
 	GetSubnetList(ctx context.Context, in *ReqGetSubnetList, opts ...grpc.CallOption) (*ResGetSubnetList, error)
+	GetAvailableSubnetList(ctx context.Context, in *rpcmsgType.Empty, opts ...grpc.CallOption) (*ResGetAvailableSubnetList, error)
 	GetSubnetNum(ctx context.Context, in *rpcmsgType.Empty, opts ...grpc.CallOption) (*ResGetSubnetNum, error)
 	UpdateSubnet(ctx context.Context, in *ReqUpdateSubnet, opts ...grpc.CallOption) (*ResUpdateSubnet, error)
 	DeleteSubnet(ctx context.Context, in *ReqDeleteSubnet, opts ...grpc.CallOption) (*ResDeleteSubnet, error)
@@ -78,6 +79,15 @@ func (c *harpClient) GetSubnetByServer(ctx context.Context, in *ReqGetSubnetBySe
 func (c *harpClient) GetSubnetList(ctx context.Context, in *ReqGetSubnetList, opts ...grpc.CallOption) (*ResGetSubnetList, error) {
 	out := new(ResGetSubnetList)
 	err := c.cc.Invoke(ctx, "/RpcHarp.Harp/GetSubnetList", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *harpClient) GetAvailableSubnetList(ctx context.Context, in *rpcmsgType.Empty, opts ...grpc.CallOption) (*ResGetAvailableSubnetList, error) {
+	out := new(ResGetAvailableSubnetList)
+	err := c.cc.Invoke(ctx, "/RpcHarp.Harp/GetAvailableSubnetList", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -210,6 +220,7 @@ type HarpServer interface {
 	GetSubnet(context.Context, *ReqGetSubnet) (*ResGetSubnet, error)
 	GetSubnetByServer(context.Context, *ReqGetSubnetByServer) (*ResGetSubnetByServer, error)
 	GetSubnetList(context.Context, *ReqGetSubnetList) (*ResGetSubnetList, error)
+	GetAvailableSubnetList(context.Context, *rpcmsgType.Empty) (*ResGetAvailableSubnetList, error)
 	GetSubnetNum(context.Context, *rpcmsgType.Empty) (*ResGetSubnetNum, error)
 	UpdateSubnet(context.Context, *ReqUpdateSubnet) (*ResUpdateSubnet, error)
 	DeleteSubnet(context.Context, *ReqDeleteSubnet) (*ResDeleteSubnet, error)
@@ -243,6 +254,9 @@ func (*UnimplementedHarpServer) GetSubnetByServer(context.Context, *ReqGetSubnet
 }
 func (*UnimplementedHarpServer) GetSubnetList(context.Context, *ReqGetSubnetList) (*ResGetSubnetList, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetSubnetList not implemented")
+}
+func (*UnimplementedHarpServer) GetAvailableSubnetList(context.Context, *rpcmsgType.Empty) (*ResGetAvailableSubnetList, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetAvailableSubnetList not implemented")
 }
 func (*UnimplementedHarpServer) GetSubnetNum(context.Context, *rpcmsgType.Empty) (*ResGetSubnetNum, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetSubnetNum not implemented")
@@ -357,6 +371,24 @@ func _Harp_GetSubnetList_Handler(srv interface{}, ctx context.Context, dec func(
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(HarpServer).GetSubnetList(ctx, req.(*ReqGetSubnetList))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Harp_GetAvailableSubnetList_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(rpcmsgType.Empty)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(HarpServer).GetAvailableSubnetList(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/RpcHarp.Harp/GetAvailableSubnetList",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(HarpServer).GetAvailableSubnetList(ctx, req.(*rpcmsgType.Empty))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -614,6 +646,10 @@ var _Harp_serviceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetSubnetList",
 			Handler:    _Harp_GetSubnetList_Handler,
+		},
+		{
+			MethodName: "GetAvailableSubnetList",
+			Handler:    _Harp_GetAvailableSubnetList_Handler,
 		},
 		{
 			MethodName: "GetSubnetNum",

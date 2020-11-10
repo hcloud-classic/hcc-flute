@@ -5,9 +5,10 @@ import "github.com/Terry-Mao/goconf"
 var configLocation = "/etc/hcc/flute/flute.conf"
 
 type fluteConfig struct {
-	MysqlConfig *goconf.Section
-	GrpcConfig  *goconf.Section
-	IpmiConfig  *goconf.Section
+	MysqlConfig  *goconf.Section
+	GrpcConfig   *goconf.Section
+	IpmiConfig   *goconf.Section
+	ViolinConfig *goconf.Section
 }
 
 /*-----------------------------------
@@ -30,9 +31,10 @@ username admin
 password qwe1212!Q
 request_timeout_ms 5000
 request_retry 3
-check_all_interval_ms 10000
-check_status_interval_ms 5000
-check_nodes_detail_interval_ms 15000
+check_node_all_interval_ms 10000
+check_node_status_interval_ms 5000
+check_server_status_interval_ms 5000
+check_node_detail_interval_ms 15000
 baseboard_nic_num_pxe 2
 baseboard_nic_num_bmc 3
 -----------------------------------*/

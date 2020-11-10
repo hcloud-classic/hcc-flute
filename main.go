@@ -34,12 +34,14 @@ func init() {
 		errors.NewHccError(errors.FluteInternalInitFail, "ipmi.BMCIPParser(): "+err.Error()).Fatal()
 	}
 
-	logger.Logger.Println("Starting ipmi.CheckAll(). Interval is " + strconv.Itoa(int(config.Ipmi.CheckAllIntervalMs)) + "ms")
-	ipmi.CheckAll()
-	logger.Logger.Println("Starting ipmi.CheckStatus(). Interval is " + strconv.Itoa(int(config.Ipmi.CheckStatusIntervalMs)) + "ms")
-	ipmi.CheckStatus()
-	logger.Logger.Println("Starting ipmi.CheckNodesDetail(). Interval is " + strconv.Itoa(int(config.Ipmi.CheckNodesDetailIntervalMs)) + "ms")
-	ipmi.CheckNodesDetail()
+	logger.Logger.Println("Starting ipmi.CheckNodeAll(). Interval is " + strconv.Itoa(int(config.Ipmi.CheckNodeAllIntervalMs)) + "ms")
+	ipmi.CheckNodeAll()
+	logger.Logger.Println("Starting ipmi.CheckNodeStatus(). Interval is " + strconv.Itoa(int(config.Ipmi.CheckNodeStatusIntervalMs)) + "ms")
+	ipmi.CheckNodeStatus()
+	logger.Logger.Println("Starting ipmi.CheckServerStatus(). Interval is " + strconv.Itoa(int(config.Ipmi.CheckServerStatusIntervalMs)) + "ms")
+	ipmi.CheckServerStatus()
+	logger.Logger.Println("Starting ipmi.CheckNodeDetail(). Interval is " + strconv.Itoa(int(config.Ipmi.CheckNodeDetailIntervalMs)) + "ms")
+	ipmi.CheckNodeDetail()
 }
 
 func end() {

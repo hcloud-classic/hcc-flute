@@ -93,17 +93,22 @@ func parseIpmi() {
 		logger.Logger.Panicln(err)
 	}
 
-	Ipmi.CheckAllIntervalMs, err = config.IpmiConfig.Int("check_all_interval_ms")
+	Ipmi.CheckNodeAllIntervalMs, err = config.IpmiConfig.Int("check_node_all_interval_ms")
 	if err != nil {
 		logger.Logger.Panicln(err)
 	}
 
-	Ipmi.CheckStatusIntervalMs, err = config.IpmiConfig.Int("check_status_interval_ms")
+	Ipmi.CheckNodeStatusIntervalMs, err = config.IpmiConfig.Int("check_node_status_interval_ms")
 	if err != nil {
 		logger.Logger.Panicln(err)
 	}
 
-	Ipmi.CheckNodesDetailIntervalMs, err = config.IpmiConfig.Int("check_nodes_detail_interval_ms")
+	Ipmi.CheckServerStatusIntervalMs, err = config.IpmiConfig.Int("check_server_status_interval_ms")
+	if err != nil {
+		logger.Logger.Panicln(err)
+	}
+
+	Ipmi.CheckNodeDetailIntervalMs, err = config.IpmiConfig.Int("check_node_detail_interval_ms")
 	if err != nil {
 		logger.Logger.Panicln(err)
 	}
