@@ -41,6 +41,16 @@ func parseMysql() {
 	if err != nil {
 		logger.Logger.Panicln(err)
 	}
+
+	Mysql.ConnectionRetryCount, err = config.MysqlConfig.Int("connection_retry_count")
+	if err != nil {
+		logger.Logger.Panicln(err)
+	}
+
+	Mysql.ConnectionRetryIntervalMs, err = config.MysqlConfig.Int("connection_retry_interval_ms")
+	if err != nil {
+		logger.Logger.Panicln(err)
+	}
 }
 
 func parseGrpc() {

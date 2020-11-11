@@ -20,6 +20,8 @@ password qwe1212!Q
 address 192.168.110.240
 port 3306
 database flute
+connection_retry_count 5
+connection_retry_interval_ms 500
 
 [grpc]
 port 7000

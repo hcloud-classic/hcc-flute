@@ -1,6 +1,7 @@
 package ipmi
 
 import (
+	dbsql "database/sql"
 	"fmt"
 	"hcc/flute/action/grpc/client"
 	pb "hcc/flute/action/grpc/pb/rpcflute"
@@ -200,7 +201,9 @@ func DoUpdateAllNodes(bmcIPCIDR string, wait *sync.WaitGroup, isNew bool, descri
 
 	if isNew {
 		sql := "insert into node(uuid, server_uuid, bmc_mac_addr, bmc_ip, pxe_mac_addr, status, cpu_cores, memory, description, rack_number, created_at, available) values (?, '', ?, ?, ?, '', ?, ?, ?, ?, now(), 1)"
-		stmt, err := mysql.Db.Prepare(sql)
+
+		var stmt *dbsql.Stmt
+		stmt, err := mysql.Prepare(sql)
 		if err != nil {
 			logger.Logger.Println("DoUpdateAllNodes(): " + bmcIPCIDR + " err=" + err.Error())
 			wait.Done()
@@ -221,7 +224,7 @@ func DoUpdateAllNodes(bmcIPCIDR string, wait *sync.WaitGroup, isNew bool, descri
 	}
 
 	sql := "update node set uuid = ?, bmc_mac_addr = ?, pxe_mac_addr = ?, cpu_cores = ?, memory = ?, rack_number = ? where bmc_ip = ?"
-	stmt, err := mysql.Db.Prepare(sql)
+	stmt, err := mysql.Prepare(sql)
 	if err != nil {
 		logger.Logger.Println("DoUpdateAllNodes(): " + bmcIPCIDR + " err=" + err.Error())
 		wait.Done()
@@ -255,7 +258,7 @@ func UpdateNodesAll() {
 	var bmcIPCIDR string
 
 	sql := "select bmc_ip from node where available = 1"
-	stmt, err := mysql.Db.Query(sql)
+	stmt, err := mysql.Query(sql)
 	if err != nil {
 		logger.Logger.Println("UpdateNodesAll(): err=" + err.Error())
 		return
@@ -349,7 +352,7 @@ func DoUpdateStatusNodes(uuid interface{}, bmcIPCIDR string, wait *sync.WaitGrou
 	}
 
 	sql := "update node set status = ? where uuid = ?"
-	stmt, err := mysql.Db.Prepare(sql)
+	stmt, err := mysql.Prepare(sql)
 	if err != nil {
 		logger.Logger.Println("DoUpdateStatusNodes(): " + bmcIPCIDR + " err=" + err.Error())
 		wait.Done()
@@ -384,7 +387,7 @@ func UpdateNodesStatus() {
 	var bmcIPCIDR string
 
 	sql := "select uuid, bmc_ip from node where available = 1"
-	stmt, err := mysql.Db.Query(sql)
+	stmt, err := mysql.Query(sql)
 	if err != nil {
 		logger.Logger.Println("UpdateNodesStatus(): err=" + err.Error())
 		return
@@ -437,7 +440,7 @@ func UpdateServerStatus() {
 		}
 
 		sql := "select status from node where server_uuid = '" + server.UUID + "'"
-		stmt, err := mysql.Db.Query(sql)
+		stmt, err := mysql.Query(sql)
 		if err != nil {
 			logger.Logger.Println("UpdateServerStatus(): err=" + err.Error())
 			return
@@ -561,12 +564,13 @@ func DoUpdateNodesDetail(uuid interface{}, bmcIPCIDR string, wait *sync.WaitGrou
 	}
 
 	sql := "select node_uuid from node_detail where node_uuid = ?"
-	err = mysql.Db.QueryRow(sql, uuid).Scan(&uuid)
+	row := mysql.Db.QueryRow(sql, uuid)
+	err = mysql.QueryRowScan(row, &uuid)
 	if err != nil {
 		logger.Logger.Println("DoUpdateNodesDetail(): Inserting not existing new node_detail")
 
 		sql = "insert into node_detail(node_uuid, cpu_model, cpu_processors, cpu_threads) values (?, ?, ?, ?)"
-		stmt, err := mysql.Db.Prepare(sql)
+		stmt, err := mysql.Prepare(sql)
 		if err != nil {
 			logger.Logger.Println("DoUpdateNodesDetail(): " + bmcIPCIDR + " err=" + err.Error())
 			wait.Done()
@@ -592,7 +596,7 @@ func DoUpdateNodesDetail(uuid interface{}, bmcIPCIDR string, wait *sync.WaitGrou
 		}
 	} else {
 		sql = "update node_detail set cpu_model = ?, cpu_processors = ?, cpu_threads = ? where node_uuid = ?"
-		stmt, err := mysql.Db.Prepare(sql)
+		stmt, err := mysql.Prepare(sql)
 		if err != nil {
 			logger.Logger.Println("DoUpdateNodesDetail(): " + bmcIPCIDR + " err=" + err.Error())
 			wait.Done()
@@ -628,7 +632,7 @@ func UpdateNodesDetail() {
 	var bmcIPCIDR string
 
 	sql := "select uuid, bmc_ip from node where available = 1"
-	stmt, err := mysql.Db.Query(sql)
+	stmt, err := mysql.Query(sql)
 	if err != nil {
 		logger.Logger.Println("UpdateNodesDetail(): err=" + err.Error())
 		return

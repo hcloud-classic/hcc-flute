@@ -17,7 +17,8 @@ func ReadNodeDetail(nodeUUID string) (*pb.NodeDetail, uint64, string) {
 	var cpuThreads int
 
 	sql := "select * from node_detail where node_uuid = ?"
-	err := mysql.Db.QueryRow(sql, nodeUUID).Scan(
+	row := mysql.Db.QueryRow(sql, nodeUUID)
+	err := mysql.QueryRowScan(row,
 		&nodeUUID,
 		&cpuModel,
 		&cpuProcessors,
@@ -60,7 +61,7 @@ func CreateNodeDetail(in *pb.ReqCreateNodeDetail) (*pb.NodeDetail, uint64, strin
 	}
 
 	sql := "insert into node_detail(node_uuid, cpu_model, cpu_processors, cpu_threads) values (?, ?, ?, ?)"
-	stmt, err := mysql.Db.Prepare(sql)
+	stmt, err := mysql.Prepare(sql)
 	if err != nil {
 		errStr := "CreateNodeDetail(): " + err.Error()
 		logger.Logger.Println(errStr)
@@ -95,7 +96,7 @@ func DeleteNodeDetail(in *pb.ReqDeleteNodeDetail) (*pb.NodeDetail, uint64, strin
 	}
 
 	sql := "delete from node_detail where node_uuid = ?"
-	stmt, err := mysql.Db.Prepare(sql)
+	stmt, err := mysql.Prepare(sql)
 	if err != nil {
 		errStr := "DeleteNodeDetail(): " + err.Error()
 		logger.Logger.Println(errStr)

@@ -26,7 +26,7 @@ func BMCIPParser() error {
 	}
 
 	sqlStr := "select bmc_ip from node"
-	stmt, err := mysql.Db.Query(sqlStr)
+	stmt, err := mysql.Query(sqlStr)
 	if err != nil {
 		logger.Logger.Println(err)
 		return err
@@ -64,7 +64,7 @@ func BMCIPParser() error {
 			sqlStr = "update node set available = 0 where bmc_ip = ?"
 		}
 
-		stmt, err := mysql.Db.Prepare(sqlStr)
+		stmt, err := mysql.Prepare(sqlStr)
 		if err != nil {
 			logger.Logger.Println(err)
 			return err

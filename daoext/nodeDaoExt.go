@@ -14,7 +14,8 @@ func ReadNodeNum() (*pb.ResGetNodeNum, uint64, string) {
 	var nodeNr int64
 
 	sql := "select count(*) from node where available = 1"
-	err := mysql.Db.QueryRow(sql).Scan(&nodeNr)
+	row := mysql.Db.QueryRow(sql)
+	err := mysql.QueryRowScan(row, &nodeNr)
 	if err != nil {
 		errStr := "ReadNodeNum(): " + err.Error()
 		logger.Logger.Println(errStr)
