@@ -36,6 +36,7 @@ func GetSerialNo(bmcIP string) (string, error) {
 			logger.Logger.Println("GetSerialNo(): Retrying for " + bmcIP + " " + strconv.Itoa(i+1) + "/" + strconv.Itoa(int(config.Ipmi.RequestRetry)))
 			continue
 		} else {
+			// Check response
 			respBody, err := ioutil.ReadAll(resp.Body)
 			if err != nil {
 				_ = resp.Body.Close()
@@ -83,6 +84,7 @@ func GetUUID(bmcIP string, serialNo string) (string, error) {
 			logger.Logger.Println("GetUUID(): Retrying for " + bmcIP + " " + strconv.Itoa(i+1) + "/" + strconv.Itoa(int(config.Ipmi.RequestRetry)))
 			continue
 		} else {
+			// Check response
 			respBody, err := ioutil.ReadAll(resp.Body)
 			if err != nil {
 				_ = resp.Body.Close()
@@ -132,6 +134,7 @@ func GetPowerState(bmcIP string, serialNo string) (string, error) {
 			continue
 		} else {
 
+			// Check response
 			respBody, err := ioutil.ReadAll(resp.Body)
 			if err != nil {
 				_ = resp.Body.Close()
@@ -181,6 +184,7 @@ func GetProcessors(bmcIP string, serialNo string) (int, error) {
 			continue
 		} else {
 
+			// Check response
 			respBody, err := ioutil.ReadAll(resp.Body)
 			if err != nil {
 				_ = resp.Body.Close()
@@ -234,6 +238,7 @@ func GetProcessorsCores(bmcIP string, serialNo string, processors int) (int, err
 				logger.Logger.Println("GetProcessorsCores(): Retrying for " + bmcIP + " " + strconv.Itoa(j+1) + "/" + strconv.Itoa(int(config.Ipmi.RequestRetry)))
 				continue
 			} else {
+				// Check response
 				respBody, err := ioutil.ReadAll(resp.Body)
 				if err != nil {
 					_ = resp.Body.Close()
@@ -292,6 +297,7 @@ func GetProcessorsThreads(bmcIP string, serialNo string, processors int) (int, e
 				logger.Logger.Println("GetProcessorsThreads(): Retrying for " + bmcIP + " " + strconv.Itoa(j+1) + "/" + strconv.Itoa(int(config.Ipmi.RequestRetry)))
 				continue
 			} else {
+				// Check response
 				respBody, err := ioutil.ReadAll(resp.Body)
 				if err != nil {
 					_ = resp.Body.Close()
@@ -345,6 +351,7 @@ func GetProcessorModel(bmcIP string, serialNo string) (string, error) {
 			logger.Logger.Println("GetProcessorModel(): Retrying for " + bmcIP + " " + strconv.Itoa(i+1) + "/" + strconv.Itoa(int(config.Ipmi.RequestRetry)))
 			continue
 		} else {
+			// Check response
 			respBody, err := ioutil.ReadAll(resp.Body)
 			if err != nil {
 				_ = resp.Body.Close()
@@ -390,6 +397,7 @@ func GetTotalSystemMemory(bmcIP string, serialNo string) (int, error) {
 			logger.Logger.Println("GetTotalSystemMemory(): Retrying for " + bmcIP + " " + strconv.Itoa(i+1) + "/" + strconv.Itoa(int(config.Ipmi.RequestRetry)))
 			continue
 		} else {
+			// Check response
 			respBody, err := ioutil.ReadAll(resp.Body)
 			if err != nil {
 				_ = resp.Body.Close()
@@ -445,6 +453,7 @@ func ChangePowerState(bmcIP string, serialNo string, state string) (string, erro
 			continue
 		} else {
 			if resp.StatusCode >= 200 && resp.StatusCode <= 299 {
+				// Check response
 				respBody, err := ioutil.ReadAll(resp.Body)
 				if err != nil {
 					_ = resp.Body.Close()
@@ -494,6 +503,7 @@ func GetNICMac(bmcIP string, nicNO int, isBMC bool) (string, error) {
 			logger.Logger.Println("GetNICMac(): Retrying for " + bmcIP + " " + strconv.Itoa(i+1) + "/" + strconv.Itoa(int(config.Ipmi.RequestRetry)))
 			continue
 		} else {
+			// Check response
 			respBody, err := ioutil.ReadAll(resp.Body)
 			if err != nil {
 				_ = resp.Body.Close()
