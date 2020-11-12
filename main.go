@@ -2,25 +2,16 @@ package main
 
 import (
 	"hcc/flute/action/graphql"
+	fluteEnd "hcc/flute/end"
+	fluteInit "hcc/flute/init"
+	"hcc/flute/lib/config"
 	"hcc/flute/lib/logger"
 	"net/http"
 	"strconv"
 )
 
 func init() {
-	err := syscheck.CheckRoot()
-	if err != nil {
-		panic(err)
-	}
-
-	err = logger.Init()
-	if err != nil {
-		panic(err)
-	}
-
-	config.Init()
-
-	err = mysql.Init()
+	err := fluteInit.MainInit()
 	if err != nil {
 		panic(err)
 	}
@@ -28,8 +19,7 @@ func init() {
 
 func main() {
 	defer func() {
-		mysql.End()
-		logger.End()
+		fluteEnd.MainEnd()
 	}()
 
 	http.Handle("/graphql", graphql.GraphqlHandler)
