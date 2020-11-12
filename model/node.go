@@ -2,6 +2,7 @@ package model
 
 import "time"
 
+// Node - cgs
 type Node struct {
 	UUID        string    `json:"uuid"`
 	ServerUUID  string    `json:"server_uuid"`
@@ -17,10 +18,12 @@ type Node struct {
 	ForceOff    bool      `json:"force_off"`
 }
 
+// Nodes - cgs
 type Nodes struct {
 	Nodes []Node `json:"node"`
 }
 
+// NodeNum - cgs
 type NodeNum struct {
 	Number int `json:"number"`
 }
