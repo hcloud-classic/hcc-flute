@@ -1,65 +1,35 @@
-package logger
+package mysql
 
 import (
-	"fmt"
-	"io"
-	"log"
-	"os"
-	"time"
+	"database/sql"
+	_ "github.com/go-sql-driver/mysql" // Needed for connect mysql
+	"hcc/flute/lib/config"
+	"hcc/flute/lib/logger"
+	"strconv"
 )
 
-// LogName : Log folder name. Also used as log prefix.
-var LogName = "flute"
+// Db : Pointer of mysql connection
+var Db *sql.DB
 
-// Logger : Pointer of logger
-var Logger *log.Logger
-
-// FpLog : File pointer of logger
-var FpLog *os.File
-
-// CreateDirIfNotExist : Make directory if not exist
-func CreateDirIfNotExist(dir string) error {
-	if _, err := os.Stat(dir); os.IsNotExist(err) {
-		err = os.MkdirAll(dir, 0755)
-		if err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
-// Init : Initialize logger
-func Init() error {
-	// Create directory if not exist
-	if _, err := os.Stat("/var/log/" + LogName); os.IsNotExist(err) {
-		err = CreateDirIfNotExist("/var/log/" + LogName)
-		if err != nil {
-			return err
-		}
-	}
-
-	now := time.Now()
-
-	year := fmt.Sprintf("%d", now.Year())
-	month := fmt.Sprintf("%02d", now.Month())
-	day := fmt.Sprintf("%02d", now.Day())
-
-	date := year + month + day
-
-	FpLog, err := os.OpenFile("/var/log/"+LogName+"/"+
-		LogName+"_"+date+".log", os.O_CREATE|os.O_RDWR|os.O_APPEND, 0666)
+// Prepare : Connect to mysql and prepare pointer of mysql connection
+func Prepare() error {
+	var err error
+	Db, err = sql.Open("mysql",
+		config.Mysql.ID+":"+config.Mysql.Password+"@tcp("+
+			config.Mysql.Address+":"+strconv.Itoa(int(config.Mysql.Port))+")/"+
+			config.Mysql.Database+"?parseTime=true")
 	if err != nil {
+		logger.Logger.Println(err)
 		return err
 	}
 
-	Logger = log.New(io.MultiWriter(FpLog, os.Stdout), LogName+"_logger: ", log.Ldate|log.Ltime)
+	err = Db.Ping()
+	if err != nil {
+		logger.Logger.Println(err)
+		return err
+	}
+
+	logger.Logger.Println("db is connected")
 
 	return nil
 }
-
-// End : Close logger
-func End() {
-	_ = FpLog.Close()
-}
-
