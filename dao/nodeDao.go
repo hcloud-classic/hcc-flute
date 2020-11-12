@@ -1,7 +1,9 @@
 package dao
 
 import (
+	dbsql "database/sql"
 	"errors"
+	gouuid "github.com/nu7hatch/gouuid"
 	"hcc/flute/lib/logger"
 	"hcc/flute/lib/mysql"
 	"hcc/flute/model"
@@ -9,6 +11,7 @@ import (
 	"time"
 )
 
+// ReadNode : Get all of infos of a node by UUID from database.
 func ReadNode(args map[string]interface{}) (interface{}, error) {
 	var node model.Node
 	var err error
@@ -65,6 +68,7 @@ func checkReadNodeListPageRow(args map[string]interface{}) bool {
 	return !rowOk || !pageOk
 }
 
+// ReadNodeList : Get selected infos of nodes from database.
 func ReadNodeList(args map[string]interface{}) (interface{}, error) {
 	var nodes []model.Node
 	var uuid string
@@ -139,6 +143,7 @@ func ReadNodeList(args map[string]interface{}) (interface{}, error) {
 	return nodes, nil
 }
 
+// ReadNodeAll : Get all of infos of nodes from database.
 func ReadNodeAll(args map[string]interface{}) (interface{}, error) {
 	var nodes []model.Node
 	var uuid string
@@ -169,7 +174,7 @@ func ReadNodeAll(args map[string]interface{}) (interface{}, error) {
 	} else if rowOk && pageOk {
 		sql = "select * from node order by created_at desc limit ? offset ?"
 		if activeOk {
-			sql = "select * from node where active = " + strconv.Itoa(active) + " order by created_at desc limit ? offset ?"
+			sql = "select * from node where active = " + strconv.Itoa(active) +" order by created_at desc limit ? offset ?"
 		}
 		stmt, err = mysql.Db.Query(sql, row, row*(page-1))
 	} else {
@@ -196,6 +201,7 @@ func ReadNodeAll(args map[string]interface{}) (interface{}, error) {
 	return nodes, nil
 }
 
+// ReadNodeNum : Get count of nodes from database.
 func ReadNodeNum(args map[string]interface{}) (interface{}, error) {
 	var nodeNum model.NodeNum
 	var nodeNr int
@@ -213,6 +219,7 @@ func ReadNodeNum(args map[string]interface{}) (interface{}, error) {
 	return nodeNum, nil
 }
 
+// CreateNode : Add a node to database.
 func CreateNode(args map[string]interface{}) (interface{}, error) {
 	out, err := gouuid.NewV4()
 	if err != nil {
@@ -266,6 +273,7 @@ func checkUpdateNodeArgs(args map[string]interface{}) bool {
 	return !serverUUIDOk && !bmcMacAddrOk && !bmcIPOk && !pxeMacAdrOk && !statusOk && !cpuCoresOk && !memoryOk && !descriptionOk && !activeOk
 }
 
+// UpdateNode : Update infos of a node.
 func UpdateNode(args map[string]interface{}) (interface{}, error) {
 	requestUUIDD, requestUUIDDOK := args["uuid"].(string)
 	serverUUID, serverUUIDOk := args["server_uuid"].(string)
@@ -348,6 +356,7 @@ func UpdateNode(args map[string]interface{}) (interface{}, error) {
 	return nil, nil
 }
 
+// DeleteNode : Delete a node from database.
 func DeleteNode(args map[string]interface{}) (interface{}, error) {
 	var err error
 

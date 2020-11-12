@@ -6,6 +6,7 @@ import (
 	"hcc/flute/model"
 )
 
+// ReadNodeDetail - cgs
 func ReadNodeDetail(args map[string]interface{}) (interface{}, error) {
 	var nodeDetail model.NodeDetail
 	var err error
@@ -34,6 +35,7 @@ func ReadNodeDetail(args map[string]interface{}) (interface{}, error) {
 	return nodeDetail, nil
 }
 
+// CreateNodeDetail - cgs
 func CreateNodeDetail(args map[string]interface{}) (interface{}, error) {
 	var err error
 
@@ -70,6 +72,7 @@ func CreateNodeDetail(args map[string]interface{}) (interface{}, error) {
 	return nodeDetail, nil
 }
 
+// DeleteNodeDetail - cgs
 func DeleteNodeDetail(args map[string]interface{}) (interface{}, error) {
 	var err error
 
