@@ -2,7 +2,7 @@ package model
 
 import "time"
 
-// Node - cgs
+// Node : Contain infos of a node
 type Node struct {
 	UUID        string    `json:"uuid"`
 	ServerUUID  string    `json:"server_uuid"`
@@ -18,12 +18,12 @@ type Node struct {
 	ForceOff    bool      `json:"force_off"`
 }
 
-// Nodes - cgs
+// Nodes : Contain a node list
 type Nodes struct {
 	Nodes []Node `json:"node"`
 }
 
-// NodeNum - cgs
+// NodeNum : Contain the number of nodes
 type NodeNum struct {
 	Number int `json:"number"`
 }
