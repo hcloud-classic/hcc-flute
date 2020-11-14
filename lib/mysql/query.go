@@ -25,9 +25,10 @@ func Prepare(sql string) (*dbsql.Stmt, error) {
 			containBadConnection := strings.Contains(errMsg, "bad connection")
 
 			if !containInvalidConnection && !containBadConnection {
-				logger.Logger.Println("mysql.Prepare(): Retrying MySQL connection...")
 				return nil, err
 			}
+
+			logger.Logger.Println("mysql.Prepare(): Retrying MySQL connection...")
 		} else {
 			return stmt, nil
 		}
@@ -52,9 +53,10 @@ func Query(sql string, args ...interface{}) (*dbsql.Rows, error) {
 			containBadConnection := strings.Contains(errMsg, "bad connection")
 
 			if !containInvalidConnection && !containBadConnection {
-				logger.Logger.Println("mysql.Query(): Retrying MySQL connection...")
 				return nil, err
 			}
+
+			logger.Logger.Println("mysql.Query(): Retrying MySQL connection...")
 		} else {
 			return rows, nil
 		}
@@ -81,9 +83,10 @@ func QueryRowScan(row *dbsql.Row, dest ...interface{}) error {
 			containBadConnection := strings.Contains(errMsg, "bad connection")
 
 			if !containInvalidConnection && !containBadConnection {
-				logger.Logger.Println("mysql.QueryRowScan(): Retrying MySQL connection...")
 				return err
 			}
+
+			logger.Logger.Println("mysql.QueryRowScan(): Retrying MySQL connection...")
 		} else {
 			return nil
 		}
