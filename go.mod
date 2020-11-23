@@ -1,5 +1,6 @@
 module hcc/flute
 
+<<<<<<< HEAD
 go 1.14
 
 require (
@@ -24,4 +25,16 @@ require (
 	golang.org/x/tools v0.0.0-20200622203043-20e05c1c8ffa // indirect
 	google.golang.org/protobuf v1.24.0 // indirect
 	gopkg.in/alecthomas/kingpin.v3-unstable v3.0.0-20191105091915-95d230a53780 // indirect
+=======
+go 1.13
+
+require (
+	github.com/Terry-Mao/goconf v0.0.0-20161115082538-13cb73d70c44
+	github.com/go-sql-driver/mysql v1.4.1
+	github.com/gojp/goreportcard v0.0.0-20190917085612-9e71b9371cfd // indirect
+	github.com/graphql-go/graphql v0.7.8
+	github.com/graphql-go/handler v0.2.3
+	github.com/streadway/amqp v0.0.0-20190827072141-edfb9018d271
+	google.golang.org/appengine v1.6.2 // indirect
+>>>>>>> f41ff24f626bd8c0587cb05747b5a3edd16976db
 )

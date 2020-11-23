@@ -2,10 +2,16 @@ package model
 
 import "time"
 
+<<<<<<< HEAD
 // Node : Contain infos of a node
 type Node struct {
 	UUID        string    `json:"uuid"`
 	ServerUUID  string    `json:"server_uuid"`
+=======
+// Node : Struct of node
+type Node struct {
+	UUID        string    `json:"uuid"`
+>>>>>>> f41ff24f626bd8c0587cb05747b5a3edd16976db
 	BmcMacAddr  string    `json:"bmc_mac_addr"`
 	BmcIP       string    `json:"bmc_ip"`
 	PXEMacAddr  string    `json:"pxe_mac_addr"`
@@ -18,12 +24,20 @@ type Node struct {
 	ForceOff    bool      `json:"force_off"`
 }
 
+<<<<<<< HEAD
 // Nodes : Contain a node list
+=======
+// Nodes : Array struct of nodes
+>>>>>>> f41ff24f626bd8c0587cb05747b5a3edd16976db
 type Nodes struct {
 	Nodes []Node `json:"node"`
 }
 
+<<<<<<< HEAD
 // NodeNum : Contain the number of nodes
+=======
+// NodeNum : Struct of number of nodes
+>>>>>>> f41ff24f626bd8c0587cb05747b5a3edd16976db
 type NodeNum struct {
 	Number int `json:"number"`
 }

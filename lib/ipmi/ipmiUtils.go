@@ -462,6 +462,16 @@ func ChangePowerState(bmcIP string, serialNo string, state string) (string, erro
 
 				str := string(respBody)
 
+<<<<<<< HEAD
+=======
+				var processors ipmiProcessors
+				err = json.Unmarshal([]byte(str), &processors)
+				if err != nil {
+					_ = resp.Body.Close()
+					return "", err
+				}
+
+>>>>>>> f41ff24f626bd8c0587cb05747b5a3edd16976db
 				_ = resp.Body.Close()
 				return str, nil
 			}

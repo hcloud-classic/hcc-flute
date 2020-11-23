@@ -5,7 +5,10 @@ import (
 	"hcc/flute/lib/config"
 	"hcc/flute/lib/logger"
 	"hcc/flute/lib/mysql"
+<<<<<<< HEAD
 	"hcc/flute/model"
+=======
+>>>>>>> f41ff24f626bd8c0587cb05747b5a3edd16976db
 	"strings"
 )
 
@@ -28,7 +31,11 @@ func BMCIPParser() error {
 		_ = stmt.Close()
 	}()
 
+<<<<<<< HEAD
 	var nodes []model.Node
+=======
+	var nodes []types.Node
+>>>>>>> f41ff24f626bd8c0587cb05747b5a3edd16976db
 	var bmcIP string
 
 	for stmt.Next() {
@@ -38,7 +45,11 @@ func BMCIPParser() error {
 			return err
 		}
 
+<<<<<<< HEAD
 		node := model.Node{BmcIP: bmcIP}
+=======
+		node := types.Node{BmcIP: bmcIP}
+>>>>>>> f41ff24f626bd8c0587cb05747b5a3edd16976db
 		nodes = append(nodes, node)
 	}
 
