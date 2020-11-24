@@ -2,12 +2,11 @@ package config
 
 import "github.com/Terry-Mao/goconf"
 
-var configLocation = "/etc/flute/flute.conf"
+var configLocation = "/etc/hcc/flute/flute.conf"
 
 type fluteConfig struct {
-	MysqlConfig    *goconf.Section
-	HTTPConfig     *goconf.Section
-	RabbitMQConfig *goconf.Section
-	IpmiConfig     *goconf.Section
+	MysqlConfig *goconf.Section
+	GrpcConfig  *goconf.Section
+	IpmiConfig  *goconf.Section
 }
 
