@@ -1,518 +1,482 @@
 package dao
 
 import (
-	dbsql "database/sql"
-	"github.com/golang/protobuf/ptypes"
-	pb "hcc/flute/action/grpc/pb/rpcflute"
-	hccerr "hcc/flute/lib/errors"
+	"errors"
+	"hcc/flute/lib/config"
 	"hcc/flute/lib/ipmi"
-	"hcc/flute/lib/iputil"
 	"hcc/flute/lib/logger"
 	"hcc/flute/lib/mysql"
-	"net"
+	"hcc/flute/model"
 	"strconv"
-	"strings"
 	"time"
 )
 
-var nodeSelectColumns = "uuid, server_uuid, bmc_mac_addr, bmc_ip, pxe_mac_addr, status, cpu_cores, memory, description, rack_number, active, created_at"
+func CreateNode(args map[string]interface{}) (interface{}, error) {
+	bmcIP, bmcIPOk := args["bmc_ip"].(string)
+	description, descriptionOk := args["description"].(string)
 
-// ReadNode : Get all of infos of a node by UUID from database.
-func ReadNode(uuid string) (*pb.Node, uint64, string) {
-	var node pb.Node
+	if !descriptionOk {
+		description = ""
+	}
 
-	var serverUUID string
-	var bmcMacAddr string
-	var bmcIPCIDR string
-	var pxeMacAdr string
-	var status string
-	var cpuCores int
-	var memory int
-	var description string
-	var rackNumber int
-	var createdAt time.Time
-	var active int
-
-	sql := "select " + nodeSelectColumns + " from node where uuid = ? and available = 1"
-	err := mysql.Db.QueryRow(sql, uuid).Scan(
-		&uuid,
-		&serverUUID,
-		&bmcMacAddr,
-		&bmcIPCIDR,
-		&pxeMacAdr,
-		&status,
-		&cpuCores,
-		&memory,
-		&description,
-		&rackNumber,
-		&active,
-		&createdAt)
-	if err != nil {
-		errStr := "ReadNode(): " + err.Error()
-		logger.Logger.Println(errStr)
-		if strings.Contains(err.Error(), "no rows in result set") {
-			return nil, hccerr.FluteSQLNoResult, errStr
+	if bmcIPOk {
+		serialNo, err := ipmi.GetSerialNo(bmcIP)
+		if err != nil {
+			logger.Logger.Println(err)
+			return nil, err
 		}
-		return nil, hccerr.FluteSQLOperationFail, errStr
+
+		uuid, err := ipmi.GetUUID(bmcIP, serialNo)
+		if err != nil {
+			logger.Logger.Println(err)
+			return nil, err
+		}
+
+		BMCmac, err := ipmi.GetNICMac(bmcIP, int(config.Ipmi.BaseboardNICNoBMC), true)
+		if err != nil {
+			logger.Logger.Println(err)
+			return nil, err
+		}
+
+		PXEmac, err := ipmi.GetNICMac(bmcIP, int(config.Ipmi.BaseboardNICNoPXE), false)
+		if err != nil {
+			logger.Logger.Println(err)
+			return nil, err
+		}
+
+		powerState, err := ipmi.GetPowerState(bmcIP, serialNo)
+		if err != nil {
+			logger.Logger.Println(err)
+			return nil, err
+		}
+
+		processors, err := ipmi.GetProcessors(bmcIP, serialNo)
+		if err != nil {
+			logger.Logger.Println(err)
+			return nil, err
+		}
+
+		cpuCores, err := ipmi.GetProcessorsCores(bmcIP, serialNo, processors)
+		if err != nil {
+			logger.Logger.Println(err)
+			return nil, err
+		}
+
+		memory, err := ipmi.GetTotalSystemMemory(bmcIP, serialNo)
+		if err != nil {
+			logger.Logger.Println(err)
+			return nil, err
+		}
+
+		node := model.Node{
+			UUID:        uuid,
+			BmcMacAddr:  BMCmac,
+			BmcIP:       bmcIP,
+			PXEMacAddr:  PXEmac,
+			Status:      powerState,
+			CPUCores:    cpuCores,
+			Memory:      memory,
+			Description: description,
+		}
+
+		sql := "insert into node(uuid, bmc_mac_addr, bmc_ip, pxe_mac_addr, status, cpu_cores, memory, description, created_at) values (?, ?, ?, ?, ?, ?, ?, ?, now())"
+		stmt, err := mysql.Db.Prepare(sql)
+		if err != nil {
+			logger.Logger.Println(err)
+			return nil, err
+		}
+		defer func() {
+			_ = stmt.Close()
+		}()
+		result, err2 := stmt.Exec(node.UUID, node.BmcMacAddr, node.BmcIP, node.PXEMacAddr, node.Status, node.CPUCores, node.Memory, node.Description)
+		if err2 != nil {
+			logger.Logger.Println(err2)
+			return nil, err2
+		}
+		logger.Logger.Println(result.LastInsertId())
+
+		err = ipmi.BMCIPParserCheckActive(node.BmcIP)
+		if err != nil {
+			logger.Logger.Println(err)
+			return nil, err
+		}
+
+		return node, nil
 	}
 
-	netIP, netIPNet, err := net.ParseCIDR(bmcIPCIDR)
-	if err != nil {
-		return nil, hccerr.FluteGrpcRequestError, "ReadNode(): " + err.Error()
-	}
-	bmcIP := netIP.String()
-	bmcIPSubnetMask := netIPNet.Mask.String()
-
-	node.UUID = uuid
-	node.ServerUUID = serverUUID
-	node.BmcMacAddr = bmcMacAddr
-	node.BmcIP = bmcIP
-	node.BmcIPSubnetMask = bmcIPSubnetMask
-	node.PXEMacAddr = pxeMacAdr
-	node.Status = status
-	node.CPUCores = int32(cpuCores)
-	node.Memory = int32(memory)
-	node.Description = description
-	node.RackNumber = int32(rackNumber)
-	node.Active = int32(active)
-
-	node.CreatedAt, err = ptypes.TimestampProto(createdAt)
-	if err != nil {
-		errStr := "ReadNode(): " + err.Error()
-		logger.Logger.Println(errStr)
-		return nil, hccerr.FluteInternalTimeStampConversionError, errStr
-	}
-
-	return &node, 0, ""
+	return nil, errors.New("need bmc_ip argument")
 }
 
-// ReadNodeList : Get selected infos of nodes from database.
-func ReadNodeList(in *pb.ReqGetNodeList) (*pb.ResGetNodeList, uint64, string) {
-	var nodeList pb.ResGetNodeList
-	var nodes []pb.Node
-	var pnodes []*pb.Node
+//func OnNode(args map[string]interface{}) (interface{}, error) {
+//	uuid, uuidOk := args["uuid"].(string)
+//
+//	if uuidOk {
+//		var bmcIP string
+//
+//		sql := "select bmc_ip from node where uuid = ?"
+//		err := mysql.Db.QueryRow(sql, uuid).Scan(&bmcIP)
+//		if err != nil {
+//			logger.Logger.Println(err)
+//			return nil, err
+//		}
+//
+//		serialNo, err := ipmi.GetSerialNo(bmcIP)
+//		if err != nil {
+//			logger.Logger.Println(err)
+//			return nil, err
+//		}
+//
+//		state, _ := ipmi.GetPowerState(bmcIP, serialNo)
+//		if state == "On" {
+//			return "Already turned on", nil
+//		}
+//
+//		result, err := ipmi.ChangePowerState(bmcIP, serialNo, "On")
+//		if err != nil {
+//			logger.Logger.Println(err)
+//			return nil, err
+//		}
+//
+//		return result, nil
+//	}
+//
+//	return nil, errors.New("need uuid argument")
+//}
+//
+//func OffNode(args map[string]interface{}) (interface{}, error) {
+//	uuid, uuidOk := args["uuid"].(string)
+//	forceOff, _ := args["force_off"].(bool)
+//
+//	if uuidOk {
+//		var bmcIP string
+//
+//		sql := "select bmc_ip from node where uuid = ?"
+//		err := mysql.Db.QueryRow(sql, uuid).Scan(&bmcIP)
+//		if err != nil {
+//			logger.Logger.Println(err)
+//			return nil, err
+//		}
+//
+//		serialNo, err := ipmi.GetSerialNo(bmcIP)
+//		if err != nil {
+//			logger.Logger.Println(err)
+//			return nil, err
+//		}
+//
+//		state, _ := ipmi.GetPowerState(bmcIP, serialNo)
+//		if state == "Off" {
+//			return "Already turned off", nil
+//		}
+//
+//		changeState := "GracefulShutdown"
+//		if forceOff {
+//			changeState = "ForceOff"
+//		}
+//		result, err := ipmi.ChangePowerState(bmcIP, serialNo, changeState)
+//		if err != nil {
+//			logger.Logger.Println(err)
+//			return nil, err
+//		}
+//
+//		return result, nil
+//	}
+//
+//	return nil, errors.New("need uuid argument")
+//}
 
-	var uuid string
-	var serverUUID string
-	var bmcMacAddr string
-	var bmcIPCIDR string
-	var pxeMacAdr string
-	var status string
-	var cpuCores int
-	var memory int
-	var description string
-	var rackNumber int
-	var createdAt time.Time
-	var active int
+func CreateNodeDetail(args map[string]interface{}) (interface{}, error) {
+	nodeUUID, nodeUUIDOk := args["node_uuid"].(string)
 
-	var isLimit bool
-	row := in.GetRow()
-	rowOk := row != 0
-	page := in.GetPage()
-	pageOk := page != 0
-	if !rowOk && !pageOk {
-		isLimit = false
-	} else if rowOk && pageOk {
-		isLimit = true
-	} else {
-		return nil, hccerr.FluteGrpcArgumentError, "ReadNodeList(): please insert row and page arguments or leave arguments as empty state"
+	if nodeUUIDOk {
+		var bmcIP string
+
+		sql := "select bmc_ip from node where uuid = ?"
+		err := mysql.Db.QueryRow(sql, nodeUUID).Scan(&bmcIP)
+		if err != nil {
+			logger.Logger.Println(err)
+			return nil, err
+		}
+
+		serialNo, err := ipmi.GetSerialNo(bmcIP)
+		if err != nil {
+			logger.Logger.Println(err)
+			return nil, err
+		}
+
+		processorModel, err := ipmi.GetProcessorModel(bmcIP, serialNo)
+		if err != nil {
+			logger.Logger.Println(err)
+			return nil, err
+		}
+
+		processors, err := ipmi.GetProcessors(bmcIP, serialNo)
+		if err != nil {
+			logger.Logger.Println(err)
+			return nil, err
+		}
+
+		threads, err := ipmi.GetProcessorsThreads(bmcIP, serialNo, processors)
+		if err != nil {
+			logger.Logger.Println(err)
+			return nil, err
+		}
+
+		nodedetail := model.NodeDetail{
+			NodeUUID:      nodeUUID,
+			CPUModel:      processorModel,
+			CPUProcessors: processors,
+			CPUThreads:    threads,
+		}
+
+		sql = "insert into node_detail(node_uuid, cpu_model, cpu_processors, cpu_threads) values (?, ?, ?, ?)"
+		stmt, err := mysql.Db.Prepare(sql)
+		if err != nil {
+			logger.Logger.Println(err)
+			return nil, err
+		}
+		defer func() {
+			_ = stmt.Close()
+		}()
+		result, err2 := stmt.Exec(nodedetail.NodeUUID, nodedetail.CPUModel, nodedetail.CPUProcessors, nodedetail.CPUThreads)
+		if err2 != nil {
+			logger.Logger.Println(err2)
+			return nil, err2
+		}
+		logger.Logger.Println(result.LastInsertId())
+
+		return nodedetail, nil
 	}
 
-	sql := "select " + nodeSelectColumns + " from node where available = 1"
+	return nil, errors.New("need node_uuid argument")
+}
 
-	if in.Node != nil {
-		reqNode := in.Node
+func UpdateNode(args map[string]interface{}) (interface{}, error) {
+	requestUUIDD, requestUUIDDOK := args["uuid"].(string)
+	bmcMacAddr, bmcMacAddrOk := args["bmc_mac_addr"].(string)
+	bmcIP, bmcIPOk := args["bmc_ip"].(string)
+	pxeMacAdr, pxeMacAdrOk := args["pxe_mac_addr"].(string)
+	status, statusOk := args["status"].(string)
+	cpuCores, cpuCoresOk := args["cpu_cores"].(int)
+	memory, memoryOk := args["memory"].(int)
+	description, descriptionOk := args["description"].(string)
+	active, activeOk := args["active"].(int)
 
-		uuid = reqNode.UUID
-		uuidOk := len(uuid) != 0
-		serverUUID = reqNode.ServerUUID
-		serverUUIDOk := len(serverUUID) != 0
-		bmcMacAddr = reqNode.BmcMacAddr
-		bmcMacAddrOk := len(bmcMacAddr) != 0
-		bmcIPCIDR = reqNode.BmcIP
-		bmcIPOk := len(bmcIPCIDR) != 0
-		pxeMacAdr = reqNode.PXEMacAddr
-		pxeMacAdrOk := len(pxeMacAdr) != 0
-		status = reqNode.Status
-		statusOk := len(status) != 0
-		cpuCores = int(reqNode.CPUCores)
-		cpuCoresOk := cpuCores != 0
-		memory = int(reqNode.Memory)
-		memoryOk := memory != 0
-		description = reqNode.Description
-		descriptionOk := len(description) != 0
-		rackNumberOk := rackNumber != 0
-		active = int(reqNode.Active)
-		// gRPC use 0 value for unset. So I will use 9 value for inactive. - ish
-		activeOk := active != 0
+	node := new(model.Node)
+	node.UUID = requestUUIDD
+	node.BmcMacAddr = bmcMacAddr
+	node.BmcIP = bmcIP
+	node.PXEMacAddr = pxeMacAdr
+	node.Status = status
+	node.CPUCores = cpuCores
+	node.Memory = memory
+	node.Description = description
+	node.Active = active
 
-		if uuidOk {
-			sql += " and uuid = '" + uuid + "'"
+	if requestUUIDDOK {
+		if !bmcMacAddrOk && !bmcIPOk && !pxeMacAdrOk && !statusOk && !cpuCoresOk && !memoryOk && !descriptionOk && !activeOk {
+			return nil, nil
 		}
-		if serverUUIDOk {
-			sql += " and server_uuid = '" + serverUUID + "'"
-		}
+
+		sql := "update node set"
 		if bmcMacAddrOk {
-			sql += " and bmc_mac_addr = '" + bmcMacAddr + "'"
+			sql += " bmc_mac_addr = '" + bmcMacAddr + "'"
+			if bmcIPOk || pxeMacAdrOk || statusOk || cpuCoresOk || memoryOk || descriptionOk || activeOk {
+				sql += ", "
+			}
 		}
 		if bmcIPOk {
-			sql += " and bmc_ip = '" + bmcIPCIDR + "'"
+			sql += " bmc_ip = '" + bmcIP + "'"
+			if pxeMacAdrOk || statusOk || cpuCoresOk || memoryOk || descriptionOk || activeOk {
+				sql += ", "
+			}
 		}
 		if pxeMacAdrOk {
-			sql += " and pxe_mac_addr = '" + pxeMacAdr + "'"
+			sql += " pxe_mac_addr = '" + pxeMacAdr + "'"
+			if statusOk || cpuCoresOk || memoryOk || descriptionOk || activeOk {
+				sql += ", "
+			}
 		}
 		if statusOk {
-			sql += " and status = '" + status + "'"
+			sql += " status = '" + status + "'"
+			if cpuCoresOk || memoryOk || descriptionOk || activeOk {
+				sql += ", "
+			}
 		}
 		if cpuCoresOk {
-			sql += " and cpu_cores = " + strconv.Itoa(cpuCores)
+			sql += " cpu_cores = '" + strconv.Itoa(cpuCores) + "'"
+			if memoryOk || descriptionOk || activeOk {
+				sql += ", "
+			}
 		}
 		if memoryOk {
-			sql += " and memory = " + strconv.Itoa(memory)
+			sql += " memory = '" + strconv.Itoa(memory) + "'"
+			if descriptionOk || activeOk {
+				sql += ", "
+			}
 		}
 		if descriptionOk {
-			sql += " and description = '" + description + "'"
-		}
-		if rackNumberOk {
-			sql += " and rack_number = " + strconv.Itoa(rackNumber)
+			sql += " description = '" + description + "'"
+			if activeOk {
+				sql += ", "
+			}
 		}
 		if activeOk {
-			sql += " and active = " + strconv.Itoa(active)
+			sql += " active = '" + strconv.Itoa(active) + "'"
+		}
+		sql += " where uuid = ?"
+
+		logger.Logger.Println("update_node sql : ", sql)
+		stmt, err := mysql.Db.Prepare(sql)
+		if err != nil {
+			logger.Logger.Println(err.Error())
+			return nil, nil
+		}
+		defer func() {
+			_ = stmt.Close()
+		}()
+
+		result, err2 := stmt.Exec(node.UUID)
+		if err2 != nil {
+			logger.Logger.Println(err2)
+			return nil, nil
+		}
+		logger.Logger.Println(result.LastInsertId())
+		return node, nil
+	}
+	return nil, nil
+}
+
+func SelectNode(args map[string]interface{}) (interface{}, error) {
+	requestedUUID, ok := args["uuid"].(string)
+	if ok {
+		node := new(model.Node)
+
+		var uuid string
+		var BMCmacAddr string
+		var bmcIP string
+		var pxeMacAddr string
+		var status string
+		var cpuCores int
+		var memory int
+		var description string
+		var createdAt time.Time
+		var active int
+
+		sql := "select * from node where uuid = ?"
+		err := mysql.Db.QueryRow(sql, requestedUUID).Scan(&uuid, &BMCmacAddr, &bmcIP, &pxeMacAddr, &status, &cpuCores, &memory, &description, &createdAt, &active)
+		if err != nil {
+			logger.Logger.Println(err)
+			return nil, err
+		}
+
+		node.UUID = uuid
+		node.BmcMacAddr = BMCmacAddr
+		node.BmcIP = bmcIP
+		node.PXEMacAddr = pxeMacAddr
+		node.Status = status
+		node.CPUCores = cpuCores
+		node.Memory = memory
+		node.Description = description
+		node.CreatedAt = createdAt
+		node.Active = active
+
+		return node, nil
+	}
+	return nil, errors.New("need uuid argument")
+}
+
+func ListNode(args map[string]interface{}) (interface{}, error) {
+	var nodes []model.Node
+	var uuid string
+	var createdAt time.Time
+
+	bmcMacAddr, bmcMacAddrOk := args["bmc_mac_addr"].(string)
+	bmcIP, bmcIPOk := args["bmc_ip"].(string)
+	pxeMacAdr, pxeMacAdrOk := args["pxe_mac_addr"].(string)
+	status, statusOk := args["status"].(string)
+	cpuCores, cpuCoresOk := args["cpu_cores"].(int)
+	memory, memoryOk := args["memory"].(int)
+	description, descriptionOk := args["description"].(string)
+	active, activeOk := args["active"].(int)
+	row, rowOk := args["row"].(int)
+	page, pageOk := args["page"].(int)
+	if !rowOk || !pageOk {
+		return nil, nil
+	}
+
+	sql := "select * from node where"
+	if bmcMacAddrOk {
+		sql += " bmc_mac_addr = '" + bmcMacAddr + "'"
+		if bmcIPOk || pxeMacAdrOk || statusOk || cpuCoresOk || memoryOk || descriptionOk || activeOk {
+			sql += " and"
 		}
 	}
-
-	var stmt *dbsql.Rows
-	var err error
-	if isLimit {
-		sql += " order by created_at desc limit ? offset ?"
-		stmt, err = mysql.Db.Query(sql, row, row*(page-1))
-	} else {
-		sql += " order by created_at desc"
-		stmt, err = mysql.Db.Query(sql)
+	if bmcIPOk {
+		sql += " bmc_ip = '" + bmcIP + "'"
+		if pxeMacAdrOk || statusOk || cpuCoresOk || memoryOk || descriptionOk || activeOk {
+			sql += " and"
+		}
 	}
+	if pxeMacAdrOk {
+		sql += " pxe_mac_addr = '" + pxeMacAdr + "'"
+		if statusOk || cpuCoresOk || memoryOk || descriptionOk || activeOk {
+			sql += " and"
+		}
+	}
+	if statusOk {
+		sql += " status = '" + status + "'"
+		if cpuCoresOk || memoryOk || descriptionOk || activeOk {
+			sql += " and"
+		}
+	}
+	if cpuCoresOk {
+		sql += " cpu_cores = '" + strconv.Itoa(cpuCores) + "'"
+		if memoryOk || descriptionOk || activeOk {
+			sql += " and"
+		}
+	}
+	if memoryOk {
+		sql += " memory = '" + strconv.Itoa(memory) + "'"
+		if descriptionOk || activeOk {
+			sql += " and"
+		}
+	}
+	if descriptionOk {
+		sql += " description = '" + description + "'"
+		if activeOk {
+			sql += " and"
+		}
+	}
+	if activeOk {
+		sql += " active = '" + strconv.Itoa(active) + "'"
+	}
+	sql += " order by created_at desc limit ? offset ?"
 
+	logger.Logger.Println("list_node sql : ", sql)
+
+	stmt, err := mysql.Db.Query(sql, row, row*(page-1))
 	if err != nil {
-		errStr := "ReadNode(): " + err.Error()
-		logger.Logger.Println(errStr)
-		return nil, hccerr.FluteSQLOperationFail, errStr
+		logger.Logger.Println(err)
+		return nil, nil
 	}
 	defer func() {
 		_ = stmt.Close()
 	}()
 
 	for stmt.Next() {
-		err := stmt.Scan(&uuid, &serverUUID, &bmcMacAddr, &bmcIPCIDR, &pxeMacAdr, &status, &cpuCores, &memory, &description, &rackNumber, &active, &createdAt)
+		err := stmt.Scan(&uuid, &bmcMacAddr, &bmcIP, &pxeMacAdr, &status, &cpuCores, &memory, &description, &createdAt, &active)
 		if err != nil {
-			errStr := "ReadNodeList(): " + err.Error()
-			logger.Logger.Println(errStr)
-			if strings.Contains(err.Error(), "no rows in result set") {
-				return nil, hccerr.FluteSQLNoResult, errStr
-			}
-			return nil, hccerr.FluteSQLOperationFail, errStr
+			logger.Logger.Println(err)
 		}
-
-		if uuid == "" || pxeMacAdr == "" || cpuCores == 0 || memory == 0 {
-			logger.Logger.Println("ReadNodeList(): " + bmcIPCIDR + "'s fields have not yet been filled.")
-			continue
-		}
-
-		_createdAt, err := ptypes.TimestampProto(createdAt)
-		if err != nil {
-			errStr := "ReadNodeList(): " + err.Error()
-			logger.Logger.Println(errStr)
-			return nil, hccerr.FluteInternalTimeStampConversionError, errStr
-		}
-
-		// gRPC use 0 value for unset. So I will use 9 value for inactive. - ish
-		if active == 9 {
-			active = 0
-		}
-
-		netIP, netIPNet, err := net.ParseCIDR(bmcIPCIDR)
-		if err != nil {
-			return nil, hccerr.FluteGrpcRequestError, "ReadNodeList(): " + err.Error()
-		}
-		bmcIP := netIP.String()
-		bmcIPSubnetMask := net.IPv4(netIPNet.Mask[0], netIPNet.Mask[1], netIPNet.Mask[2], netIPNet.Mask[3]).To4().String()
-
-		nodes = append(nodes, pb.Node{
-			UUID:            uuid,
-			ServerUUID:      serverUUID,
-			BmcMacAddr:      bmcMacAddr,
-			BmcIP:           bmcIP,
-			BmcIPSubnetMask: bmcIPSubnetMask,
-			PXEMacAddr:      pxeMacAdr,
-			Status:          status,
-			CPUCores:        int32(cpuCores),
-			Memory:          int32(memory),
-			Description:     description,
-			RackNumber:      int32(rackNumber),
-			Active:          int32(active),
-			CreatedAt:       _createdAt,
-		})
+		node := model.Node{UUID: uuid, BmcMacAddr: bmcMacAddr, BmcIP: bmcIP, PXEMacAddr: pxeMacAdr, Status: status, CPUCores: cpuCores, Memory: memory, Description: description, CreatedAt: createdAt, Active: active}
+		nodes = append(nodes, node)
 	}
-
-	for i := range nodes {
-		pnodes = append(pnodes, &nodes[i])
-	}
-
-	nodeList.Node = pnodes
-
-	return &nodeList, 0, ""
+	return nodes, nil
 }
 
-// ReadNodeNum : Get count of nodes from database.
-func ReadNodeNum() (*pb.ResGetNodeNum, uint64, string) {
-	var resNodeNum pb.ResGetNodeNum
-	var nodeNr int64
-
-	sql := "select count(*) from node where available = 1"
-	err := mysql.Db.QueryRow(sql).Scan(&nodeNr)
-	if err != nil {
-		errStr := "ReadNodeNum(): " + err.Error()
-		logger.Logger.Println(errStr)
-		if strings.Contains(err.Error(), "no rows in result set") {
-			return nil, hccerr.FluteSQLNoResult, errStr
-		}
-		return nil, hccerr.FluteSQLOperationFail, errStr
-	}
-	resNodeNum.Num = nodeNr
-
-	return &resNodeNum, 0, ""
-}
-
-func checkCreateNodeArgs(reqNode *pb.Node) bool {
-	UUIDOk := len(reqNode.UUID) != 0
-	serverUUIDOk := len(reqNode.ServerUUID) != 0
-	bmcMacAddrOk := len(reqNode.BmcMacAddr) != 0
-	pxeMacAdrOk := len(reqNode.PXEMacAddr) != 0
-	statusOk := len(reqNode.Status) != 0
-	cpuCoresOk := reqNode.CPUCores != 0
-	memoryOk := reqNode.Memory != 0
-
-	return !(UUIDOk && serverUUIDOk && bmcMacAddrOk && pxeMacAdrOk && statusOk && cpuCoresOk && memoryOk)
-}
-
-// CreateNode : Add a node to database.
-func CreateNode(in *pb.ReqCreateNode) (*pb.Node, uint64, string) {
-	reqNode := in.GetNode()
-	if reqNode == nil {
-		return nil, hccerr.FluteGrpcRequestError, "CreateNode(): node is nil"
-	}
-
-	bmcIPOk := len(reqNode.BmcIP) != 0
-	descriptionOk := len(reqNode.Description) != 0
-	if !bmcIPOk || !descriptionOk {
-		return nil, hccerr.FluteGrpcRequestError, "CreateNode(): need bmcIP and description arguments"
-	} else if !bmcIPOk && checkCreateNodeArgs(reqNode) {
-		return nil, hccerr.FluteGrpcRequestError, "CreateNode(): some of arguments are missing"
-	}
-
-	err := iputil.CheckCIDRStr(reqNode.BmcIP)
-	if err != nil {
-		return nil, hccerr.FluteGrpcRequestError, "CreateNode(): " + err.Error()
-	}
-
-	_, _, err = net.ParseCIDR(reqNode.BmcIP)
-	if err != nil {
-		return nil, hccerr.FluteGrpcRequestError, "CreateNode(): " + err.Error()
-	}
-
-	node := pb.Node{
-		UUID:        reqNode.UUID,
-		ServerUUID:  "",
-		BmcMacAddr:  reqNode.BmcMacAddr,
-		BmcIP:       reqNode.BmcIP,
-		PXEMacAddr:  reqNode.PXEMacAddr,
-		Status:      reqNode.Status,
-		CPUCores:    reqNode.CPUCores,
-		Memory:      reqNode.Memory,
-		Description: reqNode.Description,
-		RackNumber:  reqNode.RackNumber,
-	}
-
-	sql := "insert into node(uuid, server_uuid, bmc_mac_addr, bmc_ip, pxe_mac_addr, status, cpu_cores, memory, description, rack_number, created_at, available) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, now(), 1)"
-	stmt, err := mysql.Db.Prepare(sql)
-	if err != nil {
-		errStr := "CreateNode(): " + err.Error()
-		logger.Logger.Println(errStr)
-		return nil, hccerr.FluteSQLOperationFail, errStr
-	}
-	defer func() {
-		_ = stmt.Close()
-	}()
-	_, err = stmt.Exec(node.UUID, node.ServerUUID, node.BmcMacAddr, node.BmcIP, node.PXEMacAddr, node.Status, node.CPUCores, node.Memory, node.Description, node.RackNumber)
-	if err != nil {
-		errStr := "CreateNode(): " + err.Error()
-		logger.Logger.Println(errStr)
-		return nil, hccerr.FluteSQLOperationFail, errStr
-	}
-
-	return &node, 0, ""
-}
-
-// NodePowerControl : Change power state of nodes
-func NodePowerControl(in *pb.ReqNodePowerControl) ([]string, uint64, string) {
-	nodes := in.GetNode()
-	if nodes == nil {
-		return nil, hccerr.FluteGrpcArgumentError, "NodePowerControl(): need some Nodes"
-	}
-
-	var results []string
-
-	var changeState string
-	switch in.GetPowerState() {
-	case pb.PowerState_ON:
-		changeState = "On"
-		break
-	case pb.PowerState_OFF:
-		changeState = "GracefulShutdown"
-		break
-	case pb.PowerState_FORCE_OFF:
-		changeState = "ForceOff"
-		break
-	case pb.PowerState_FORCE_RESTART:
-		changeState = "ForceRestart"
-		break
-	}
-
-	for _, node := range nodes {
-		if len(node.UUID) == 0 {
-			continue
-		}
-
-		var bmcIPCIDR string
-		var bmcIP string
-		var netIP net.IP
-		var result string
-		var serialNo string
-
-		sql := "select bmc_ip from node where uuid = ?"
-		err := mysql.Db.QueryRow(sql, node.UUID).Scan(&bmcIPCIDR)
-		if err != nil {
-			result = err.Error()
-			logger.Logger.Println("NodePowerControl(): " + err.Error())
-			goto APPEND
-		}
-
-		netIP, _, err = net.ParseCIDR(bmcIPCIDR)
-		if err != nil {
-			return nil, hccerr.FluteGrpcRequestError, "NodePowerControl(): " + err.Error()
-		}
-		bmcIP = netIP.String()
-
-		serialNo, err = ipmi.GetSerialNo(bmcIP)
-		if err != nil {
-			result = "[" + bmcIP + "]: " + err.Error()
-			logger.Logger.Println("NodePowerControl(): " + result)
-			goto APPEND
-		}
-
-		if changeState == "On" {
-			state, _ := ipmi.GetPowerState(bmcIP, serialNo)
-			if state == "On" {
-				result = "[" + bmcIP + "]: Already turned on"
-				logger.Logger.Println("NodePowerControl(): " + result)
-				goto APPEND
-			}
-		} else if changeState == "GracefulShutdown" ||
-			changeState == "ForceOff" {
-			state, _ := ipmi.GetPowerState(bmcIP, serialNo)
-			if state == "Off" {
-				result = "[" + bmcIP + "]: Already turned off"
-				logger.Logger.Println("NodePowerControl(): " + result)
-				goto APPEND
-			}
-		}
-
-		result, err = ipmi.ChangePowerState(bmcIP, serialNo, changeState)
-		if err != nil {
-			result = "[" + bmcIP + "]: " + err.Error()
-			logger.Logger.Println("NodePowerControl(): " + result)
-			goto APPEND
-		}
-		result = "[" + bmcIP + "]: " + result
-
-	APPEND:
-		results = append(results, result)
-	}
-
-	return results, 0, ""
-}
-
-// GetNodePowerState : Get power state of the node
-func GetNodePowerState(in *pb.ReqNodePowerState) (string, uint64, string) {
-	uuid := in.GetUUID()
-	uuidOk := len(uuid) != 0
-	if !uuidOk {
-		return "", hccerr.FluteGrpcArgumentError, "GetNodePowerState(): need a uuid argument"
-	}
-
-	var bmcIPCIDR string
-
-	sql := "select bmc_ip from node where uuid = ?"
-	err := mysql.Db.QueryRow(sql, uuid).Scan(&bmcIPCIDR)
-	if err != nil {
-		errStr := "GetNodePowerState(): " + err.Error()
-		logger.Logger.Println(errStr)
-		return "", hccerr.FluteSQLOperationFail, errStr
-	}
-
-	netIP, _, err := net.ParseCIDR(bmcIPCIDR)
-	if err != nil {
-		return "", hccerr.FluteGrpcRequestError, "GetNodePowerState(): " + err.Error()
-	}
-	bmcIP := netIP.String()
-
-	serialNo, err := ipmi.GetSerialNo(bmcIP)
-	if err != nil {
-		logger.Logger.Println(err)
-		return "", hccerr.FluteInternalIPMIError, "GetNodePowerState(): " + err.Error()
-	}
-
-	result, err := ipmi.GetPowerState(bmcIP, serialNo)
-	if err != nil {
-		logger.Logger.Println(err)
-		return "", hccerr.FluteInternalIPMIError, "GetNodePowerState(): " + err.Error()
-	}
-
-	return result, 0, ""
-}
-
-func checkUpdateNodeArgs(reqNode *pb.Node) bool {
-	serverUUIDOk := len(reqNode.ServerUUID) != 0
-	bmcMacAddrOk := len(reqNode.BmcMacAddr) != 0
-	bmcIPOk := len(reqNode.BmcIP) != 0
-	pxeMacAdrOk := len(reqNode.PXEMacAddr) != 0
-	statusOk := len(reqNode.Status) != 0
-	cpuCoresOk := reqNode.CPUCores != 0
-	memoryOk := reqNode.Memory != 0
-	descriptionOk := len(reqNode.Description) != 0
-	rackNumberOk := reqNode.RackNumber != 0
-	// gRPC use 0 value for unset. So I will use 9 value for inactive. - ish
-	activeOk := reqNode.Active != 0
-
-	return !serverUUIDOk && !bmcMacAddrOk && !bmcIPOk && !pxeMacAdrOk && !statusOk && !cpuCoresOk && !memoryOk && !descriptionOk && !rackNumberOk && !activeOk
-}
-
-// UpdateNode : Update infos of the node.
-func UpdateNode(in *pb.ReqUpdateNode) (*pb.Node, uint64, string) {
-	if in.Node == nil {
-		return nil, hccerr.FluteGrpcArgumentError, "UpdateNode(): node is nil"
-	}
-	reqNode := in.Node
-
-	requestedUUID := reqNode.GetUUID()
-	requestedUUIDOk := len(requestedUUID) != 0
-	if !requestedUUIDOk {
-		return nil, hccerr.FluteGrpcArgumentError, "UpdateNode(): need a uuid argument"
-	}
-
-	if checkUpdateNodeArgs(reqNode) {
-		return nil, hccerr.FluteGrpcArgumentError, "UpdateNode(): need some arguments"
-	}
-
-	var serverUUID string
+func AllNode(args map[string]interface{}) (interface{}, error) {
+	var nodes []model.Node
+	var uuid string
 	var bmcMacAddr string
 	var bmcIP string
 	var pxeMacAdr string
@@ -520,150 +484,142 @@ func UpdateNode(in *pb.ReqUpdateNode) (*pb.Node, uint64, string) {
 	var cpuCores int
 	var memory int
 	var description string
-	var rackNumber int
+	var createdAt time.Time
 	var active int
+	row, rowOk := args["row"].(int)
+	page, pageOk := args["page"].(int)
+	if !rowOk || !pageOk {
+		return nil, nil
+	}
 
-	serverUUID = in.GetNode().ServerUUID
-	serverUUIDOk := len(serverUUID) != 0
-	bmcMacAddr = in.GetNode().BmcMacAddr
-	bmcMacAddrOk := len(bmcMacAddr) != 0
-	bmcIP = in.GetNode().BmcIP
-	bmcIPOk := len(reqNode.BmcIP) != 0
-	pxeMacAdr = in.GetNode().PXEMacAddr
-	pxeMacAdrOk := len(pxeMacAdr) != 0
-	status = in.GetNode().Status
-	statusOk := len(status) != 0
-	cpuCores = int(in.GetNode().CPUCores)
-	cpuCoresOk := cpuCores != 0
-	memory = int(in.GetNode().Memory)
-	memoryOk := memory != 0
-	description = in.GetNode().Description
-	descriptionOk := len(description) != 0
-	rackNumberOk := rackNumber != 0
-	active = int(in.GetNode().Active)
-	// gRPC use 0 value for unset. So I will use 9 value for inactive. - ish
-	activeOk := active != 0
-
-	node := new(pb.Node)
-	node.ServerUUID = serverUUID
-	node.UUID = requestedUUID
-	node.BmcMacAddr = bmcMacAddr
-	node.BmcIP = bmcIP
-	node.PXEMacAddr = pxeMacAdr
-	node.Status = status
-	node.CPUCores = int32(cpuCores)
-	node.Memory = int32(memory)
-	node.Description = description
-	node.RackNumber = int32(rackNumber)
-	node.Active = int32(active)
-
-	sql := "update node set"
-	var updateSet = ""
-	if serverUUIDOk {
-		updateSet += " server_uuid = '" + serverUUID + "', "
-	}
-	if bmcMacAddrOk {
-		updateSet += " bmc_mac_addr = '" + bmcMacAddr + "', "
-	}
-	if bmcIPOk {
-		err := iputil.CheckCIDRStr(bmcIP)
-		if err != nil {
-			return nil, hccerr.FluteGrpcRequestError, "UpdateNode(): " + err.Error()
-		}
-
-		_, _, err = net.ParseCIDR(bmcIP)
-		if err != nil {
-			return nil, hccerr.FluteGrpcRequestError, "UpdateNode(): " + err.Error()
-		}
-
-		updateSet += " bmc_ip = '" + bmcIP + "', "
-	}
-	if pxeMacAdrOk {
-		updateSet += " pxe_mac_addr = '" + pxeMacAdr + "', "
-	}
-	if statusOk {
-		updateSet += " status = '" + status + "', "
-	}
-	if cpuCoresOk {
-		updateSet += " cpu_cores = " + strconv.Itoa(cpuCores) + ", "
-	}
-	if memoryOk {
-		updateSet += " memory = " + strconv.Itoa(memory) + ", "
-	}
-	if descriptionOk {
-		updateSet += " description = '" + description + "', "
-	}
-	if rackNumberOk {
-		updateSet += " rack_number = " + strconv.Itoa(rackNumber) + ", "
-	}
-	if activeOk {
-		// gRPC use 0 value for unset. So I will use 9 value for inactive. - ish
-		if active != 1 && active != 9 {
-			return nil, hccerr.FluteGrpcRequestError, "active value should be 1 for active or 9 for inactive"
-		}
-		updateSet += " active = " + strconv.Itoa(active) + ", "
-	}
-	sql += updateSet[0:len(updateSet)-2] + " where uuid = ?"
-
-	logger.Logger.Println("update_node sql : ", sql)
-
-	stmt, err := mysql.Db.Prepare(sql)
+	sql := "select * from node order by created_at desc limit ? offset ?"
+	logger.Logger.Println("list_server sql  : ", sql)
+	stmt, err := mysql.Db.Query(sql, row, row*(page-1))
 	if err != nil {
-		errStr := "UpdateNode(): " + err.Error()
-		logger.Logger.Println(errStr)
-		return nil, hccerr.FluteSQLOperationFail, errStr
+		logger.Logger.Println(err)
+		return nil, err
 	}
 	defer func() {
 		_ = stmt.Close()
 	}()
 
-	_, err2 := stmt.Exec(node.UUID)
-	if err2 != nil {
-		errStr := "UpdateNode(): " + err2.Error()
-		logger.Logger.Println(errStr)
-		return nil, hccerr.FluteSQLOperationFail, errStr
+	for stmt.Next() {
+		err := stmt.Scan(&uuid, &bmcMacAddr, &bmcIP, &pxeMacAdr, &status, &cpuCores, &memory, &description, &createdAt, &active)
+		if err != nil {
+			logger.Logger.Println(err)
+			return nil, err
+		}
+		node := model.Node{UUID: uuid, BmcMacAddr: bmcMacAddr, BmcIP: bmcIP, PXEMacAddr: pxeMacAdr, Status: status, CPUCores: cpuCores, Memory: memory, Description: description, CreatedAt: createdAt, Active: active}
+		nodes = append(nodes, node)
 	}
-
-	node, errCode, errStr := ReadNode(node.UUID)
-	if errCode != 0 {
-		logger.Logger.Println("UpdateNode(): " + errStr)
-	}
-
-	return node, 0, ""
+	return nodes, nil
 }
 
-// DeleteNode : Delete a node from database.
-func DeleteNode(in *pb.ReqDeleteNode) (string, uint64, string) {
-	var err error
+func DetailNode(args map[string]interface{}) (interface{}, error) {
+	nodeDetail := new(model.NodeDetail)
+	var nodeUUID string
+	var cpuModel string
+	var cpuProcessors int
+	var cpuThreads int
+	requestedNodeUUID, requestedNodeUUIDok := args["node_uuid"].(string)
+	if requestedNodeUUIDok {
+		sql := "select * from node_detail where node_uuid = ?"
+		err := mysql.Db.QueryRow(sql, requestedNodeUUID).Scan(&nodeUUID, &cpuModel, &cpuProcessors, &cpuThreads)
+		if err != nil {
+			logger.Logger.Println(err)
+			return nil, err
+		}
+		nodeDetail.NodeUUID = nodeUUID
+		nodeDetail.CPUModel = cpuModel
+		nodeDetail.CPUProcessors = cpuProcessors
+		nodeDetail.CPUThreads = cpuThreads
 
-	requestedUUID := in.GetUUID()
-	requestedUUIDOk := len(requestedUUID) != 0
-	if !requestedUUIDOk {
-		return "", hccerr.FluteGrpcArgumentError, "DeleteNode(): need a uuid argument"
+		return nodeDetail, nil
+	}
+	return nil, errors.New("need node_uuid argument")
+}
+
+func NumNode(args map[string]interface{}) (interface{}, error) {
+	var nodeNum model.NodeNum
+	var nodeNr int
+
+	sql := "select count(*) from node"
+	err := mysql.Db.QueryRow(sql).Scan(&nodeNr)
+	if err != nil {
+		logger.Logger.Println(err)
+		return nil, err
 	}
 
-	sql := "delete from node where uuid = ?"
-	stmt, err := mysql.Db.Prepare(sql)
+	logger.Logger.Println("Count: ", nodeNr)
+	nodeNum.Number = nodeNr
+
+	return nodeNum, nil
+}
+
+func GetAvailableNodes() ([]model.Node, error) {
+	var nodes []model.Node
+	var node model.Node
+
+	sql := "select * from node where server_uuid is not null"
+	stmt, err := mysql.Db.Query(sql)
 	if err != nil {
-		errStr := "DeleteNode(): " + err.Error()
-		logger.Logger.Println(errStr)
-		return "", hccerr.FluteSQLOperationFail, errStr
+		logger.Logger.Println(err)
+		return nil, nil
 	}
 	defer func() {
 		_ = stmt.Close()
 	}()
-	result, err2 := stmt.Exec(requestedUUID)
-	if err2 != nil {
-		errStr := "DeleteNode(): " + err2.Error()
-		logger.Logger.Println(errStr)
-		return "", hccerr.FluteSQLOperationFail, errStr
-	}
-	logger.Logger.Println(result.RowsAffected())
 
-	_, errCode, errStr := DeleteNodeDetail(&pb.ReqDeleteNodeDetail{NodeUUID: requestedUUID})
-	if errCode != 0 {
-		logger.Logger.Println("DeleteNode(): " + errStr)
+	for stmt.Next() {
+		err := stmt.Scan(&node.UUID, &node.BmcMacAddr, &node.BmcIP, &node.PXEMacAddr, &node.Status, &node.CPUCores, &node.Memory, &node.Description, &node.CreatedAt, &node.Active)
+		if err != nil {
+			logger.Logger.Println(err)
+		}
+		nodes = append(nodes, node)
 	}
 
-	return requestedUUID, 0, ""
+	return nodes, nil
+}
+
+func UpdateNodeServerUUID(node model.Node, serverUUID string) error {
+		sql := "update node set server_uuid = server_uuid where uuid = ?"
+		stmt, err := mysql.Db.Prepare(sql)
+		if err != nil {
+			return err
+		}
+		defer func() {
+			_ = stmt.Close()
+		}()
+
+		_, err2 := stmt.Exec(node.UUID)
+		if err2 != nil {
+			return err2
+		}
+
+		return nil
+}
+
+func GetNodesOfServer(serverUUID string) ([]model.Node, error) {
+	var nodes []model.Node
+	var node model.Node
+
+	sql := "select * from node where server_uuid  = " + serverUUID
+	stmt, err := mysql.Db.Query(sql)
+	if err != nil {
+		logger.Logger.Println(err)
+		return nil, nil
+	}
+	defer func() {
+		_ = stmt.Close()
+	}()
+
+	for stmt.Next() {
+		err := stmt.Scan(&node.UUID, &node.BmcMacAddr, &node.BmcIP, &node.PXEMacAddr, &node.Status, &node.CPUCores, &node.Memory, &node.Description, &node.CreatedAt, &node.Active)
+		if err != nil {
+			logger.Logger.Println(err)
+		}
+		nodes = append(nodes, node)
+	}
+
+	return nodes, nil
 }

@@ -15,7 +15,7 @@ type ipmiNodeInfo struct {
 	OdataContext string `json:"@odata.context"`
 	OdataID      string `json:"@odata.id"`
 	OdataType    string `json:"@odata.type"`
-	ID           string `json:"ID"`
+	ID           string `json:"Id"`
 	SerialNumber string `json:"SerialNumber"`
 	Name         string `json:"Name"`
 	Model        string `json:"Model"`
@@ -127,7 +127,7 @@ type ipmiCPU struct {
 	OdataID               string `json:"@odata.id"`
 	OdataType             string `json:"@odata.type"`
 	Name                  string `json:"Name"`
-	ID                    string `json:"ID"`
+	ID                    string `json:"Id"`
 	Socket                string `json:"Socket"`
 	ProcessorType         string `json:"ProcessorType"`
 	ProcessorArchitecture string `json:"ProcessorArchitecture"`
@@ -166,7 +166,7 @@ type ipmiNIC struct {
 	OdataType    string `json:"@odata.type"`
 	OdataContext string `json:"@odata.context"`
 	OdataID      string `json:"@odata.id"`
-	ID           string `json:"ID"`
+	ID           string `json:"Id"`
 	Name         string `json:"Name"`
 	Description  string `json:"Description"`
 	Status       struct {
