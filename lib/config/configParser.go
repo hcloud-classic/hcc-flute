@@ -43,42 +43,13 @@ func parseMysql() {
 	}
 }
 
-func parseHTTP() {
-	config.HTTPConfig = conf.Get("http")
-	if config.HTTPConfig == nil {
-		logger.Logger.Panicln("no http section")
+func parseGrpc() {
+	config.GrpcConfig = conf.Get("grpc")
+	if config.GrpcConfig == nil {
+		logger.Logger.Panicln("no grpc section")
 	}
 
-	HTTP = http{}
-	HTTP.Port, err = config.HTTPConfig.Int("port")
-	if err != nil {
-		logger.Logger.Panicln(err)
-	}
-}
-
-func parseRabbitMQ() {
-	config.RabbitMQConfig = conf.Get("rabbitmq")
-	if config.RabbitMQConfig == nil {
-		logger.Logger.Panicln("no rabbitmq section")
-	}
-
-	RabbitMQ = rabbitmq{}
-	RabbitMQ.ID, err = config.RabbitMQConfig.String("rabbitmq_id")
-	if err != nil {
-		logger.Logger.Panicln(err)
-	}
-
-	RabbitMQ.Password, err = config.RabbitMQConfig.String("rabbitmq_password")
-	if err != nil {
-		logger.Logger.Panicln(err)
-	}
-
-	RabbitMQ.Address, err = config.RabbitMQConfig.String("rabbitmq_address")
-	if err != nil {
-		logger.Logger.Panicln(err)
-	}
-
-	RabbitMQ.Port, err = config.RabbitMQConfig.Int("rabbitmq_port")
+	Grpc.Port, err = config.GrpcConfig.Int("port")
 	if err != nil {
 		logger.Logger.Panicln(err)
 	}
@@ -137,25 +108,24 @@ func parseIpmi() {
 		logger.Logger.Panicln(err)
 	}
 
-	Ipmi.BaseboardNICNoPXE, err = config.IpmiConfig.Int("baseboard_nic_no_pxe")
+	Ipmi.BaseboardNICNumPXE, err = config.IpmiConfig.Int("baseboard_nic_num_pxe")
 	if err != nil {
 		logger.Logger.Panicln(err)
 	}
 
-	Ipmi.BaseboardNICNoBMC, err = config.IpmiConfig.Int("baseboard_nic_no_bmc")
+	Ipmi.BaseboardNICNumBMC, err = config.IpmiConfig.Int("baseboard_nic_num_bmc")
 	if err != nil {
 		logger.Logger.Panicln(err)
 	}
 }
 
-// Parser : Parse config file
-func Parser() {
+// Init : Parse config file and initialize config structure
+func Init() {
 	if err = conf.Parse(configLocation); err != nil {
 		logger.Logger.Panicln(err)
 	}
 
 	parseMysql()
-	parseHTTP()
-	parseRabbitMQ()
+	parseGrpc()
 	parseIpmi()
 }

@@ -11,8 +11,8 @@ import (
 // Db : Pointer of mysql connection
 var Db *sql.DB
 
-// Prepare : Connect to mysql and prepare pointer of mysql connection
-func Prepare() error {
+// Init : Initialize mysql connection
+func Init() error {
 	var err error
 	Db, err = sql.Open("mysql",
 		config.Mysql.ID+":"+config.Mysql.Password+"@tcp("+
@@ -29,7 +29,14 @@ func Prepare() error {
 		return err
 	}
 
-	logger.Logger.Println("db is connected")
+	logger.Logger.Println("Connected to MySQL database")
 
 	return nil
+}
+
+// End : Close mysql connection
+func End() {
+	if Db != nil {
+		_ = Db.Close()
+	}
 }

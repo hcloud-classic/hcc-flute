@@ -462,13 +462,6 @@ func ChangePowerState(bmcIP string, serialNo string, state string) (string, erro
 
 				str := string(respBody)
 
-				var processors ipmiProcessors
-				err = json.Unmarshal([]byte(str), &processors)
-				if err != nil {
-					_ = resp.Body.Close()
-					return "", err
-				}
-
 				_ = resp.Body.Close()
 				return str, nil
 			}
@@ -529,7 +522,7 @@ func GetNICMac(bmcIP string, nicNO int, isBMC bool) (string, error) {
 					return "", errors.New("GetNICMac(): Invalid mac address")
 				}
 
-				lastPart := lastMacOffset(macParts[len(macParts)-1])
+				lastPart := lastMacOffset(macParts[len(macParts)-1], nicNO+1)
 				for i, part := range macParts {
 					if i == len(macParts)-1 {
 						break

@@ -1,80 +1,62 @@
 package main
 
 import (
-	"hcc/flute/action/graphql"
-	"hcc/flute/action/rabbitmq"
+	"fmt"
+	"hcc/flute/action/grpc/server"
 	"hcc/flute/lib/config"
+	"hcc/flute/lib/errors"
 	"hcc/flute/lib/ipmi"
 	"hcc/flute/lib/logger"
 	"hcc/flute/lib/mysql"
-	"hcc/flute/lib/syscheck"
-	"net/http"
+	"os"
+	"os/signal"
 	"strconv"
+	"syscall"
 )
 
-func main() {
-	if !syscheck.CheckRoot() {
-		return
-	}
-
-	if !logger.Prepare() {
-		return
-	}
-	defer func() {
-		_ = logger.FpLog.Close()
-	}()
-
-	config.Parser()
-
-	err := mysql.Prepare()
+func init() {
+	err := logger.Init()
 	if err != nil {
-		return
+		errors.SetErrLogger(logger.Logger)
+		errors.NewHccError(errors.FluteInternalInitFail, "logger.Init(): "+err.Error()).Fatal()
 	}
-	defer func() {
-		_ = mysql.Db.Close()
-	}()
+	errors.SetErrLogger(logger.Logger)
+
+	config.Init()
+
+	err = mysql.Init()
+	if err != nil {
+		errors.NewHccError(errors.FluteInternalInitFail, "mysql.Init(): "+err.Error()).Fatal()
+	}
 
 	err = ipmi.BMCIPParser()
 	if err != nil {
-		return
+		errors.NewHccError(errors.FluteInternalInitFail, "ipmi.BMCIPParser(): "+err.Error()).Fatal()
 	}
 
-	//logger.Logger.Println("Starting ipmi.CheckAll(). Interval is " + strconv.Itoa(int(config.Ipmi.CheckAllIntervalMs)) + "ms")
-	//ipmi.CheckAll()
-	//logger.Logger.Println("Starting ipmi.CheckStatus(). Interval is " + strconv.Itoa(int(config.Ipmi.CheckStatusIntervalMs)) + "ms")
-	//ipmi.CheckStatus()
-	//logger.Logger.Println("Starting ipmi.CheckNodesDetail(). Interval is " + strconv.Itoa(int(config.Ipmi.CheckNodesDetailIntervalMs)) + "ms")
-	//ipmi.CheckNodesDetail()
+	logger.Logger.Println("Starting ipmi.CheckAll(). Interval is " + strconv.Itoa(int(config.Ipmi.CheckAllIntervalMs)) + "ms")
+	ipmi.CheckAll()
+	logger.Logger.Println("Starting ipmi.CheckStatus(). Interval is " + strconv.Itoa(int(config.Ipmi.CheckStatusIntervalMs)) + "ms")
+	ipmi.CheckStatus()
+	logger.Logger.Println("Starting ipmi.CheckNodesDetail(). Interval is " + strconv.Itoa(int(config.Ipmi.CheckNodesDetailIntervalMs)) + "ms")
+	ipmi.CheckNodesDetail()
+}
 
-	err = rabbitmq.PrepareChannel()
-	if err != nil {
-		logger.Logger.Panic(err)
-	}
-	defer func() {
-		_ = rabbitmq.Channel.Close()
+func end() {
+	mysql.End()
+	logger.End()
+}
+
+func main() {
+	// Catch the exit signal
+	sigChan := make(chan os.Signal)
+	signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
+	go func() {
+		<-sigChan
+		end()
+		fmt.Println("Exiting flute module...")
+		os.Exit(0)
 	}()
-	defer func() {
-		_ = rabbitmq.Connection.Close()
-	}()
 
-	err = rabbitmq.OnNode()
-	if err != nil {
-		logger.Logger.Panic(err)
-	}
-	err = rabbitmq.OffNode()
-	if err != nil {
-		logger.Logger.Panic(err)
-	}
-	err = rabbitmq.GetNodes()
-	if err != nil {
-		logger.Logger.Panic(err)
-	}
-
-	http.Handle("/graphql", graphql.Handler)
-
-	logger.Logger.Println("Server is running on port " + strconv.Itoa(int(config.HTTP.Port)))
-	err = http.ListenAndServe(":"+strconv.Itoa(int(config.HTTP.Port)), nil)
-	if err != nil {
-		logger.Logger.Println("Failed to prepare http server!")
-	}
+	server.Init()
 }

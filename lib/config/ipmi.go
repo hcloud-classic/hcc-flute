@@ -11,8 +11,8 @@ type ipmi struct {
 	CheckAllIntervalMs         int64    `goconf:"ipmi:check_all_interval_ms"`          // CheckAllIntervalMs : IPMI check interval for all infos (ms)
 	CheckStatusIntervalMs      int64    `goconf:"ipmi:check_status_interval_ms"`       // CheckStatusIntervalMs : IPMI check interval for status (ms)
 	CheckNodesDetailIntervalMs int64    `goconf:"ipmi:check_nodes_detail_interval_ms"` // CheckNodesDetailIntervalMs : IPMI check interval for nodes detail (ms)
-	BaseboardNICNoPXE          int64    `goconf:"ipmi:baseboard_nic_no_pxe"`           // BaseboardNICNoPXE : Baseboard NIC no used for PXE boot
-	BaseboardNICNoBMC          int64    `goconf:"ipmi:baseboard_nic_no_bmc"`           // BaseboardNICNoIPMI : Baseboard NIC no used for control IPMI
+	BaseboardNICNumPXE         int64    `goconf:"ipmi:baseboard_nic_num_pxe"`          // BaseboardNICNoPXE : Baseboard NIC num used for PXE boot
+	BaseboardNICNumBMC         int64    `goconf:"ipmi:baseboard_nic_num_bmc"`          // BaseboardNICNoIPMI : Baseboard NIC num used for control IPMI
 }
 
 // Ipmi : ipmi config structure
