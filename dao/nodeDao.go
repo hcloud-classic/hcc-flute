@@ -548,6 +548,9 @@ func UpdateNode(in *pb.ReqUpdateNode) (*pb.Node, uint64, string) {
 	sql := "update node set"
 	var updateSet = ""
 	if serverUUIDOk {
+		if serverUUID == "-" {
+			serverUUID = ""
+		}
 		updateSet += " server_uuid = '" + serverUUID + "', "
 	}
 	if bmcMacAddrOk {
