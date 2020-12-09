@@ -336,8 +336,6 @@ func NodePowerControl(in *pb.ReqNodePowerControl) ([]string, uint64, string) {
 		return nil, hccerr.FluteGrpcArgumentError, "NodePowerControl(): need some Nodes"
 	}
 
-	var results []string
-
 	var changeState string
 	switch in.GetPowerState() {
 	case pb.PowerState_ON:
@@ -354,66 +352,78 @@ func NodePowerControl(in *pb.ReqNodePowerControl) ([]string, uint64, string) {
 		break
 	}
 
-	for _, node := range nodes {
-		if len(node.UUID) == 0 {
-			continue
-		}
+	var results = make([]string, len(nodes))
 
-		var bmcIPCIDR string
-		var bmcIP string
-		var netIP net.IP
-		var result string
-		var serialNo string
+	var wait sync.WaitGroup
+	wait.Add(len(nodes))
 
-		sql := "select bmc_ip from node where uuid = ?"
-		err := mysql.Db.QueryRow(sql, node.UUID).Scan(&bmcIPCIDR)
-		if err != nil {
-			result = err.Error()
-			logger.Logger.Println("NodePowerControl(): " + err.Error())
-			goto APPEND
-		}
+	for i, node := range nodes {
+		go func(i int, results []string, node *pb.Node) {
+			if len(node.UUID) == 0 {
+				return
+			}
 
-		netIP, _, err = net.ParseCIDR(bmcIPCIDR)
-		if err != nil {
-			return nil, hccerr.FluteGrpcRequestError, "NodePowerControl(): " + err.Error()
-		}
-		bmcIP = netIP.String()
+			var bmcIPCIDR string
+			var bmcIP string
+			var netIP net.IP
+			var result string
+			var serialNo string
 
-		serialNo, err = ipmi.GetSerialNo(bmcIP)
-		if err != nil {
-			result = "[" + bmcIP + "]: " + err.Error()
-			logger.Logger.Println("NodePowerControl(): " + result)
-			goto APPEND
-		}
+			sql := "select bmc_ip from node where uuid = ?"
+			err := mysql.Db.QueryRow(sql, node.UUID).Scan(&bmcIPCIDR)
+			if err != nil {
+				result = err.Error()
+				logger.Logger.Println("NodePowerControl(): " + err.Error())
+				goto APPEND
+			}
 
-		if changeState == "On" {
-			state, _ := ipmi.GetPowerState(bmcIP, serialNo)
-			if state == "On" {
-				result = "[" + bmcIP + "]: Already turned on"
+			netIP, _, err = net.ParseCIDR(bmcIPCIDR)
+			if err != nil {
+				result = err.Error()
+				logger.Logger.Println("NodePowerControl(): " + err.Error())
+				goto APPEND
+			}
+			bmcIP = netIP.String()
+
+			serialNo, err = ipmi.GetSerialNo(bmcIP)
+			if err != nil {
+				result = "[" + bmcIP + "]: " + err.Error()
 				logger.Logger.Println("NodePowerControl(): " + result)
 				goto APPEND
 			}
-		} else if changeState == "GracefulShutdown" ||
-			changeState == "ForceOff" {
-			state, _ := ipmi.GetPowerState(bmcIP, serialNo)
-			if state == "Off" {
-				result = "[" + bmcIP + "]: Already turned off"
+
+			if changeState == "On" {
+				state, _ := ipmi.GetPowerState(bmcIP, serialNo)
+				if state == "On" {
+					result = "[" + bmcIP + "]: Already turned on"
+					logger.Logger.Println("NodePowerControl(): " + result)
+					goto APPEND
+				}
+			} else if changeState == "GracefulShutdown" ||
+				changeState == "ForceOff" {
+				state, _ := ipmi.GetPowerState(bmcIP, serialNo)
+				if state == "Off" {
+					result = "[" + bmcIP + "]: Already turned off"
+					logger.Logger.Println("NodePowerControl(): " + result)
+					goto APPEND
+				}
+			}
+
+			result, err = ipmi.ChangePowerState(bmcIP, serialNo, changeState)
+			if err != nil {
+				result = "[" + bmcIP + "]: " + err.Error()
 				logger.Logger.Println("NodePowerControl(): " + result)
 				goto APPEND
 			}
-		}
+			result = "[" + bmcIP + "]: " + result
 
-		result, err = ipmi.ChangePowerState(bmcIP, serialNo, changeState)
-		if err != nil {
-			result = "[" + bmcIP + "]: " + err.Error()
-			logger.Logger.Println("NodePowerControl(): " + result)
-			goto APPEND
-		}
-		result = "[" + bmcIP + "]: " + result
-
-	APPEND:
-		results = append(results, result)
+		APPEND:
+			results[i] = result
+			wait.Done()
+		}(i, results, node)
 	}
+
+	wait.Wait()
 
 	return results, 0, ""
 }
