@@ -2,7 +2,9 @@ package ipmi
 
 import (
 	"fmt"
+	"hcc/flute/action/grpc/client"
 	pb "hcc/flute/action/grpc/pb/rpcflute"
+	"hcc/flute/action/grpc/pb/rpcviolin"
 	"hcc/flute/daoext"
 	"hcc/flute/lib/config"
 	"hcc/flute/lib/iputil"
@@ -15,36 +17,45 @@ import (
 	"time"
 )
 
-var checkAllLocked = false
-var checkStatusLocked = false
-var checkNodesDetailLocked = false
+var checkNodeAllLocked = false
+var checkNodeStatusLocked = false
+var checkServerStatusLocked = false
+var checkNodeDetailLocked = false
 
 func delayMillisecond(n time.Duration) {
 	time.Sleep(n * time.Millisecond)
 }
 
-func checkAllLock() {
-	checkAllLocked = true
+func checkNodeAllLock() {
+	checkNodeAllLocked = true
 }
 
-func checkAllUnlock() {
-	checkAllLocked = false
+func checkNodeAllUnlock() {
+	checkNodeAllLocked = false
 }
 
-func checkStatusLock() {
-	checkStatusLocked = true
+func checkNodeStatusLock() {
+	checkNodeStatusLocked = true
 }
 
-func checkStatusUnlock() {
-	checkStatusLocked = false
+func checkNodeStatusUnlock() {
+	checkNodeStatusLocked = false
 }
 
-func checkNodesDetailLock() {
-	checkNodesDetailLocked = true
+func checkServerStatusLock() {
+	checkServerStatusLocked = true
 }
 
-func checkNodesDetailUnlock() {
-	checkNodesDetailLocked = false
+func checkServerStatusUnlock() {
+	checkServerStatusLocked = false
+}
+
+func checkNodeDetailLock() {
+	checkNodeDetailLocked = true
+}
+
+func checkNodeDetailUnlock() {
+	checkNodeDetailLocked = false
 }
 
 // makeRackNumber : Split IP address and add numbers of 4 sections with prefix length.
@@ -239,14 +250,14 @@ func DoUpdateAllNodes(bmcIPCIDR string, wait *sync.WaitGroup, isNew bool, descri
 	return uuid, nil
 }
 
-// UpdateAllNodes : Get all infos from IPMI nodes and update the database (except power state)
-func UpdateAllNodes() {
+// UpdateNodesAll : Get all infos from IPMI nodes and update the database (except power state)
+func UpdateNodesAll() {
 	var bmcIPCIDR string
 
 	sql := "select bmc_ip from node where available = 1"
 	stmt, err := mysql.Db.Query(sql)
 	if err != nil {
-		logger.Logger.Println("UpdateAllNodes(): err=" + err.Error())
+		logger.Logger.Println("UpdateNodesAll(): err=" + err.Error())
 		return
 	}
 	defer func() {
@@ -255,7 +266,7 @@ func UpdateAllNodes() {
 
 	resReadNodeNum, errCode, errText := daoext.ReadNodeNum()
 	if errCode != 0 {
-		logger.Logger.Println("UpdateAllNodes(): err=" + errText)
+		logger.Logger.Println("UpdateNodesAll(): err=" + errText)
 		return
 	}
 
@@ -265,7 +276,7 @@ func UpdateAllNodes() {
 	for stmt.Next() {
 		err := stmt.Scan(&bmcIPCIDR)
 		if err != nil {
-			logger.Logger.Println("UpdateAllNodes(): " + bmcIPCIDR + " err=" + err.Error())
+			logger.Logger.Println("UpdateNodesAll(): " + bmcIPCIDR + " err=" + err.Error())
 			continue
 		}
 
@@ -277,7 +288,7 @@ func UpdateAllNodes() {
 	wait.Wait()
 
 	if config.Ipmi.Debug == "on" {
-		logger.Logger.Print("UpdateAllNodes(): Done")
+		logger.Logger.Print("UpdateNodesAll(): Done")
 	}
 }
 
@@ -367,15 +378,15 @@ func DoUpdateStatusNodes(uuid interface{}, bmcIPCIDR string, wait *sync.WaitGrou
 	return nil
 }
 
-// UpdateStatusNodes : Get status from IPMI nodes and update the database
-func UpdateStatusNodes() {
+// UpdateNodesStatus : Get status from IPMI nodes and update the database
+func UpdateNodesStatus() {
 	var uuid interface{}
 	var bmcIPCIDR string
 
 	sql := "select uuid, bmc_ip from node where available = 1"
 	stmt, err := mysql.Db.Query(sql)
 	if err != nil {
-		logger.Logger.Println("UpdateStatusNodes(): err=" + err.Error())
+		logger.Logger.Println("UpdateNodesStatus(): err=" + err.Error())
 		return
 	}
 	defer func() {
@@ -384,7 +395,7 @@ func UpdateStatusNodes() {
 
 	resReadNodeNum, errCode, errText := daoext.ReadNodeNum()
 	if errCode != 0 {
-		logger.Logger.Println("UpdateStatusNodes(): err=" + errText)
+		logger.Logger.Println("UpdateNodesStatus(): err=" + errText)
 		return
 	}
 
@@ -394,7 +405,7 @@ func UpdateStatusNodes() {
 	for stmt.Next() {
 		err := stmt.Scan(&uuid, &bmcIPCIDR)
 		if err != nil {
-			logger.Logger.Println("UpdateStatusNodes(): " + bmcIPCIDR + " err=" + err.Error())
+			logger.Logger.Println("UpdateNodesStatus(): " + bmcIPCIDR + " err=" + err.Error())
 			continue
 		}
 
@@ -406,7 +417,61 @@ func UpdateStatusNodes() {
 	wait.Wait()
 
 	if config.Ipmi.Debug == "on" {
-		logger.Logger.Print("UpdateStatusNodes(): Done")
+		logger.Logger.Print("UpdateNodesStatus(): Done")
+	}
+}
+
+// UpdateServerStatus : Update status of the server
+func UpdateServerStatus() {
+	var status string
+
+	resGetServerList, err := client.RC.GetServerList(&rpcviolin.ReqGetServerList{})
+	if err != nil {
+		logger.Logger.Println("UpdateServerStatus(): err=" + err.Error())
+		return
+	}
+
+	for _, server := range resGetServerList.Server {
+		sql := "select status from node where server_uuid = '" + server.UUID + "'"
+		stmt, err := mysql.Db.Query(sql)
+		if err != nil {
+			logger.Logger.Println("UpdateServerStatus(): err=" + err.Error())
+			return
+		}
+		defer func() {
+			_ = stmt.Close()
+		}()
+
+		var isAllTurnedOff = true
+
+		for stmt.Next() {
+			err := stmt.Scan(&status)
+			if err != nil {
+				logger.Logger.Println("UpdateServerStatus(): err=" + err.Error())
+				continue
+			}
+
+			if strings.ToLower(status) != "off" {
+				isAllTurnedOff = false
+				break
+			}
+		}
+
+		if isAllTurnedOff {
+			_, err := client.RC.UpdateServer(&rpcviolin.ReqUpdateServer{
+				Server: &rpcviolin.Server{
+					UUID:   server.UUID,
+					Status: "Stopped",
+				},
+			})
+			if err != nil {
+				logger.Logger.Println("UpdateServerStatus(): err=" + err.Error())
+			}
+		}
+	}
+
+	if config.Ipmi.Debug == "on" {
+		logger.Logger.Print("UpdateServerStatus(): Done")
 	}
 }
 
@@ -596,98 +661,130 @@ func UpdateNodesDetail() {
 	}
 }
 
-func queueCheckAll() {
+func queueCheckNodeAll() {
 	go func() {
 		if config.Ipmi.Debug == "on" {
-			logger.Logger.Println("queueCheckAll(): Rerun CheckAll() after " + strconv.Itoa(int(config.Ipmi.CheckAllIntervalMs)) + "ms")
+			logger.Logger.Println("queueCheckNodeAll(): Rerun CheckNodeAll() after " + strconv.Itoa(int(config.Ipmi.CheckNodeAllIntervalMs)) + "ms")
 		}
-		delayMillisecond(time.Duration(config.Ipmi.CheckAllIntervalMs))
-		CheckAll()
+		delayMillisecond(time.Duration(config.Ipmi.CheckNodeAllIntervalMs))
+		CheckNodeAll()
 	}()
 }
 
-func queueCheckStatus() {
+func queueCheckNodeStatus() {
 	go func() {
 		if config.Ipmi.Debug == "on" {
-			logger.Logger.Println("queueCheckStatus(): Rerun CheckStatus() after " + strconv.Itoa(int(config.Ipmi.CheckStatusIntervalMs)) + "ms")
+			logger.Logger.Println("queueCheckNodeStatus(): Rerun CheckNodeStatus() after " + strconv.Itoa(int(config.Ipmi.CheckNodeStatusIntervalMs)) + "ms")
 		}
-		delayMillisecond(time.Duration(config.Ipmi.CheckStatusIntervalMs))
-		CheckStatus()
+		delayMillisecond(time.Duration(config.Ipmi.CheckNodeStatusIntervalMs))
+		CheckNodeStatus()
 	}()
 }
 
-func queueNodesDetail() {
+func queueCheckServerStatus() {
 	go func() {
 		if config.Ipmi.Debug == "on" {
-			logger.Logger.Println("queueNodesDetail(): Rerun NodesDetail() after " + strconv.Itoa(int(config.Ipmi.CheckNodesDetailIntervalMs)) + "ms")
+			logger.Logger.Println("queueCheckServerStatus(): Rerun CheckNodeStatus() after " + strconv.Itoa(int(config.Ipmi.CheckServerStatusIntervalMs)) + "ms")
 		}
-		delayMillisecond(time.Duration(config.Ipmi.CheckNodesDetailIntervalMs))
-		CheckNodesDetail()
+		delayMillisecond(time.Duration(config.Ipmi.CheckServerStatusIntervalMs))
+		CheckServerStatus()
 	}()
 }
 
-// CheckAll : Check all IPMI infos by 'check_all_interval_ms' config option
-func CheckAll() {
-	if checkAllLocked {
+func queueNodeDetail() {
+	go func() {
 		if config.Ipmi.Debug == "on" {
-			logger.Logger.Println("CheckAll(): Locked")
+			logger.Logger.Println("queueNodeDetail(): Rerun NodesDetail() after " + strconv.Itoa(int(config.Ipmi.CheckNodeDetailIntervalMs)) + "ms")
 		}
-		queueCheckAll()
+		delayMillisecond(time.Duration(config.Ipmi.CheckNodeDetailIntervalMs))
+		CheckNodeDetail()
+	}()
+}
+
+// CheckNodeAll : Check node's all infos by interval of 'check_node_all_interval_ms' config option
+func CheckNodeAll() {
+	if checkNodeAllLocked {
+		if config.Ipmi.Debug == "on" {
+			logger.Logger.Println("CheckNodeAll(): Locked")
+		}
+		queueCheckNodeAll()
 		return
 	}
 
 	go func() {
-		checkAllLock()
+		checkNodeAllLock()
 		if config.Ipmi.Debug == "on" {
-			logger.Logger.Println("CheckAll(): Running UpdateAllNodes()")
+			logger.Logger.Println("CheckNodeAll(): Running UpdateNodesAll()")
 		}
-		UpdateAllNodes()
-		checkAllUnlock()
+		UpdateNodesAll()
+		checkNodeAllUnlock()
 	}()
 
-	queueCheckAll()
+	queueCheckNodeAll()
 }
 
-// CheckStatus : Check power status of IPMI nodes by 'check_status_interval_ms' config option
-func CheckStatus() {
-	if checkStatusLocked {
+// CheckNodeStatus : Check node's power status by interval of 'check_node_status_interval_ms' config option
+func CheckNodeStatus() {
+	if checkNodeStatusLocked {
 		if config.Ipmi.Debug == "on" {
-			logger.Logger.Println("CheckStatus(): Locked")
+			logger.Logger.Println("CheckNodeStatus(): Locked")
 		}
-		queueCheckStatus()
+		queueCheckNodeStatus()
 		return
 	}
 
 	go func() {
-		checkStatusLock()
+		checkNodeStatusLock()
 		if config.Ipmi.Debug == "on" {
-			logger.Logger.Println("CheckStatus(): Running UpdateStatusNodes()")
+			logger.Logger.Println("CheckNodeStatus(): Running UpdateNodesStatus()")
 		}
-		UpdateStatusNodes()
-		checkStatusUnlock()
+		UpdateNodesStatus()
+		checkNodeStatusUnlock()
 	}()
 
-	queueCheckStatus()
+	queueCheckNodeStatus()
 }
 
-// CheckNodesDetail : Check detail infos of IPMI nodes by 'check_nodes_detail_interval_ms' config option
-func CheckNodesDetail() {
-	if checkNodesDetailLocked {
+// CheckServerStatus : Check server's power status by interval of 'check_server_status_interval_ms' config option
+func CheckServerStatus() {
+	if checkServerStatusLocked {
 		if config.Ipmi.Debug == "on" {
-			logger.Logger.Println("CheckNodesDetail(): Locked")
+			logger.Logger.Println("CheckServerStatus(): Locked")
 		}
-		queueNodesDetail()
+		queueCheckServerStatus()
 		return
 	}
 
 	go func() {
-		checkNodesDetailLock()
+		checkServerStatusLock()
 		if config.Ipmi.Debug == "on" {
-			logger.Logger.Println("CheckNodesDetail(): Running UpdateNodesDetail()")
+			logger.Logger.Println("CheckServerStatus(): Running UpdateServerStatus()")
+		}
+		UpdateServerStatus()
+		checkServerStatusUnlock()
+	}()
+
+	queueCheckServerStatus()
+}
+
+// CheckNodeDetail : Check node's detail infos by interval of 'check_node_detail_interval_ms' config option
+func CheckNodeDetail() {
+	if checkNodeDetailLocked {
+		if config.Ipmi.Debug == "on" {
+			logger.Logger.Println("CheckNodeDetail(): Locked")
+		}
+		queueNodeDetail()
+		return
+	}
+
+	go func() {
+		checkNodeDetailLock()
+		if config.Ipmi.Debug == "on" {
+			logger.Logger.Println("CheckNodeDetail(): Running UpdateNodesDetail()")
 		}
 		UpdateNodesDetail()
-		checkNodesDetailUnlock()
+		checkNodeDetailUnlock()
 	}()
 
-	queueNodesDetail()
+	queueNodeDetail()
 }

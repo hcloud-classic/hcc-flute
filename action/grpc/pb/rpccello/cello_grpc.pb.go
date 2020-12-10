@@ -21,6 +21,7 @@ type CelloClient interface {
 	PoolHandler(ctx context.Context, in *ReqPoolHandler, opts ...grpc.CallOption) (*ResPoolHandler, error)
 	GetVolume(ctx context.Context, in *ReqGetVolume, opts ...grpc.CallOption) (*ResGetVolume, error)
 	GetVolumeList(ctx context.Context, in *ReqGetVolumeList, opts ...grpc.CallOption) (*ResGetVolumeList, error)
+	GetPoolList(ctx context.Context, in *ReqGetPoolList, opts ...grpc.CallOption) (*ResGetPoolList, error)
 }
 
 type celloClient struct {
@@ -67,6 +68,15 @@ func (c *celloClient) GetVolumeList(ctx context.Context, in *ReqGetVolumeList, o
 	return out, nil
 }
 
+func (c *celloClient) GetPoolList(ctx context.Context, in *ReqGetPoolList, opts ...grpc.CallOption) (*ResGetPoolList, error) {
+	out := new(ResGetPoolList)
+	err := c.cc.Invoke(ctx, "/RpcCello.Cello/GetPoolList", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // CelloServer is the server API for Cello service.
 // All implementations must embed UnimplementedCelloServer
 // for forward compatibility
@@ -75,6 +85,7 @@ type CelloServer interface {
 	PoolHandler(context.Context, *ReqPoolHandler) (*ResPoolHandler, error)
 	GetVolume(context.Context, *ReqGetVolume) (*ResGetVolume, error)
 	GetVolumeList(context.Context, *ReqGetVolumeList) (*ResGetVolumeList, error)
+	GetPoolList(context.Context, *ReqGetPoolList) (*ResGetPoolList, error)
 	mustEmbedUnimplementedCelloServer()
 }
 
@@ -93,6 +104,9 @@ func (*UnimplementedCelloServer) GetVolume(context.Context, *ReqGetVolume) (*Res
 }
 func (*UnimplementedCelloServer) GetVolumeList(context.Context, *ReqGetVolumeList) (*ResGetVolumeList, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetVolumeList not implemented")
+}
+func (*UnimplementedCelloServer) GetPoolList(context.Context, *ReqGetPoolList) (*ResGetPoolList, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetPoolList not implemented")
 }
 func (*UnimplementedCelloServer) mustEmbedUnimplementedCelloServer() {}
 
@@ -172,6 +186,24 @@ func _Cello_GetVolumeList_Handler(srv interface{}, ctx context.Context, dec func
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Cello_GetPoolList_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ReqGetPoolList)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(CelloServer).GetPoolList(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/RpcCello.Cello/GetPoolList",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(CelloServer).GetPoolList(ctx, req.(*ReqGetPoolList))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 var _Cello_serviceDesc = grpc.ServiceDesc{
 	ServiceName: "RpcCello.Cello",
 	HandlerType: (*CelloServer)(nil),
@@ -191,6 +223,10 @@ var _Cello_serviceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetVolumeList",
 			Handler:    _Cello_GetVolumeList_Handler,
+		},
+		{
+			MethodName: "GetPoolList",
+			Handler:    _Cello_GetPoolList_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
