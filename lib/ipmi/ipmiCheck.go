@@ -432,6 +432,10 @@ func UpdateServerStatus() {
 	}
 
 	for _, server := range resGetServerList.Server {
+		if strings.ToLower(server.Status) == "creating" {
+			continue
+		}
+
 		sql := "select status from node where server_uuid = '" + server.UUID + "'"
 		stmt, err := mysql.Db.Query(sql)
 		if err != nil {
