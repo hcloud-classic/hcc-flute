@@ -20,18 +20,21 @@ func initViolin() error {
 	logger.Logger.Println("Trying to connect to violin module (" + addr + ")")
 
 	for i := 0; i < int(config.Violin.ConnectionRetryCount); i++ {
-		ctx, _ := context.WithTimeout(context.Background(), time.Duration(config.Violin.ConnectionTimeOutMs)*time.Millisecond)
+		ctx, cancel := context.WithTimeout(context.Background(), time.Duration(config.Violin.ConnectionTimeOutMs)*time.Millisecond)
 		violinConn, err = grpc.DialContext(ctx, addr, grpc.WithInsecure(), grpc.WithBlock())
 		if err != nil {
 			logger.Logger.Println("Failed to connect violin module (" + addr + "): " + err.Error())
 			logger.Logger.Println("Re-trying to connect to violin module (" +
 				strconv.Itoa(i+1) + "/" + strconv.Itoa(int(config.Violin.ConnectionRetryCount)) + ")")
+
+			cancel()
 			continue
 		}
 
 		RC.violin = pb.NewViolinClient(violinConn)
 		logger.Logger.Println("gRPC client connected to violin module")
 
+		cancel()
 		return nil
 	}
 
