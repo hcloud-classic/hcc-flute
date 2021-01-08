@@ -2,11 +2,11 @@ package server
 
 import (
 	"context"
+	"github.com/hcloud-classic/hcc_errors"
+	"github.com/hcloud-classic/pb"
 	"hcc/flute/action/grpc/errconv"
-	pb "hcc/flute/action/grpc/pb/rpcflute"
 	"hcc/flute/dao"
 	"hcc/flute/daoext"
-	"hcc/flute/lib/errors"
 	"hcc/flute/lib/logger"
 )
 
@@ -45,8 +45,8 @@ func (s *fluteServer) CreateNode(_ context.Context, in *pb.ReqCreateNode) (*pb.R
 
 	node, errCode, errStr := dao.CreateNode(in)
 	if errCode != 0 {
-		errStack := errors.ReturnHccError(errCode, errStr)
-		return &pb.ResCreateNode{Node: &pb.Node{}, HccErrorStack: errconv.HccStackToGrpc(&errStack)}, nil
+		errStack := hcc_errors.NewHccErrorStack(hcc_errors.NewHccError(errCode, errStr))
+		return &pb.ResCreateNode{Node: &pb.Node{}, HccErrorStack: errconv.HccStackToGrpc(errStack)}, nil
 	}
 
 	return &pb.ResCreateNode{Node: returnNode(node)}, nil
@@ -57,8 +57,8 @@ func (s *fluteServer) GetNode(_ context.Context, in *pb.ReqGetNode) (*pb.ResGetN
 
 	node, errCode, errStr := dao.ReadNode(in.GetUUID())
 	if errCode != 0 {
-		errStack := errors.ReturnHccError(errCode, errStr)
-		return &pb.ResGetNode{Node: &pb.Node{}, HccErrorStack: errconv.HccStackToGrpc(&errStack)}, nil
+		errStack := hcc_errors.NewHccErrorStack(hcc_errors.NewHccError(errCode, errStr))
+		return &pb.ResGetNode{Node: &pb.Node{}, HccErrorStack: errconv.HccStackToGrpc(errStack)}, nil
 	}
 
 	return &pb.ResGetNode{Node: returnNode(node)}, nil
@@ -69,8 +69,8 @@ func (s *fluteServer) GetNodeList(_ context.Context, in *pb.ReqGetNodeList) (*pb
 
 	nodeList, errCode, errStr := dao.ReadNodeList(in)
 	if errCode != 0 {
-		errStack := errors.ReturnHccError(errCode, errStr)
-		return &pb.ResGetNodeList{Node: []*pb.Node{}, HccErrorStack: errconv.HccStackToGrpc(&errStack)}, nil
+		errStack := hcc_errors.NewHccErrorStack(hcc_errors.NewHccError(errCode, errStr))
+		return &pb.ResGetNodeList{Node: []*pb.Node{}, HccErrorStack: errconv.HccStackToGrpc(errStack)}, nil
 	}
 
 	return nodeList, nil
@@ -81,8 +81,8 @@ func (s *fluteServer) GetNodeNum(_ context.Context, _ *pb.Empty) (*pb.ResGetNode
 
 	nodeNum, errCode, errStr := daoext.ReadNodeNum()
 	if errCode != 0 {
-		errStack := errors.ReturnHccError(errCode, errStr)
-		return &pb.ResGetNodeNum{Num: 0, HccErrorStack: errconv.HccStackToGrpc(&errStack)}, nil
+		errStack := hcc_errors.NewHccErrorStack(hcc_errors.NewHccError(errCode, errStr))
+		return &pb.ResGetNodeNum{Num: 0, HccErrorStack: errconv.HccStackToGrpc(errStack)}, nil
 
 	}
 
@@ -94,8 +94,8 @@ func (s *fluteServer) UpdateNode(_ context.Context, in *pb.ReqUpdateNode) (*pb.R
 
 	updateNode, errCode, errStr := dao.UpdateNode(in)
 	if errCode != 0 {
-		errStack := errors.ReturnHccError(errCode, errStr)
-		return &pb.ResUpdateNode{Node: &pb.Node{}, HccErrorStack: errconv.HccStackToGrpc(&errStack)}, nil
+		errStack := hcc_errors.NewHccErrorStack(hcc_errors.NewHccError(errCode, errStr))
+		return &pb.ResUpdateNode{Node: &pb.Node{}, HccErrorStack: errconv.HccStackToGrpc(errStack)}, nil
 	}
 
 	return &pb.ResUpdateNode{Node: updateNode}, nil
@@ -106,8 +106,8 @@ func (s *fluteServer) DeleteNode(_ context.Context, in *pb.ReqDeleteNode) (*pb.R
 
 	deleteNode, errCode, errStr := dao.DeleteNode(in)
 	if errCode != 0 {
-		errStack := errors.ReturnHccError(errCode, errStr)
-		return &pb.ResDeleteNode{Node: &pb.Node{}, HccErrorStack: errconv.HccStackToGrpc(&errStack)}, nil
+		errStack := hcc_errors.NewHccErrorStack(hcc_errors.NewHccError(errCode, errStr))
+		return &pb.ResDeleteNode{Node: &pb.Node{}, HccErrorStack: errconv.HccStackToGrpc(errStack)}, nil
 	}
 
 	return &pb.ResDeleteNode{Node: deleteNode}, nil
@@ -118,8 +118,8 @@ func (s *fluteServer) NodePowerControl(_ context.Context, in *pb.ReqNodePowerCon
 
 	result, errCode, errStr := dao.NodePowerControl(in)
 	if errCode != 0 {
-		errStack := errors.ReturnHccError(errCode, errStr)
-		return &pb.ResNodePowerControl{Result: []string{}, HccErrorStack: errconv.HccStackToGrpc(&errStack)}, nil
+		errStack := hcc_errors.NewHccErrorStack(hcc_errors.NewHccError(errCode, errStr))
+		return &pb.ResNodePowerControl{Result: []string{}, HccErrorStack: errconv.HccStackToGrpc(errStack)}, nil
 	}
 
 	return &pb.ResNodePowerControl{Result: result}, nil
@@ -130,8 +130,8 @@ func (s *fluteServer) GetNodePowerState(_ context.Context, in *pb.ReqNodePowerSt
 
 	result, errCode, errStr := dao.GetNodePowerState(in)
 	if errCode != 0 {
-		errStack := errors.ReturnHccError(errCode, errStr)
-		return &pb.ResNodePowerState{Result: "", HccErrorStack: errconv.HccStackToGrpc(&errStack)}, nil
+		errStack := hcc_errors.NewHccErrorStack(hcc_errors.NewHccError(errCode, errStr))
+		return &pb.ResNodePowerState{Result: "", HccErrorStack: errconv.HccStackToGrpc(errStack)}, nil
 	}
 
 	return &pb.ResNodePowerState{Result: result}, nil
@@ -142,8 +142,8 @@ func (s *fluteServer) CreateNodeDetail(_ context.Context, in *pb.ReqCreateNodeDe
 
 	nodeDetail, errCode, errStr := dao.CreateNodeDetail(in)
 	if errCode != 0 {
-		errStack := errors.ReturnHccError(errCode, errStr)
-		return &pb.ResCreateNodeDetail{NodeDetail: &pb.NodeDetail{}, HccErrorStack: errconv.HccStackToGrpc(&errStack)}, nil
+		errStack := hcc_errors.NewHccErrorStack(hcc_errors.NewHccError(errCode, errStr))
+		return &pb.ResCreateNodeDetail{NodeDetail: &pb.NodeDetail{}, HccErrorStack: errconv.HccStackToGrpc(errStack)}, nil
 	}
 
 	return &pb.ResCreateNodeDetail{NodeDetail: returnNodeDetail(nodeDetail)}, nil
@@ -154,8 +154,8 @@ func (s *fluteServer) GetNodeDetail(_ context.Context, in *pb.ReqGetNodeDetail) 
 
 	nodeDetail, errCode, errStr := dao.ReadNodeDetail(in.GetNodeUUID())
 	if errCode != 0 {
-		errStack := errors.ReturnHccError(errCode, errStr)
-		return &pb.ResGetNodeDetail{NodeDetail: &pb.NodeDetail{}, HccErrorStack: errconv.HccStackToGrpc(&errStack)}, nil
+		errStack := hcc_errors.NewHccErrorStack(hcc_errors.NewHccError(errCode, errStr))
+		return &pb.ResGetNodeDetail{NodeDetail: &pb.NodeDetail{}, HccErrorStack: errconv.HccStackToGrpc(errStack)}, nil
 	}
 
 	return &pb.ResGetNodeDetail{NodeDetail: returnNodeDetail(nodeDetail)}, nil
@@ -166,8 +166,8 @@ func (s *fluteServer) DeleteNodeDetail(_ context.Context, in *pb.ReqDeleteNodeDe
 
 	nodeDetail, errCode, errStr := dao.DeleteNodeDetail(in)
 	if errCode != 0 {
-		errStack := errors.ReturnHccError(errCode, errStr)
-		return &pb.ResDeleteNodeDetail{NodeDetail: &pb.NodeDetail{}, HccErrorStack: errconv.HccStackToGrpc(&errStack)}, nil
+		errStack := hcc_errors.NewHccErrorStack(hcc_errors.NewHccError(errCode, errStr))
+		return &pb.ResDeleteNodeDetail{NodeDetail: &pb.NodeDetail{}, HccErrorStack: errconv.HccStackToGrpc(errStack)}, nil
 	}
 
 	return &pb.ResDeleteNodeDetail{NodeDetail: nodeDetail}, nil

@@ -1,8 +1,8 @@
 package daoext
 
 import (
-	pb "hcc/flute/action/grpc/pb/rpcflute"
-	hccerr "hcc/flute/lib/errors"
+	"github.com/hcloud-classic/hcc_errors"
+	"github.com/hcloud-classic/pb"
 	"hcc/flute/lib/logger"
 	"hcc/flute/lib/mysql"
 	"strings"
@@ -14,14 +14,15 @@ func ReadNodeNum() (*pb.ResGetNodeNum, uint64, string) {
 	var nodeNr int64
 
 	sql := "select count(*) from node where available = 1"
-	err := mysql.Db.QueryRow(sql).Scan(&nodeNr)
+	row := mysql.Db.QueryRow(sql)
+	err := mysql.QueryRowScan(row, &nodeNr)
 	if err != nil {
 		errStr := "ReadNodeNum(): " + err.Error()
 		logger.Logger.Println(errStr)
 		if strings.Contains(err.Error(), "no rows in result set") {
-			return nil, hccerr.FluteSQLNoResult, errStr
+			return nil, hcc_errors.FluteSQLNoResult, errStr
 		}
-		return nil, hccerr.FluteSQLOperationFail, errStr
+		return nil, hcc_errors.FluteSQLOperationFail, errStr
 	}
 	resNodeNum.Num = nodeNr
 
