@@ -1,5 +1,6 @@
 stages:
     - init
+    - pb
     - test
     - build
     - run
@@ -8,6 +9,16 @@ before_script:
     - export GOROOT="/opt/go"
     - export GOPATH="/home/gitlab-runner/go"
     - export PATH="$PATH:$GOROOT/bin:$GOPATH/bin"
+
+pb:
+  stage: pb
+  script:
+    - export BUILD_DIR=$PWD
+    - cd $GOPATH/src/hcc/melody
+    - gmake
+    - cd $BUILD_DIR
+    - rm -rf ../pb
+    - cp -Rp $GOPATH/src/hcc/pb ../pb
 
 copy_dir:
     stage: init

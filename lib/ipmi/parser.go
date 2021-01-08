@@ -1,7 +1,7 @@
 package ipmi
 
 import (
-	pb "hcc/flute/action/grpc/pb/rpcflute"
+	"github.com/hcloud-classic/pb"
 	"hcc/flute/lib/config"
 	"hcc/flute/lib/iputil"
 	"hcc/flute/lib/logger"

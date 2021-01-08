@@ -3,9 +3,8 @@ package ipmi
 import (
 	dbsql "database/sql"
 	"fmt"
+	"github.com/hcloud-classic/pb"
 	"hcc/flute/action/grpc/client"
-	pb "hcc/flute/action/grpc/pb/rpcflute"
-	"hcc/flute/action/grpc/pb/rpcviolin"
 	"hcc/flute/daoext"
 	"hcc/flute/lib/config"
 	"hcc/flute/lib/iputil"
@@ -428,7 +427,7 @@ func UpdateNodesStatus() {
 func UpdateServerStatus() {
 	var status string
 
-	resGetServerList, err := client.RC.GetServerList(&rpcviolin.ReqGetServerList{})
+	resGetServerList, err := client.RC.GetServerList(&pb.ReqGetServerList{})
 	if err != nil {
 		logger.Logger.Println("UpdateServerStatus(): err=" + err.Error())
 		return
@@ -465,8 +464,8 @@ func UpdateServerStatus() {
 		}
 
 		if isAllTurnedOff {
-			_, err := client.RC.UpdateServer(&rpcviolin.ReqUpdateServer{
-				Server: &rpcviolin.Server{
+			_, err := client.RC.UpdateServer(&pb.ReqUpdateServer{
+				Server: &pb.Server{
 					UUID:   server.UUID,
 					Status: "Stopped",
 				},

@@ -2,10 +2,10 @@ package client
 
 import (
 	"context"
+	"github.com/hcloud-classic/hcc_errors"
+	"github.com/hcloud-classic/pb"
 	"google.golang.org/grpc"
-	"hcc/flute/action/grpc/pb/rpcviolin"
 	"hcc/flute/lib/config"
-	"hcc/flute/lib/errors"
 	"hcc/flute/lib/logger"
 	"strconv"
 	"time"
@@ -29,14 +29,14 @@ func initViolin() error {
 			continue
 		}
 
-		RC.violin = rpcviolin.NewViolinClient(violinConn)
+		RC.violin = pb.NewViolinClient(violinConn)
 		logger.Logger.Println("gRPC client connected to violin module")
 
 		return nil
 	}
 
-	hccErrStack := errors.ReturnHccError(errors.FluteInternalInitFail, "initViolin(): retry count exceeded to connect violin module")
-	return hccErrStack[0].New()
+	hccErrStack := hcc_errors.NewHccErrorStack(hcc_errors.NewHccError(hcc_errors.FluteInternalInitFail, "initViolin(): retry count exceeded to connect violin module")).Stack()
+	return (*hccErrStack)[0].ToError()
 }
 
 func closeViolin() {
@@ -44,7 +44,7 @@ func closeViolin() {
 }
 
 // GetServerList : Get list of the server
-func (rc *RPCClient) GetServerList(in *rpcviolin.ReqGetServerList) (*rpcviolin.ResGetServerList, error) {
+func (rc *RPCClient) GetServerList(in *pb.ReqGetServerList) (*pb.ResGetServerList, error) {
 	ctx, cancel := context.WithTimeout(context.Background(),
 		time.Duration(config.Violin.RequestTimeoutMs)*time.Millisecond)
 	defer cancel()
@@ -57,7 +57,7 @@ func (rc *RPCClient) GetServerList(in *rpcviolin.ReqGetServerList) (*rpcviolin.R
 }
 
 // UpdateServer : Update infos of the server
-func (rc *RPCClient) UpdateServer(in *rpcviolin.ReqUpdateServer) (*rpcviolin.ResUpdateServer, error) {
+func (rc *RPCClient) UpdateServer(in *pb.ReqUpdateServer) (*pb.ResUpdateServer, error) {
 	ctx, cancel := context.WithTimeout(context.Background(),
 		time.Duration(config.Violin.RequestTimeoutMs)*time.Millisecond)
 	defer cancel()

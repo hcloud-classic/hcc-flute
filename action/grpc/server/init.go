@@ -1,9 +1,9 @@
 package server
 
 import (
+	"github.com/hcloud-classic/pb"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
-	pb "hcc/flute/action/grpc/pb/rpcflute"
 	"hcc/flute/lib/config"
 	"hcc/flute/lib/logger"
 	"net"

@@ -2,10 +2,10 @@ package main
 
 import (
 	"fmt"
+	"github.com/hcloud-classic/hcc_errors"
 	"hcc/flute/action/grpc/client"
 	"hcc/flute/action/grpc/server"
 	"hcc/flute/lib/config"
-	"hcc/flute/lib/errors"
 	"hcc/flute/lib/ipmi"
 	"hcc/flute/lib/logger"
 	"hcc/flute/lib/mysql"
@@ -18,26 +18,26 @@ import (
 func init() {
 	err := logger.Init()
 	if err != nil {
-		errors.SetErrLogger(logger.Logger)
-		errors.NewHccError(errors.FluteInternalInitFail, "logger.Init(): "+err.Error()).Fatal()
+		hcc_errors.SetErrLogger(logger.Logger)
+		hcc_errors.NewHccError(hcc_errors.FluteInternalInitFail, "logger.Init(): "+err.Error()).Fatal()
 	}
-	errors.SetErrLogger(logger.Logger)
+	hcc_errors.SetErrLogger(logger.Logger)
 
 	config.Init()
 
 	err = mysql.Init()
 	if err != nil {
-		errors.NewHccError(errors.FluteInternalInitFail, "mysql.Init(): "+err.Error()).Fatal()
+		hcc_errors.NewHccError(hcc_errors.FluteInternalInitFail, "mysql.Init(): "+err.Error()).Fatal()
 	}
 
 	err = client.Init()
 	if err != nil {
-		errors.NewHccError(errors.FluteInternalInitFail, "client.Init(): "+err.Error()).Fatal()
+		hcc_errors.NewHccError(hcc_errors.FluteInternalInitFail, "client.Init(): "+err.Error()).Fatal()
 	}
 
 	err = ipmi.BMCIPParser()
 	if err != nil {
-		errors.NewHccError(errors.FluteInternalInitFail, "ipmi.BMCIPParser(): "+err.Error()).Fatal()
+		hcc_errors.NewHccError(hcc_errors.FluteInternalInitFail, "ipmi.BMCIPParser(): "+err.Error()).Fatal()
 	}
 
 	logger.Logger.Println("Starting ipmi.CheckNodeAll(). Interval is " + strconv.Itoa(int(config.Ipmi.CheckNodeAllIntervalMs)) + "ms")
