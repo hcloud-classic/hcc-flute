@@ -50,6 +50,7 @@ func Init() error {
 	FpLog, err := os.OpenFile("/var/log/"+LogName+"/"+
 		LogName+"_"+date+".log", os.O_CREATE|os.O_RDWR|os.O_APPEND, 0666)
 	if err != nil {
+		Logger = log.New(io.Writer(os.Stdout), LogName+"_logger: ", log.Ldate|log.Ltime)
 		return err
 	}
 
