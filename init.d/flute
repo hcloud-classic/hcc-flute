@@ -1,0 +1,151 @@
+#! /bin/sh
+
+### BEGIN INIT INFO
+# Provides:		flute
+# Required-Start:	$remote_fs $syslog
+# Required-Stop:	$remote_fs $syslog
+# Default-Start:	2 3 4 5
+# Default-Stop:		
+# Short-Description:	HCloud Classic module
+### END INIT INFO
+
+DAEMON_EXEC="/usr/bin/flute"
+DAEMON_NAME=$(basename $DAEMON_EXEC)
+PIDFILE="/var/run/flute.pid"
+DAEMON_OPTS=""
+
+. /lib/lsb/init-functions
+
+pidofproc () {
+    local pidfile base status specified pid OPTIND
+    pidfile=
+    specified=
+    
+    OPTIND=1
+    while getopts p: opt ; do
+        case "$opt" in
+            p)  pidfile="$OPTARG"
+                specified="specified"
+		;;
+        esac
+    done
+    shift $(($OPTIND - 1))
+    if [ $# -ne 1 ]; then
+        echo "$0: invalid arguments" >&2
+        return 4
+    fi
+
+    base=${1##*/}
+    if [ ! "$specified" ]; then
+        pidfile="/var/run/$base.pid"
+    fi
+
+    if [ -n "${pidfile:-}" ]; then
+     if [ -e "$pidfile" ]; then
+      if [ -r "$pidfile" ]; then
+        read pid < "$pidfile"
+        if [ -n "${pid:-}" ]; then
+            if $(kill -0 "${pid:-}" 2> /dev/null); then
+                echo "$pid" || true
+                return 0
+            elif ps "${pid:-}" >/dev/null 2>&1; then
+                echo "$pid" || true
+                return 0 # program is running, but not owned by this user
+            else
+                return 1 # program is dead and /var/run pid file exists
+            fi
+        fi
+      else
+        return 4 # pid file not readable, hence status is unknown.
+      fi
+     else
+       # pid file doesn't exist, try to find the pid nevertheless
+       if [ -x /bin/pidof ] && [ ! "$specified" ]; then
+         status="0"
+         /bin/pidof -c -o %PPID -x $1 || status="$?"
+         if [ "$status" = 1 ]; then
+             return 3 # program is not running
+         fi
+         return 0
+       fi
+       return 3 # specified pid file doesn't exist, program probably stopped
+     fi
+    fi
+    if [ "$specified" ]; then
+        return 3 # almost certain it's not running
+    fi
+    return 4 # Unable to determine status
+}
+
+status_of_proc () {
+    local pidfile daemon name status OPTIND
+
+    pidfile=
+    OPTIND=1
+    while getopts p: opt ; do
+        case "$opt" in
+            p)  pidfile="$OPTARG";;
+        esac
+    done
+    shift $(($OPTIND - 1))
+
+    if [ -n "$pidfile" ]; then
+        pidfile="-p $pidfile"
+    fi
+    daemon="$1"
+    name="$2"
+
+    status="0"
+    pidofproc $pidfile $daemon >/dev/null || status="$?"
+    if [ "$status" = 0 ]; then
+        log_success_msg "$name is running"
+        return 0
+    elif [ "$status" = 4 ]; then
+        log_failure_msg "could not access PID file for $name"
+        return $status
+    else
+        log_failure_msg "$name is not running"
+        return $status
+    fi
+}
+
+case "$1" in
+  start)
+	if [ -f $PIDFILE ]; then
+	  pid=$(cat $PIDFILE)
+	  if ps --pid $pid 2>&1 | grep -wq $DAEMON_NAME; then
+	    log_daemon_msg "The HCloud Classic module is already running for" "$DAEMON_NAME" || true
+	    exit 1
+	  fi
+	fi
+	log_daemon_msg "Starting HCloud Classic module" "$DAEMON_NAME" || true
+	nohup $DAEMON_EXEC > /dev/null 2>&1 & echo $! > $PIDFILE
+	;;
+  stop)
+	log_daemon_msg "Stopping HCloud Classic module" "$DAEMON_NAME" || true
+	if [ -f $PIDFILE ]; then
+	  pid=$(cat $PIDFILE)
+	  kill -s INT $pid > /dev/null 2>&1
+	  rm -f $PIDFILE
+	fi
+	;;
+
+  restart)
+	log_daemon_msg "Restarting HCloud Classic module" "$DAEMON_NAME" || true
+	if [ -f $PIDFILE ]; then
+	  pid=$(cat $PIDFILE)
+	  kill -s INT $pid > /dev/null 2>&1
+	fi
+	nohup $DAEMON_EXEC > /dev/null 2>&1 & echo $! > $PIDFILE
+	;;
+
+  status)
+	status_of_proc -p $PIDFILE $DAEMON_EXEC $DAEMON_NAME && exit 0 || exit $?
+	;;
+
+  *)
+	log_action_msg "Usage: /etc/init.d/$DAEMON_NAME {start|stop|restart|status}" || true
+	exit 1
+esac
+
+exit 0
