@@ -1,11 +1,11 @@
 package server
 
 import (
-	"github.com/hcloud-classic/pb"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
 	"hcc/flute/lib/config"
 	"hcc/flute/lib/logger"
+	"innogrid.com/hcloud-classic/pb"
 	"net"
 	"strconv"
 )

@@ -3,12 +3,12 @@ package dao
 import (
 	dbsql "database/sql"
 	"github.com/golang/protobuf/ptypes"
-	"github.com/hcloud-classic/hcc_errors"
-	"github.com/hcloud-classic/pb"
 	"hcc/flute/lib/ipmi"
 	"hcc/flute/lib/iputil"
 	"hcc/flute/lib/logger"
 	"hcc/flute/lib/mysql"
+	"innogrid.com/hcloud-classic/hcc_errors"
+	"innogrid.com/hcloud-classic/pb"
 	"net"
 	"strconv"
 	"strings"
@@ -95,6 +95,7 @@ func ReadNodeList(in *pb.ReqGetNodeList) (*pb.ResGetNodeList, uint64, string) {
 	var pnodes []*pb.Node
 
 	var uuid string
+	var groupID int64
 	var serverUUID string
 	var bmcMacAddr string
 	var bmcIPCIDR string
@@ -102,8 +103,12 @@ func ReadNodeList(in *pb.ReqGetNodeList) (*pb.ResGetNodeList, uint64, string) {
 	var status string
 	var cpuCores int
 	var memory int
+	var nicSpeedMbps int
 	var description string
 	var rackNumber int
+	var chargeCPU int
+	var chargeMemory int
+	var chargeNIC int
 	var createdAt time.Time
 	var active int
 
@@ -127,6 +132,8 @@ func ReadNodeList(in *pb.ReqGetNodeList) (*pb.ResGetNodeList, uint64, string) {
 
 		uuid = reqNode.UUID
 		uuidOk := len(uuid) != 0
+		groupID = reqNode.GroupID
+		groupIDOk := groupID != 0
 		serverUUID = reqNode.ServerUUID
 		serverUUIDOk := len(serverUUID) != 0
 		bmcMacAddr = reqNode.BmcMacAddr
@@ -141,13 +148,25 @@ func ReadNodeList(in *pb.ReqGetNodeList) (*pb.ResGetNodeList, uint64, string) {
 		cpuCoresOk := cpuCores != 0
 		memory = int(reqNode.Memory)
 		memoryOk := memory != 0
+		nicSpeedMbps = int(reqNode.NicSpeedMbps)
+		nicSpeedMbpsOk := nicSpeedMbps != 0
 		description = reqNode.Description
 		descriptionOk := len(description) != 0
+		rackNumber = int(reqNode.GetRackNumber())
 		rackNumberOk := rackNumber != 0
+		chargeCPU = int(reqNode.GetChargeCPU())
+		chargeCPUOk := chargeCPU != 0
+		chargeMemory = int(reqNode.GetChargeMemory())
+		chargeMemoryOk := chargeMemory != 0
+		chargeNIC = int(reqNode.GetChargeNIC())
+		chargeNICOk := chargeNIC != 0
 		active = int(reqNode.Active)
 		// gRPC use 0 value for unset. So I will use 9 value for inactive. - ish
 		activeOk := active != 0
 
+		if groupIDOk {
+			sql += " group_id = " + strconv.Itoa(int(groupID)) + ", "
+		}
 		if uuidOk {
 			sql += " and uuid = '" + uuid + "'"
 		}
@@ -172,11 +191,23 @@ func ReadNodeList(in *pb.ReqGetNodeList) (*pb.ResGetNodeList, uint64, string) {
 		if memoryOk {
 			sql += " and memory = " + strconv.Itoa(memory)
 		}
+		if nicSpeedMbpsOk {
+			sql += " nic_speed_mbps = " + strconv.Itoa(nicSpeedMbps) + ", "
+		}
 		if descriptionOk {
 			sql += " and description = '" + description + "'"
 		}
 		if rackNumberOk {
 			sql += " and rack_number = " + strconv.Itoa(rackNumber)
+		}
+		if chargeCPUOk {
+			sql += " charge_cpu = " + strconv.Itoa(chargeCPU) + ", "
+		}
+		if chargeMemoryOk {
+			sql += " charge_memory = " + strconv.Itoa(chargeMemory) + ", "
+		}
+		if chargeNICOk {
+			sql += " charge_nic = " + strconv.Itoa(chargeNIC) + ", "
 		}
 		if activeOk {
 			sql += " and active = " + strconv.Itoa(active)
@@ -238,6 +269,7 @@ func ReadNodeList(in *pb.ReqGetNodeList) (*pb.ResGetNodeList, uint64, string) {
 		bmcIPSubnetMask := net.IPv4(netIPNet.Mask[0], netIPNet.Mask[1], netIPNet.Mask[2], netIPNet.Mask[3]).To4().String()
 
 		nodes = append(nodes, pb.Node{
+			GroupID:         groupID,
 			UUID:            uuid,
 			ServerUUID:      serverUUID,
 			BmcMacAddr:      bmcMacAddr,
@@ -247,8 +279,12 @@ func ReadNodeList(in *pb.ReqGetNodeList) (*pb.ResGetNodeList, uint64, string) {
 			Status:          status,
 			CPUCores:        int32(cpuCores),
 			Memory:          int32(memory),
+			NicSpeedMbps:    int32(nicSpeedMbps),
 			Description:     description,
 			RackNumber:      int32(rackNumber),
+			ChargeCPU:       int32(chargeCPU),
+			ChargeMemory:    int32(chargeMemory),
+			ChargeNIC:       int32(chargeNIC),
 			Active:          int32(active),
 			CreatedAt:       _createdAt,
 		})
@@ -270,10 +306,16 @@ func CreateNode(in *pb.ReqCreateNode) (*pb.Node, uint64, string) {
 		return nil, hcc_errors.FluteGrpcRequestError, "CreateNode(): node is nil"
 	}
 
+	groupIDOk := reqNode.GroupID != 0
 	bmcIPOk := len(reqNode.BmcIP) != 0
+	nicSpeedMbpsOk := reqNode.NicSpeedMbps != 0
 	descriptionOk := len(reqNode.Description) != 0
-	if !bmcIPOk || !descriptionOk {
-		return nil, hcc_errors.FluteGrpcRequestError, "CreateNode(): need bmcIP and description arguments"
+	chargeCPUOk := reqNode.ChargeCPU != 0
+	chargeMemoryOk := reqNode.ChargeMemory != 0
+	chargeNICOk := reqNode.ChargeNIC != 0
+	if !groupIDOk || !bmcIPOk || !nicSpeedMbpsOk || !descriptionOk || !chargeCPUOk || !chargeMemoryOk || !chargeNICOk {
+		return nil, hcc_errors.FluteGrpcRequestError,
+		"CreateNode(): need group_id and bmc_ip, nic_speed_mbps, description, charge_cpu, charge_memory, charge_nic arguments"
 	}
 
 	err := iputil.CheckCIDRStr(reqNode.BmcIP)
@@ -302,7 +344,7 @@ func CreateNode(in *pb.ReqCreateNode) (*pb.Node, uint64, string) {
 	var wait sync.WaitGroup
 	wait.Add(3)
 
-	uuid, err := ipmi.DoUpdateAllNodes(reqNode.BmcIP, &wait, true, reqNode.Description)
+	uuid, err := ipmi.DoUpdateAllNodes(reqNode.BmcIP, &wait, true, reqNode)
 	if err != nil {
 		return nil, hcc_errors.FluteInternalIPMIError, "CreateNode(): Error occurred while updating node information"
 	}
@@ -503,6 +545,7 @@ func UpdateNode(in *pb.ReqUpdateNode) (*pb.Node, uint64, string) {
 		return nil, hcc_errors.FluteGrpcArgumentError, "UpdateNode(): need some arguments"
 	}
 
+	var groupID int64
 	var serverUUID string
 	var bmcMacAddr string
 	var bmcIP string
@@ -510,32 +553,48 @@ func UpdateNode(in *pb.ReqUpdateNode) (*pb.Node, uint64, string) {
 	var status string
 	var cpuCores int
 	var memory int
+	var nicSpeedMbps int
 	var description string
 	var rackNumber int
+	var chargeCPU int
+	var chargeMemory int
+	var chargeNIC int
 	var active int
 
-	serverUUID = in.GetNode().ServerUUID
+	groupID = reqNode.GroupID
+	groupIDOk := groupID != 0
+	serverUUID = reqNode.ServerUUID
 	serverUUIDOk := len(serverUUID) != 0
-	bmcMacAddr = in.GetNode().BmcMacAddr
+	bmcMacAddr = reqNode.BmcMacAddr
 	bmcMacAddrOk := len(bmcMacAddr) != 0
-	bmcIP = in.GetNode().BmcIP
+	bmcIP = reqNode.BmcIP
 	bmcIPOk := len(reqNode.BmcIP) != 0
-	pxeMacAdr = in.GetNode().PXEMacAddr
+	pxeMacAdr = reqNode.PXEMacAddr
 	pxeMacAdrOk := len(pxeMacAdr) != 0
-	status = in.GetNode().Status
+	status = reqNode.Status
 	statusOk := len(status) != 0
-	cpuCores = int(in.GetNode().CPUCores)
+	cpuCores = int(reqNode.CPUCores)
 	cpuCoresOk := cpuCores != 0
-	memory = int(in.GetNode().Memory)
+	memory = int(reqNode.Memory)
 	memoryOk := memory != 0
-	description = in.GetNode().Description
+	nicSpeedMbps = int(reqNode.NicSpeedMbps)
+	nicSpeedMbpsOk := nicSpeedMbps != 0
+	description = reqNode.Description
 	descriptionOk := len(description) != 0
+	rackNumber = int(reqNode.GetRackNumber())
 	rackNumberOk := rackNumber != 0
-	active = int(in.GetNode().Active)
+	chargeCPU = int(reqNode.GetChargeCPU())
+	chargeCPUOk := chargeCPU != 0
+	chargeMemory = int(reqNode.GetChargeMemory())
+	chargeMemoryOk := chargeMemory != 0
+	chargeNIC = int(reqNode.GetChargeNIC())
+	chargeNICOk := chargeNIC != 0
+	active = int(reqNode.Active)
 	// gRPC use 0 value for unset. So I will use 9 value for inactive. - ish
 	activeOk := active != 0
 
 	node := new(pb.Node)
+	node.GroupID = groupID
 	node.ServerUUID = serverUUID
 	node.UUID = requestedUUID
 	node.BmcMacAddr = bmcMacAddr
@@ -544,12 +603,19 @@ func UpdateNode(in *pb.ReqUpdateNode) (*pb.Node, uint64, string) {
 	node.Status = status
 	node.CPUCores = int32(cpuCores)
 	node.Memory = int32(memory)
+	node.NicSpeedMbps = int32(nicSpeedMbps)
 	node.Description = description
 	node.RackNumber = int32(rackNumber)
+	node.ChargeCPU = int32(chargeCPU)
+	node.ChargeMemory = int32(chargeMemory)
+	node.ChargeNIC = int32(chargeNIC)
 	node.Active = int32(active)
 
 	sql := "update node set"
 	var updateSet = ""
+	if groupIDOk {
+		updateSet += " group_id = " + strconv.Itoa(int(groupID)) + ", "
+	}
 	if serverUUIDOk {
 		if serverUUID == "-" {
 			serverUUID = ""
@@ -584,11 +650,23 @@ func UpdateNode(in *pb.ReqUpdateNode) (*pb.Node, uint64, string) {
 	if memoryOk {
 		updateSet += " memory = " + strconv.Itoa(memory) + ", "
 	}
+	if nicSpeedMbpsOk {
+		updateSet += " nic_speed_mbps = " + strconv.Itoa(nicSpeedMbps) + ", "
+	}
 	if descriptionOk {
 		updateSet += " description = '" + description + "', "
 	}
 	if rackNumberOk {
 		updateSet += " rack_number = " + strconv.Itoa(rackNumber) + ", "
+	}
+	if chargeCPUOk {
+		updateSet += " charge_cpu = " + strconv.Itoa(chargeCPU) + ", "
+	}
+	if chargeMemoryOk {
+		updateSet += " charge_memory = " + strconv.Itoa(chargeMemory) + ", "
+	}
+	if chargeNICOk {
+		updateSet += " charge_nic = " + strconv.Itoa(chargeNIC) + ", "
 	}
 	if activeOk {
 		// gRPC use 0 value for unset. So I will use 9 value for inactive. - ish

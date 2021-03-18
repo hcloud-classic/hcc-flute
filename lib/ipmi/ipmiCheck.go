@@ -2,14 +2,15 @@ package ipmi
 
 import (
 	dbsql "database/sql"
+	"errors"
 	"fmt"
-	"github.com/hcloud-classic/pb"
 	"hcc/flute/action/grpc/client"
 	"hcc/flute/daoext"
 	"hcc/flute/lib/config"
 	"hcc/flute/lib/iputil"
 	"hcc/flute/lib/logger"
 	"hcc/flute/lib/mysql"
+	"innogrid.com/hcloud-classic/pb"
 	"net"
 	"strconv"
 	"strings"
@@ -90,10 +91,28 @@ func makeRackNumber(bmcIPCIDR string) (int, error) {
 	return rackNumber, nil
 }
 
+func checkNICSpeed(speed int) error {
+	switch speed {
+	case 10, 100, 1000, 2500, 5000, 10000, 20000, 40000:
+		return nil
+	default:
+		return errors.New("unknown or not supported NIC speed")
+	}
+}
+
 // DoUpdateAllNodes : Update the database of a specific node by getting bmcIP
-func DoUpdateAllNodes(bmcIPCIDR string, wait *sync.WaitGroup, isNew bool, description string) (string, error) {
+func DoUpdateAllNodes(bmcIPCIDR string, wait *sync.WaitGroup, isNew bool, reqNode *pb.Node) (string, error) {
 	if config.Ipmi.Debug == "on" {
 		logger.Logger.Println("DoUpdateAllNodes(): Updating for bmc IP " + bmcIPCIDR)
+	}
+
+	if isNew {
+		err := checkNICSpeed(int(reqNode.NicSpeedMbps))
+		if err != nil {
+			logger.Logger.Println("DoUpdateAllNodes(): " + bmcIPCIDR + " err=" + err.Error())
+			wait.Done()
+			return "", err
+		}
 	}
 
 	rackNumber, err := makeRackNumber(bmcIPCIDR)
@@ -199,7 +218,9 @@ func DoUpdateAllNodes(bmcIPCIDR string, wait *sync.WaitGroup, isNew bool, descri
 	}
 
 	if isNew {
-		sql := "insert into node(uuid, server_uuid, bmc_mac_addr, bmc_ip, pxe_mac_addr, status, cpu_cores, memory, description, rack_number, created_at, available) values (?, '', ?, ?, ?, '', ?, ?, ?, ?, now(), 1)"
+		sql := "insert into node(uuid, server_uuid, bmc_mac_addr, bmc_ip, pxe_mac_addr, status, cpu_cores, memory, " +
+			"description, rack_number, charge_cpu, charge_memory, charge_nic, created_at, available) " +
+			"values (?, '', ?, ?, ?, '', ?, ?, ?, ?, ?, ?, ?, now(), 1)"
 
 		var stmt *dbsql.Stmt
 		stmt, err := mysql.Prepare(sql)
@@ -211,7 +232,8 @@ func DoUpdateAllNodes(bmcIPCIDR string, wait *sync.WaitGroup, isNew bool, descri
 		defer func() {
 			_ = stmt.Close()
 		}()
-		_, err = stmt.Exec(node.UUID, node.BmcMacAddr, node.BmcIP, node.PXEMacAddr, node.CPUCores, node.Memory, description, node.RackNumber)
+		_, err = stmt.Exec(node.UUID, node.BmcMacAddr, node.BmcIP, node.PXEMacAddr, node.CPUCores, node.Memory,
+			reqNode.GetDescription(), node.RackNumber, reqNode.ChargeCPU, reqNode.ChargeMemory, reqNode.ChargeNIC)
 		if err != nil {
 			logger.Logger.Println("DoUpdateAllNodes(): " + bmcIPCIDR + " err=" + err.Error())
 			wait.Done()
@@ -283,7 +305,7 @@ func UpdateNodesAll() {
 		}
 
 		go func(bmcIPCIDR string, wait *sync.WaitGroup) {
-			_, _ = DoUpdateAllNodes(bmcIPCIDR, wait, false, "")
+			_, _ = DoUpdateAllNodes(bmcIPCIDR, wait, false, nil)
 		}(bmcIPCIDR, &wait)
 	}
 

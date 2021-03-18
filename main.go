@@ -2,13 +2,13 @@ package main
 
 import (
 	"fmt"
-	"github.com/hcloud-classic/hcc_errors"
 	"hcc/flute/action/grpc/client"
 	"hcc/flute/action/grpc/server"
 	"hcc/flute/lib/config"
 	"hcc/flute/lib/ipmi"
 	"hcc/flute/lib/logger"
 	"hcc/flute/lib/mysql"
+	"innogrid.com/hcloud-classic/hcc_errors"
 	"os"
 	"os/signal"
 	"strconv"

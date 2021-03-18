@@ -1,7 +1,7 @@
 package client
 
 import (
-	"github.com/hcloud-classic/pb"
+	"innogrid.com/hcloud-classic/pb"
 )
 
 // RPCClient : Struct type of gRPC clients
