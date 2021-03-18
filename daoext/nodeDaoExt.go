@@ -1,10 +1,10 @@
 package daoext
 
 import (
-	"innogrid.com/hcloud-classic/hcc_errors"
-	"innogrid.com/hcloud-classic/pb"
 	"hcc/flute/lib/logger"
 	"hcc/flute/lib/mysql"
+	"innogrid.com/hcloud-classic/hcc_errors"
+	"innogrid.com/hcloud-classic/pb"
 	"strings"
 )
 

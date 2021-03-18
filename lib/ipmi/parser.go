@@ -1,11 +1,11 @@
 package ipmi
 
 import (
-	"innogrid.com/hcloud-classic/pb"
 	"hcc/flute/lib/config"
 	"hcc/flute/lib/iputil"
 	"hcc/flute/lib/logger"
 	"hcc/flute/lib/mysql"
+	"innogrid.com/hcloud-classic/pb"
 	"net"
 )
 

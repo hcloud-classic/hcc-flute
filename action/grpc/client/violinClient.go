@@ -2,11 +2,11 @@ package client
 
 import (
 	"context"
-	"innogrid.com/hcloud-classic/hcc_errors"
-	"innogrid.com/hcloud-classic/pb"
 	"google.golang.org/grpc"
 	"hcc/flute/lib/config"
 	"hcc/flute/lib/logger"
+	"innogrid.com/hcloud-classic/hcc_errors"
+	"innogrid.com/hcloud-classic/pb"
 	"strconv"
 	"time"
 )
