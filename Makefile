@@ -47,8 +47,6 @@ goreport: goreport_dep ## Make goreport
 	@./hcloud-badge/hcloud_badge.sh ${PROJECT_NAME}
 
 build: ## Build the binary file
-	@$(GOROOT)/bin/go get -u=patch github.com/hcloud-classic/hcc_errors@v1.1
-	@$(GOROOT)/bin/go mod vendor
 	@$(GOROOT)/bin/go build -o ${PROJECT_NAME} main.go
 
 docker: ## Build docker image and push it to private docker registry

@@ -1,7 +1,7 @@
 package logger
 
 import (
-	"github.com/hcloud-classic/hcc_errors"
+	"innogrid.com/hcloud-classic/hcc_errors"
 	"testing"
 )
 

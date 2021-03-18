@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"github.com/hcloud-classic/hcc_errors"
+	"innogrid.com/hcloud-classic/hcc_errors"
 	"hcc/flute/action/grpc/client"
 	"hcc/flute/action/grpc/server"
 	"hcc/flute/lib/config"

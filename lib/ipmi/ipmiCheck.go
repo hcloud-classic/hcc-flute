@@ -3,7 +3,7 @@ package ipmi
 import (
 	dbsql "database/sql"
 	"fmt"
-	"github.com/hcloud-classic/pb"
+	"innogrid.com/hcloud-classic/pb"
 	"hcc/flute/action/grpc/client"
 	"hcc/flute/daoext"
 	"hcc/flute/lib/config"

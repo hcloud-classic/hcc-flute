@@ -1,8 +1,8 @@
 package errconv
 
 import (
-	errh "github.com/hcloud-classic/hcc_errors"
-	errg "github.com/hcloud-classic/pb"
+	errh "innogrid.com/hcloud-classic/hcc_errors"
+	errg "innogrid.com/hcloud-classic/pb"
 )
 
 func GrpcToHcc(eg *errg.HccError) *errh.HccError {

@@ -1,7 +1,7 @@
 package mysql
 
 import (
-	"github.com/hcloud-classic/hcc_errors"
+	"innogrid.com/hcloud-classic/hcc_errors"
 	"hcc/flute/lib/config"
 	"hcc/flute/lib/logger"
 	"testing"

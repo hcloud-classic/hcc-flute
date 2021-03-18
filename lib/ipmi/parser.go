@@ -1,7 +1,7 @@
 package ipmi
 
 import (
-	"github.com/hcloud-classic/pb"
+	"innogrid.com/hcloud-classic/pb"
 	"hcc/flute/lib/config"
 	"hcc/flute/lib/iputil"
 	"hcc/flute/lib/logger"

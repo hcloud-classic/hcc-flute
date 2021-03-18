@@ -15,6 +15,7 @@ copy_dir:
     script:
     - make copy_dir
     - ln -sf $GOPATH/src/hcc/pb ../pb
+    - ln -sf $GOPATH/src/hcc/hcc_errors ../hcc_errors
 
 unit_tests:
   stage: test
