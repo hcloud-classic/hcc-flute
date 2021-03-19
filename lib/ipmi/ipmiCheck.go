@@ -218,9 +218,9 @@ func DoUpdateAllNodes(bmcIPCIDR string, wait *sync.WaitGroup, isNew bool, reqNod
 	}
 
 	if isNew {
-		sql := "insert into node(uuid, server_uuid, bmc_mac_addr, bmc_ip, pxe_mac_addr, status, cpu_cores, memory, " +
+		sql := "insert into node(uuid, group_id, server_uuid, bmc_mac_addr, bmc_ip, pxe_mac_addr, status, cpu_cores, memory, " +
 			"description, rack_number, charge_cpu, charge_memory, charge_nic, created_at, available) " +
-			"values (?, '', ?, ?, ?, '', ?, ?, ?, ?, ?, ?, ?, now(), 1)"
+			"values (?, ?, '', ?, ?, ?, '', ?, ?, ?, ?, ?, ?, ?, now(), 1)"
 
 		var stmt *dbsql.Stmt
 		stmt, err := mysql.Prepare(sql)
@@ -232,7 +232,7 @@ func DoUpdateAllNodes(bmcIPCIDR string, wait *sync.WaitGroup, isNew bool, reqNod
 		defer func() {
 			_ = stmt.Close()
 		}()
-		_, err = stmt.Exec(node.UUID, node.BmcMacAddr, node.BmcIP, node.PXEMacAddr, node.CPUCores, node.Memory,
+		_, err = stmt.Exec(node.UUID, reqNode.GroupID, node.BmcMacAddr, node.BmcIP, node.PXEMacAddr, node.CPUCores, node.Memory,
 			reqNode.GetDescription(), node.RackNumber, reqNode.ChargeCPU, reqNode.ChargeMemory, reqNode.ChargeNIC)
 		if err != nil {
 			logger.Logger.Println("DoUpdateAllNodes(): " + bmcIPCIDR + " err=" + err.Error())
