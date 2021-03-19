@@ -315,7 +315,7 @@ func CreateNode(in *pb.ReqCreateNode) (*pb.Node, uint64, string) {
 	chargeNICOk := reqNode.ChargeNIC != 0
 	if !groupIDOk || !bmcIPOk || !nicSpeedMbpsOk || !descriptionOk || !chargeCPUOk || !chargeMemoryOk || !chargeNICOk {
 		return nil, hcc_errors.FluteGrpcRequestError,
-		"CreateNode(): need group_id and bmc_ip, nic_speed_mbps, description, charge_cpu, charge_memory, charge_nic arguments"
+			"CreateNode(): need group_id and bmc_ip, nic_speed_mbps, description, charge_cpu, charge_memory, charge_nic arguments"
 	}
 
 	err := iputil.CheckCIDRStr(reqNode.BmcIP)
