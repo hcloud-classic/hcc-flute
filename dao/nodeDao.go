@@ -16,12 +16,14 @@ import (
 	"time"
 )
 
-var nodeSelectColumns = "uuid, server_uuid, bmc_mac_addr, bmc_ip, pxe_mac_addr, status, cpu_cores, memory, description, rack_number, active, created_at"
+var nodeSelectColumns = "uuid, group_id, server_uuid, bmc_mac_addr, bmc_ip, pxe_mac_addr, status, cpu_cores, memory, " +
+	"nic_speed_mbps, description, rack_number, charge_cpu, charge_memory, charge_nic, active, created_at"
 
 // ReadNode : Get all of infos of a node by UUID from database.
 func ReadNode(uuid string) (*pb.Node, uint64, string) {
 	var node pb.Node
 
+	var groupID int64
 	var serverUUID string
 	var bmcMacAddr string
 	var bmcIPCIDR string
@@ -29,8 +31,12 @@ func ReadNode(uuid string) (*pb.Node, uint64, string) {
 	var status string
 	var cpuCores int
 	var memory int
+	var nicSpeedMbps int
 	var description string
 	var rackNumber int
+	var chargeCPU int
+	var chargeMemory int
+	var chargeNIC int
 	var createdAt time.Time
 	var active int
 
@@ -38,6 +44,7 @@ func ReadNode(uuid string) (*pb.Node, uint64, string) {
 	row := mysql.Db.QueryRow(sql, uuid)
 	err := mysql.QueryRowScan(row,
 		&uuid,
+		&groupID,
 		&serverUUID,
 		&bmcMacAddr,
 		&bmcIPCIDR,
@@ -45,8 +52,12 @@ func ReadNode(uuid string) (*pb.Node, uint64, string) {
 		&status,
 		&cpuCores,
 		&memory,
+		&nicSpeedMbps,
 		&description,
 		&rackNumber,
+		&chargeCPU,
+		&chargeMemory,
+		&chargeNIC,
 		&active,
 		&createdAt)
 	if err != nil {
@@ -66,6 +77,7 @@ func ReadNode(uuid string) (*pb.Node, uint64, string) {
 	bmcIPSubnetMask := netIPNet.Mask.String()
 
 	node.UUID = uuid
+	node.GroupID = groupID
 	node.ServerUUID = serverUUID
 	node.BmcMacAddr = bmcMacAddr
 	node.BmcIP = bmcIP
@@ -74,8 +86,12 @@ func ReadNode(uuid string) (*pb.Node, uint64, string) {
 	node.Status = status
 	node.CPUCores = int32(cpuCores)
 	node.Memory = int32(memory)
+	node.NicSpeedMbps = int32(nicSpeedMbps)
 	node.Description = description
 	node.RackNumber = int32(rackNumber)
+	node.ChargeCPU = int32(chargeCPU)
+	node.ChargeMemory = int32(chargeMemory)
+	node.ChargeNIC = int32(chargeNIC)
 	node.Active = int32(active)
 
 	node.CreatedAt, err = ptypes.TimestampProto(createdAt)
@@ -234,7 +250,8 @@ func ReadNodeList(in *pb.ReqGetNodeList) (*pb.ResGetNodeList, uint64, string) {
 	}()
 
 	for stmt.Next() {
-		err := stmt.Scan(&uuid, &serverUUID, &bmcMacAddr, &bmcIPCIDR, &pxeMacAdr, &status, &cpuCores, &memory, &description, &rackNumber, &active, &createdAt)
+		err := stmt.Scan(&uuid, &groupID, &serverUUID, &bmcMacAddr, &bmcIPCIDR, &pxeMacAdr, &status, &cpuCores, &memory,
+			&nicSpeedMbps, &description, &rackNumber, &chargeCPU, &chargeMemory, &chargeNIC, &active, &createdAt)
 		if err != nil {
 			errStr := "ReadNodeList(): " + err.Error()
 			logger.Logger.Println(errStr)
@@ -315,7 +332,7 @@ func CreateNode(in *pb.ReqCreateNode) (*pb.Node, uint64, string) {
 	chargeNICOk := reqNode.ChargeNIC != 0
 	if !groupIDOk || !bmcIPOk || !nicSpeedMbpsOk || !descriptionOk || !chargeCPUOk || !chargeMemoryOk || !chargeNICOk {
 		return nil, hcc_errors.FluteGrpcRequestError,
-		"CreateNode(): need group_id and bmc_ip, nic_speed_mbps, description, charge_cpu, charge_memory, charge_nic arguments"
+			"CreateNode(): need group_id and bmc_ip, nic_speed_mbps, description, charge_cpu, charge_memory, charge_nic arguments"
 	}
 
 	err := iputil.CheckCIDRStr(reqNode.BmcIP)

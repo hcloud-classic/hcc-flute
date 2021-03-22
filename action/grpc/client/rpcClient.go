@@ -6,7 +6,8 @@ import (
 
 // RPCClient : Struct type of gRPC clients
 type RPCClient struct {
-	violin pb.ViolinClient
+	violin  pb.ViolinClient
+	piccolo pb.PiccoloClient
 }
 
 // RC : Exported variable pointed to RPCClient
@@ -19,10 +20,16 @@ func Init() error {
 		return err
 	}
 
+	err = initPiccolo()
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
 // End : Close connections of gRPC clients
 func End() {
+	closePiccolo()
 	closeViolin()
 }
