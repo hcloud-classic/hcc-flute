@@ -121,15 +121,15 @@ func DoUpdateAllNodes(bmcIPCIDR string, wait *sync.WaitGroup, isNew bool, reqNod
 		logger.Logger.Println("DoUpdateAllNodes(): Updating for bmc IP " + bmcIPCIDR)
 	}
 
-	err := checkGroupIDExist(reqNode.GroupID)
-	if err != nil {
-		logger.Logger.Println("DoUpdateAllNodes(): " + bmcIPCIDR + " err=" + err.Error())
-		wait.Done()
-		return "", err
-	}
-
 	if isNew {
-		err := checkNICSpeed(int(reqNode.NicSpeedMbps))
+		err := checkGroupIDExist(reqNode.GroupID)
+		if err != nil {
+			logger.Logger.Println("DoUpdateAllNodes(): " + bmcIPCIDR + " err=" + err.Error())
+			wait.Done()
+			return "", err
+		}
+
+		err = checkNICSpeed(int(reqNode.NicSpeedMbps))
 		if err != nil {
 			logger.Logger.Println("DoUpdateAllNodes(): " + bmcIPCIDR + " err=" + err.Error())
 			wait.Done()
