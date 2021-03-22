@@ -167,6 +167,39 @@ func parseViolin() {
 	}
 }
 
+func parsePiccolo() {
+	config.PiccoloConfig = conf.Get("piccolo")
+	if config.PiccoloConfig == nil {
+		logger.Logger.Panicln("no piccolo section")
+	}
+
+	Piccolo = piccolo{}
+	Piccolo.ServerAddress, err = config.PiccoloConfig.String("piccolo_server_address")
+	if err != nil {
+		logger.Logger.Panicln(err)
+	}
+
+	Piccolo.ServerPort, err = config.PiccoloConfig.Int("piccolo_server_port")
+	if err != nil {
+		logger.Logger.Panicln(err)
+	}
+
+	Piccolo.ConnectionTimeOutMs, err = config.PiccoloConfig.Int("piccolo_connection_timeout_ms")
+	if err != nil {
+		logger.Logger.Panicln(err)
+	}
+
+	Piccolo.ConnectionRetryCount, err = config.PiccoloConfig.Int("piccolo_connection_retry_count")
+	if err != nil {
+		logger.Logger.Panicln(err)
+	}
+
+	Piccolo.RequestTimeoutMs, err = config.PiccoloConfig.Int("piccolo_request_timeout_ms")
+	if err != nil {
+		logger.Logger.Panicln(err)
+	}
+}
+
 // Init : Parse config file and initialize config structure
 func Init() {
 	if err = conf.Parse(configLocation); err != nil {
@@ -177,4 +210,5 @@ func Init() {
 	parseGrpc()
 	parseIpmi()
 	parseViolin()
+	parsePiccolo()
 }

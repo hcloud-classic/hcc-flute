@@ -91,6 +91,21 @@ func makeRackNumber(bmcIPCIDR string) (int, error) {
 	return rackNumber, nil
 }
 
+func checkGroupIDExist(groupID int64) error {
+	resGetGroupList, hccErrStack := client.RC.GetGroupList(&pb.Empty{})
+	if hccErrStack != nil {
+		return (*hccErrStack.Stack())[0].ToError()
+	}
+
+	for _, pGroup := range resGetGroupList.Group {
+		if pGroup.Id == groupID {
+			return nil
+		}
+	}
+
+	return errors.New("given group ID is not in the database")
+}
+
 func checkNICSpeed(speed int) error {
 	switch speed {
 	case 10, 100, 1000, 2500, 5000, 10000, 20000, 40000:
@@ -104,6 +119,13 @@ func checkNICSpeed(speed int) error {
 func DoUpdateAllNodes(bmcIPCIDR string, wait *sync.WaitGroup, isNew bool, reqNode *pb.Node) (string, error) {
 	if config.Ipmi.Debug == "on" {
 		logger.Logger.Println("DoUpdateAllNodes(): Updating for bmc IP " + bmcIPCIDR)
+	}
+
+	err := checkGroupIDExist(reqNode.GroupID)
+	if err != nil {
+		logger.Logger.Println("DoUpdateAllNodes(): " + bmcIPCIDR + " err=" + err.Error())
+		wait.Done()
+		return "", err
 	}
 
 	if isNew {
