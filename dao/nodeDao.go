@@ -161,6 +161,7 @@ func ReadNodeList(in *pb.ReqGetNodeList) (*pb.ResGetNodeList, uint64, string) {
 		serverUUID = reqNode.ServerUUID
 		serverUUIDOk := len(serverUUID) != 0
 		nodeNum = int(reqNode.NodeNum)
+		// gRPC use 0 value for unset. So I will use -1 for unset node_num. - ish
 		nodeNumOk := nodeNum != 0
 		nodeIP = reqNode.NodeIP
 		nodeIPOk := len(nodeIP) != 0
@@ -289,6 +290,11 @@ func ReadNodeList(in *pb.ReqGetNodeList) (*pb.ResGetNodeList, uint64, string) {
 			errStr := "ReadNodeList(): " + err.Error()
 			logger.Logger.Println(errStr)
 			return nil, hcc_errors.FluteInternalTimeStampConversionError, errStr
+		}
+
+		// gRPC use 0 value for unset. So I will use -1 for unset node_num. - ish
+		if nodeNum == -1 {
+			nodeNum = 0
 		}
 
 		// gRPC use 0 value for unset. So I will use 9 value for inactive. - ish
@@ -605,6 +611,7 @@ func UpdateNode(in *pb.ReqUpdateNode) (*pb.Node, uint64, string) {
 	serverUUID = reqNode.ServerUUID
 	serverUUIDOk := len(serverUUID) != 0
 	nodeNum = int(reqNode.NodeNum)
+	// gRPC use 0 value for unset. So I will use -1 for unset node_num. - ish
 	nodeNumOk := nodeNum != 0
 	nodeIP = reqNode.NodeIP
 	nodeIPOk := len(nodeIP) != 0
