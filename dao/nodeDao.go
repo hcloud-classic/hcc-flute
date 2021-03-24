@@ -610,24 +610,6 @@ func UpdateNode(in *pb.ReqUpdateNode) (*pb.Node, uint64, string) {
 	// gRPC use 0 value for unset. So I will use 9 value for inactive. - ish
 	activeOk := active != 0
 
-	node := new(pb.Node)
-	node.GroupID = groupID
-	node.ServerUUID = serverUUID
-	node.UUID = requestedUUID
-	node.BmcMacAddr = bmcMacAddr
-	node.BmcIP = bmcIP
-	node.PXEMacAddr = pxeMacAdr
-	node.Status = status
-	node.CPUCores = int32(cpuCores)
-	node.Memory = int32(memory)
-	node.NicSpeedMbps = int32(nicSpeedMbps)
-	node.Description = description
-	node.RackNumber = int32(rackNumber)
-	node.ChargeCPU = int32(chargeCPU)
-	node.ChargeMemory = int32(chargeMemory)
-	node.ChargeNIC = int32(chargeNIC)
-	node.Active = int32(active)
-
 	sql := "update node set"
 	var updateSet = ""
 	if groupIDOk {
@@ -706,14 +688,14 @@ func UpdateNode(in *pb.ReqUpdateNode) (*pb.Node, uint64, string) {
 		_ = stmt.Close()
 	}()
 
-	_, err2 := stmt.Exec(node.UUID)
+	_, err2 := stmt.Exec(requestedUUID)
 	if err2 != nil {
 		errStr := "UpdateNode(): " + err2.Error()
 		logger.Logger.Println(errStr)
 		return nil, hcc_errors.FluteSQLOperationFail, errStr
 	}
 
-	node, errCode, errStr := ReadNode(node.UUID)
+	node, errCode, errStr := ReadNode(requestedUUID)
 	if errCode != 0 {
 		logger.Logger.Println("UpdateNode(): " + errStr)
 	}
