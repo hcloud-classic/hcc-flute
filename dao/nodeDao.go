@@ -556,19 +556,29 @@ func GetNodePowerState(in *pb.ReqNodePowerState) (string, uint64, string) {
 }
 
 func checkUpdateNodeArgs(reqNode *pb.Node) bool {
+	groupIDOk := reqNode.GroupID != 0
 	serverUUIDOk := len(reqNode.ServerUUID) != 0
+	// gRPC use 0 value for unset. So I will use -1 for unset node_num. - ish
+	nodeNumOk := int(reqNode.NodeNum) != 0
+	nodeIPOk := len(reqNode.NodeIP) != 0
 	bmcMacAddrOk := len(reqNode.BmcMacAddr) != 0
 	bmcIPOk := len(reqNode.BmcIP) != 0
 	pxeMacAdrOk := len(reqNode.PXEMacAddr) != 0
 	statusOk := len(reqNode.Status) != 0
 	cpuCoresOk := reqNode.CPUCores != 0
 	memoryOk := reqNode.Memory != 0
+	nicSpeedMbpsOk := reqNode.NicSpeedMbps != 0
 	descriptionOk := len(reqNode.Description) != 0
 	rackNumberOk := reqNode.RackNumber != 0
+	chargeCPUOk := int(reqNode.GetChargeCPU()) != 0
+	chargeMemoryOk := int(reqNode.GetChargeMemory()) != 0
+	chargeNICOk := int(reqNode.GetChargeNIC()) != 0
 	// gRPC use 0 value for unset. So I will use 9 value for inactive. - ish
 	activeOk := reqNode.Active != 0
 
-	return !serverUUIDOk && !bmcMacAddrOk && !bmcIPOk && !pxeMacAdrOk && !statusOk && !cpuCoresOk && !memoryOk && !descriptionOk && !rackNumberOk && !activeOk
+	return !groupIDOk && !serverUUIDOk && !nodeNumOk && !nodeIPOk && !bmcMacAddrOk && !bmcIPOk && !pxeMacAdrOk &&
+		!statusOk && !cpuCoresOk && !memoryOk && !nicSpeedMbpsOk && !descriptionOk && !rackNumberOk &&
+		!chargeCPUOk && !chargeMemoryOk && !chargeNICOk && !activeOk
 }
 
 // UpdateNode : Update infos of the node.
