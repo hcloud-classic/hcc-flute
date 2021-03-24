@@ -16,7 +16,7 @@ import (
 	"time"
 )
 
-var nodeSelectColumns = "uuid, group_id, server_uuid, bmc_mac_addr, bmc_ip, pxe_mac_addr, status, cpu_cores, memory, " +
+var nodeSelectColumns = "uuid, group_id, server_uuid, node_num, node_ip, bmc_mac_addr, bmc_ip, pxe_mac_addr, status, cpu_cores, memory, " +
 	"nic_speed_mbps, description, rack_number, charge_cpu, charge_memory, charge_nic, active, created_at"
 
 // ReadNode : Get all of infos of a node by UUID from database.
@@ -25,6 +25,8 @@ func ReadNode(uuid string) (*pb.Node, uint64, string) {
 
 	var groupID int64
 	var serverUUID string
+	var nodeNum int
+	var nodeIP string
 	var bmcMacAddr string
 	var bmcIPCIDR string
 	var pxeMacAdr string
@@ -46,6 +48,8 @@ func ReadNode(uuid string) (*pb.Node, uint64, string) {
 		&uuid,
 		&groupID,
 		&serverUUID,
+		&nodeNum,
+		&nodeIP,
 		&bmcMacAddr,
 		&bmcIPCIDR,
 		&pxeMacAdr,
@@ -79,6 +83,8 @@ func ReadNode(uuid string) (*pb.Node, uint64, string) {
 	node.UUID = uuid
 	node.GroupID = groupID
 	node.ServerUUID = serverUUID
+	node.NodeNum = int32(nodeNum)
+	node.NodeIP = nodeIP
 	node.BmcMacAddr = bmcMacAddr
 	node.BmcIP = bmcIP
 	node.BmcIPSubnetMask = bmcIPSubnetMask
@@ -262,7 +268,7 @@ func ReadNodeList(in *pb.ReqGetNodeList) (*pb.ResGetNodeList, uint64, string) {
 	}()
 
 	for stmt.Next() {
-		err := stmt.Scan(&uuid, &groupID, &serverUUID, &bmcMacAddr, &bmcIPCIDR, &pxeMacAdr, &status, &cpuCores, &memory,
+		err := stmt.Scan(&uuid, &groupID, &serverUUID, &nodeNum, &nodeIP, &bmcMacAddr, &bmcIPCIDR, &pxeMacAdr, &status, &cpuCores, &memory,
 			&nicSpeedMbps, &description, &rackNumber, &chargeCPU, &chargeMemory, &chargeNIC, &active, &createdAt)
 		if err != nil {
 			errStr := "ReadNodeList(): " + err.Error()
@@ -301,6 +307,8 @@ func ReadNodeList(in *pb.ReqGetNodeList) (*pb.ResGetNodeList, uint64, string) {
 			GroupID:         groupID,
 			UUID:            uuid,
 			ServerUUID:      serverUUID,
+			NodeNum:         int32(nodeNum),
+			NodeIP:          nodeIP,
 			BmcMacAddr:      bmcMacAddr,
 			BmcIP:           bmcIP,
 			BmcIPSubnetMask: bmcIPSubnetMask,
