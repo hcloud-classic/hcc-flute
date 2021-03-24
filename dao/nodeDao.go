@@ -113,6 +113,8 @@ func ReadNodeList(in *pb.ReqGetNodeList) (*pb.ResGetNodeList, uint64, string) {
 	var uuid string
 	var groupID int64
 	var serverUUID string
+	var nodeNum int
+	var nodeIP string
 	var bmcMacAddr string
 	var bmcIPCIDR string
 	var pxeMacAdr string
@@ -152,6 +154,10 @@ func ReadNodeList(in *pb.ReqGetNodeList) (*pb.ResGetNodeList, uint64, string) {
 		groupIDOk := groupID != 0
 		serverUUID = reqNode.ServerUUID
 		serverUUIDOk := len(serverUUID) != 0
+		nodeNum = int(reqNode.NodeNum)
+		nodeNumOk := nodeNum != 0
+		nodeIP = reqNode.NodeIP
+		nodeIPOk := len(nodeIP) != 0
 		bmcMacAddr = reqNode.BmcMacAddr
 		bmcMacAddrOk := len(bmcMacAddr) != 0
 		bmcIPCIDR = reqNode.BmcIP
@@ -188,6 +194,12 @@ func ReadNodeList(in *pb.ReqGetNodeList) (*pb.ResGetNodeList, uint64, string) {
 		}
 		if serverUUIDOk {
 			sql += " and server_uuid = '" + serverUUID + "'"
+		}
+		if nodeNumOk {
+			sql += " and node_num = " + strconv.Itoa(nodeNum)
+		}
+		if nodeIPOk {
+			sql += " and node_ip = '" + nodeIP + "'"
 		}
 		if bmcMacAddrOk {
 			sql += " and bmc_mac_addr = '" + bmcMacAddr + "'"
