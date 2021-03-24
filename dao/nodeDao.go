@@ -564,6 +564,8 @@ func UpdateNode(in *pb.ReqUpdateNode) (*pb.Node, uint64, string) {
 
 	var groupID int64
 	var serverUUID string
+	var nodeNum int
+	var nodeIP string
 	var bmcMacAddr string
 	var bmcIP string
 	var pxeMacAdr string
@@ -582,6 +584,10 @@ func UpdateNode(in *pb.ReqUpdateNode) (*pb.Node, uint64, string) {
 	groupIDOk := groupID != 0
 	serverUUID = reqNode.ServerUUID
 	serverUUIDOk := len(serverUUID) != 0
+	nodeNum = int(reqNode.NodeNum)
+	nodeNumOk := nodeNum != 0
+	nodeIP = reqNode.NodeIP
+	nodeIPOk := len(nodeIP) != 0
 	bmcMacAddr = reqNode.BmcMacAddr
 	bmcMacAddrOk := len(bmcMacAddr) != 0
 	bmcIP = reqNode.BmcIP
@@ -620,6 +626,19 @@ func UpdateNode(in *pb.ReqUpdateNode) (*pb.Node, uint64, string) {
 			serverUUID = ""
 		}
 		updateSet += " server_uuid = '" + serverUUID + "', "
+	}
+	if nodeNumOk {
+		// gRPC use 0 value for unset. So I will use -1 for unset node_num. - ish
+		if nodeNum == 0 && nodeNum < -1 {
+			return nil, hcc_errors.FluteGrpcRequestError, "node_num value should be -1 for unset or it should be start from 1"
+		}
+		updateSet += " node_num = " + strconv.Itoa(nodeNum) + ", "
+	}
+	if nodeIPOk {
+		if nodeIP == "-" {
+			nodeIP = ""
+		}
+		updateSet += " node_ip = '" + nodeIP + "', "
 	}
 	if bmcMacAddrOk {
 		updateSet += " bmc_mac_addr = '" + bmcMacAddr + "', "
