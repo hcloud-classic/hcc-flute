@@ -194,7 +194,7 @@ func ReadNodeList(in *pb.ReqGetNodeList) (*pb.ResGetNodeList, uint64, string) {
 		activeOk := active != 0
 
 		if groupIDOk {
-			sql += " group_id = " + strconv.Itoa(int(groupID)) + ", "
+			sql += " and group_id = " + strconv.Itoa(int(groupID))
 		}
 		if uuidOk {
 			sql += " and uuid = '" + uuid + "'"
@@ -227,7 +227,7 @@ func ReadNodeList(in *pb.ReqGetNodeList) (*pb.ResGetNodeList, uint64, string) {
 			sql += " and memory = " + strconv.Itoa(memory)
 		}
 		if nicSpeedMbpsOk {
-			sql += " nic_speed_mbps = " + strconv.Itoa(nicSpeedMbps) + ", "
+			sql += " and nic_speed_mbps = " + strconv.Itoa(nicSpeedMbps)
 		}
 		if descriptionOk {
 			sql += " and description = '" + description + "'"
@@ -236,13 +236,13 @@ func ReadNodeList(in *pb.ReqGetNodeList) (*pb.ResGetNodeList, uint64, string) {
 			sql += " and rack_number = " + strconv.Itoa(rackNumber)
 		}
 		if chargeCPUOk {
-			sql += " charge_cpu = " + strconv.Itoa(chargeCPU) + ", "
+			sql += " and charge_cpu = " + strconv.Itoa(chargeCPU)
 		}
 		if chargeMemoryOk {
-			sql += " charge_memory = " + strconv.Itoa(chargeMemory) + ", "
+			sql += " and charge_memory = " + strconv.Itoa(chargeMemory)
 		}
 		if chargeNICOk {
-			sql += " charge_nic = " + strconv.Itoa(chargeNIC) + ", "
+			sql += " and charge_nic = " + strconv.Itoa(chargeNIC)
 		}
 		if activeOk {
 			sql += " and active = " + strconv.Itoa(active)
