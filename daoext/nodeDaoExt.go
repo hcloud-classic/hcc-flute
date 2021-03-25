@@ -5,15 +5,21 @@ import (
 	"hcc/flute/lib/mysql"
 	"innogrid.com/hcloud-classic/hcc_errors"
 	"innogrid.com/hcloud-classic/pb"
+	"strconv"
 	"strings"
 )
 
 // ReadNodeNum : Get count of nodes from database.
-func ReadNodeNum() (*pb.ResGetNodeNum, uint64, string) {
+func ReadNodeNum(in *pb.ReqGetNodeNum) (*pb.ResGetNodeNum, uint64, string) {
 	var resNodeNum pb.ResGetNodeNum
 	var nodeNr int64
 
-	sql := "select count(*) from node where available = 1"
+	var groupID = in.GetGroupID()
+	if groupID == 0 {
+		return nil, hcc_errors.FluteGrpcArgumentError, "ReadNodeNum(): please insert a group_id argument"
+	}
+
+	sql := "select count(*) from node where available = 1 and group_id = " + strconv.Itoa(int(groupID))
 	row := mysql.Db.QueryRow(sql)
 	err := mysql.QueryRowScan(row, &nodeNr)
 	if err != nil {

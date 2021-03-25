@@ -16,7 +16,7 @@ import (
 	"time"
 )
 
-var nodeSelectColumns = "uuid, group_id, server_uuid, bmc_mac_addr, bmc_ip, pxe_mac_addr, status, cpu_cores, memory, " +
+var nodeSelectColumns = "uuid, group_id, server_uuid, node_num, node_ip, bmc_mac_addr, bmc_ip, pxe_mac_addr, status, cpu_cores, memory, " +
 	"nic_speed_mbps, description, rack_number, charge_cpu, charge_memory, charge_nic, active, created_at"
 
 // ReadNode : Get all of infos of a node by UUID from database.
@@ -25,6 +25,8 @@ func ReadNode(uuid string) (*pb.Node, uint64, string) {
 
 	var groupID int64
 	var serverUUID string
+	var nodeNum int
+	var nodeIP string
 	var bmcMacAddr string
 	var bmcIPCIDR string
 	var pxeMacAdr string
@@ -46,6 +48,8 @@ func ReadNode(uuid string) (*pb.Node, uint64, string) {
 		&uuid,
 		&groupID,
 		&serverUUID,
+		&nodeNum,
+		&nodeIP,
 		&bmcMacAddr,
 		&bmcIPCIDR,
 		&pxeMacAdr,
@@ -79,6 +83,8 @@ func ReadNode(uuid string) (*pb.Node, uint64, string) {
 	node.UUID = uuid
 	node.GroupID = groupID
 	node.ServerUUID = serverUUID
+	node.NodeNum = int32(nodeNum)
+	node.NodeIP = nodeIP
 	node.BmcMacAddr = bmcMacAddr
 	node.BmcIP = bmcIP
 	node.BmcIPSubnetMask = bmcIPSubnetMask
@@ -113,6 +119,8 @@ func ReadNodeList(in *pb.ReqGetNodeList) (*pb.ResGetNodeList, uint64, string) {
 	var uuid string
 	var groupID int64
 	var serverUUID string
+	var nodeNum int
+	var nodeIP string
 	var bmcMacAddr string
 	var bmcIPCIDR string
 	var pxeMacAdr string
@@ -152,6 +160,11 @@ func ReadNodeList(in *pb.ReqGetNodeList) (*pb.ResGetNodeList, uint64, string) {
 		groupIDOk := groupID != 0
 		serverUUID = reqNode.ServerUUID
 		serverUUIDOk := len(serverUUID) != 0
+		nodeNum = int(reqNode.NodeNum)
+		// gRPC use 0 value for unset. So I will use -1 for unset node_num. - ish
+		nodeNumOk := nodeNum != 0
+		nodeIP = reqNode.NodeIP
+		nodeIPOk := len(nodeIP) != 0
 		bmcMacAddr = reqNode.BmcMacAddr
 		bmcMacAddrOk := len(bmcMacAddr) != 0
 		bmcIPCIDR = reqNode.BmcIP
@@ -181,13 +194,19 @@ func ReadNodeList(in *pb.ReqGetNodeList) (*pb.ResGetNodeList, uint64, string) {
 		activeOk := active != 0
 
 		if groupIDOk {
-			sql += " group_id = " + strconv.Itoa(int(groupID)) + ", "
+			sql += " and group_id = " + strconv.Itoa(int(groupID))
 		}
 		if uuidOk {
 			sql += " and uuid = '" + uuid + "'"
 		}
 		if serverUUIDOk {
 			sql += " and server_uuid = '" + serverUUID + "'"
+		}
+		if nodeNumOk {
+			sql += " and node_num = " + strconv.Itoa(nodeNum)
+		}
+		if nodeIPOk {
+			sql += " and node_ip = '" + nodeIP + "'"
 		}
 		if bmcMacAddrOk {
 			sql += " and bmc_mac_addr = '" + bmcMacAddr + "'"
@@ -208,7 +227,7 @@ func ReadNodeList(in *pb.ReqGetNodeList) (*pb.ResGetNodeList, uint64, string) {
 			sql += " and memory = " + strconv.Itoa(memory)
 		}
 		if nicSpeedMbpsOk {
-			sql += " nic_speed_mbps = " + strconv.Itoa(nicSpeedMbps) + ", "
+			sql += " and nic_speed_mbps = " + strconv.Itoa(nicSpeedMbps)
 		}
 		if descriptionOk {
 			sql += " and description = '" + description + "'"
@@ -217,13 +236,13 @@ func ReadNodeList(in *pb.ReqGetNodeList) (*pb.ResGetNodeList, uint64, string) {
 			sql += " and rack_number = " + strconv.Itoa(rackNumber)
 		}
 		if chargeCPUOk {
-			sql += " charge_cpu = " + strconv.Itoa(chargeCPU) + ", "
+			sql += " and charge_cpu = " + strconv.Itoa(chargeCPU)
 		}
 		if chargeMemoryOk {
-			sql += " charge_memory = " + strconv.Itoa(chargeMemory) + ", "
+			sql += " and charge_memory = " + strconv.Itoa(chargeMemory)
 		}
 		if chargeNICOk {
-			sql += " charge_nic = " + strconv.Itoa(chargeNIC) + ", "
+			sql += " and charge_nic = " + strconv.Itoa(chargeNIC)
 		}
 		if activeOk {
 			sql += " and active = " + strconv.Itoa(active)
@@ -250,7 +269,7 @@ func ReadNodeList(in *pb.ReqGetNodeList) (*pb.ResGetNodeList, uint64, string) {
 	}()
 
 	for stmt.Next() {
-		err := stmt.Scan(&uuid, &groupID, &serverUUID, &bmcMacAddr, &bmcIPCIDR, &pxeMacAdr, &status, &cpuCores, &memory,
+		err := stmt.Scan(&uuid, &groupID, &serverUUID, &nodeNum, &nodeIP, &bmcMacAddr, &bmcIPCIDR, &pxeMacAdr, &status, &cpuCores, &memory,
 			&nicSpeedMbps, &description, &rackNumber, &chargeCPU, &chargeMemory, &chargeNIC, &active, &createdAt)
 		if err != nil {
 			errStr := "ReadNodeList(): " + err.Error()
@@ -273,6 +292,11 @@ func ReadNodeList(in *pb.ReqGetNodeList) (*pb.ResGetNodeList, uint64, string) {
 			return nil, hcc_errors.FluteInternalTimeStampConversionError, errStr
 		}
 
+		// gRPC use 0 value for unset. So I will use -1 for unset node_num. - ish
+		if nodeNum == -1 {
+			nodeNum = 0
+		}
+
 		// gRPC use 0 value for unset. So I will use 9 value for inactive. - ish
 		if active == 9 {
 			active = 0
@@ -289,6 +313,8 @@ func ReadNodeList(in *pb.ReqGetNodeList) (*pb.ResGetNodeList, uint64, string) {
 			GroupID:         groupID,
 			UUID:            uuid,
 			ServerUUID:      serverUUID,
+			NodeNum:         int32(nodeNum),
+			NodeIP:          nodeIP,
 			BmcMacAddr:      bmcMacAddr,
 			BmcIP:           bmcIP,
 			BmcIPSubnetMask: bmcIPSubnetMask,
@@ -530,19 +556,29 @@ func GetNodePowerState(in *pb.ReqNodePowerState) (string, uint64, string) {
 }
 
 func checkUpdateNodeArgs(reqNode *pb.Node) bool {
+	groupIDOk := reqNode.GroupID != 0
 	serverUUIDOk := len(reqNode.ServerUUID) != 0
+	// gRPC use 0 value for unset. So I will use -1 for unset node_num. - ish
+	nodeNumOk := int(reqNode.NodeNum) != 0
+	nodeIPOk := len(reqNode.NodeIP) != 0
 	bmcMacAddrOk := len(reqNode.BmcMacAddr) != 0
 	bmcIPOk := len(reqNode.BmcIP) != 0
 	pxeMacAdrOk := len(reqNode.PXEMacAddr) != 0
 	statusOk := len(reqNode.Status) != 0
 	cpuCoresOk := reqNode.CPUCores != 0
 	memoryOk := reqNode.Memory != 0
+	nicSpeedMbpsOk := reqNode.NicSpeedMbps != 0
 	descriptionOk := len(reqNode.Description) != 0
 	rackNumberOk := reqNode.RackNumber != 0
+	chargeCPUOk := int(reqNode.GetChargeCPU()) != 0
+	chargeMemoryOk := int(reqNode.GetChargeMemory()) != 0
+	chargeNICOk := int(reqNode.GetChargeNIC()) != 0
 	// gRPC use 0 value for unset. So I will use 9 value for inactive. - ish
 	activeOk := reqNode.Active != 0
 
-	return !serverUUIDOk && !bmcMacAddrOk && !bmcIPOk && !pxeMacAdrOk && !statusOk && !cpuCoresOk && !memoryOk && !descriptionOk && !rackNumberOk && !activeOk
+	return !groupIDOk && !serverUUIDOk && !nodeNumOk && !nodeIPOk && !bmcMacAddrOk && !bmcIPOk && !pxeMacAdrOk &&
+		!statusOk && !cpuCoresOk && !memoryOk && !nicSpeedMbpsOk && !descriptionOk && !rackNumberOk &&
+		!chargeCPUOk && !chargeMemoryOk && !chargeNICOk && !activeOk
 }
 
 // UpdateNode : Update infos of the node.
@@ -585,6 +621,7 @@ func UpdateNode(in *pb.ReqUpdateNode) (*pb.Node, uint64, string) {
 	serverUUID = reqNode.ServerUUID
 	serverUUIDOk := len(serverUUID) != 0
 	nodeNum = int(reqNode.NodeNum)
+	// gRPC use 0 value for unset. So I will use -1 for unset node_num. - ish
 	nodeNumOk := nodeNum != 0
 	nodeIP = reqNode.NodeIP
 	nodeIPOk := len(nodeIP) != 0
