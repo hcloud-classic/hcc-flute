@@ -260,7 +260,7 @@ func ReadNodeList(in *pb.ReqGetNodeList) (*pb.ResGetNodeList, uint64, string) {
 	}
 
 	if err != nil {
-		errStr := "ReadNode(): " + err.Error()
+		errStr := "ReadNodeList(): " + err.Error()
 		logger.Logger.Println(errStr)
 		return nil, hcc_errors.FluteSQLOperationFail, errStr
 	}
