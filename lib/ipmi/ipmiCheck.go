@@ -310,7 +310,7 @@ func UpdateNodesAll() {
 		_ = stmt.Close()
 	}()
 
-	resReadNodeNum, errCode, errText := daoext.ReadNodeNum()
+	resReadNodeNum, errCode, errText := daoext.ReadNodeNum(&pb.ReqGetNodeNum{})
 	if errCode != 0 {
 		logger.Logger.Println("UpdateNodesAll(): err=" + errText)
 		return
@@ -439,7 +439,7 @@ func UpdateNodesStatus() {
 		_ = stmt.Close()
 	}()
 
-	resReadNodeNum, errCode, errText := daoext.ReadNodeNum()
+	resReadNodeNum, errCode, errText := daoext.ReadNodeNum(&pb.ReqGetNodeNum{})
 	if errCode != 0 {
 		logger.Logger.Println("UpdateNodesStatus(): err=" + errText)
 		return
@@ -684,7 +684,7 @@ func UpdateNodesDetail() {
 		_ = stmt.Close()
 	}()
 
-	resReadNodeNum, errCode, errText := daoext.ReadNodeNum()
+	resReadNodeNum, errCode, errText := daoext.ReadNodeNum(&pb.ReqGetNodeNum{})
 	if errCode != 0 {
 		logger.Logger.Println("UpdateNodesDetail(): err=" + errText)
 		return

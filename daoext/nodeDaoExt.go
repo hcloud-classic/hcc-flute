@@ -13,13 +13,12 @@ import (
 func ReadNodeNum(in *pb.ReqGetNodeNum) (*pb.ResGetNodeNum, uint64, string) {
 	var resNodeNum pb.ResGetNodeNum
 	var nodeNr int64
-
 	var groupID = in.GetGroupID()
-	if groupID == 0 {
-		return nil, hcc_errors.FluteGrpcArgumentError, "ReadNodeNum(): please insert a group_id argument"
-	}
 
-	sql := "select count(*) from node where available = 1 and group_id = " + strconv.Itoa(int(groupID))
+	sql := "select count(*) from node where available = 1"
+	if groupID != 0 {
+		sql = "select count(*) from node where available = 1 and group_id = " + strconv.Itoa(int(groupID))
+	}
 	row := mysql.Db.QueryRow(sql)
 	err := mysql.QueryRowScan(row, &nodeNr)
 	if err != nil {
