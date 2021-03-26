@@ -45,14 +45,14 @@ func GetSerialNo(bmcIP string) (string, error) {
 
 			str := string(respBody)
 
-			var ipmiNode ipmiNode
-			err = json.Unmarshal([]byte(str), &ipmiNode)
+			var ipmiNodes ipmiMembers
+			err = json.Unmarshal([]byte(str), &ipmiNodes)
 			if err != nil {
 				_ = resp.Body.Close()
 				return "", err
 			}
 
-			serialNo := ipmiNode.Members[0].OdataID[len("/redfish/v1/Systems/"):]
+			serialNo := ipmiNodes.Members[0].OdataID[len("/redfish/v1/Systems/"):]
 
 			_ = resp.Body.Close()
 			return serialNo, nil
@@ -193,7 +193,7 @@ func GetProcessors(bmcIP string, serialNo string) (int, error) {
 
 			str := string(respBody)
 
-			var processors ipmiProcessors
+			var processors ipmiMembers
 			err = json.Unmarshal([]byte(str), &processors)
 			if err != nil {
 				_ = resp.Body.Close()

@@ -1,6 +1,6 @@
 package ipmi
 
-type ipmiNode struct {
+type ipmiMembers struct {
 	OdataContext      string `json:"@odata.context"`
 	OdataID           string `json:"@odata.id"`
 	OdataType         string `json:"@odata.type"`
@@ -109,17 +109,6 @@ type ipmiNodeInfo struct {
 			} `json:"#Intel.Oem.ChangeTPMState"`
 		} `json:"Oem"`
 	} `json:"Actions"`
-}
-
-type ipmiProcessors struct {
-	OdataContext      string `json:"@odata.context"`
-	OdataID           string `json:"@odata.id"`
-	OdataType         string `json:"@odata.type"`
-	Name              string `json:"Name"`
-	MembersOdataCount int    `json:"Members@odata.count"`
-	Members           []struct {
-		OdataID string `json:"@odata.id"`
-	} `json:"Members"`
 }
 
 type ipmiCPU struct {
