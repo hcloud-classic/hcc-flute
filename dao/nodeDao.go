@@ -393,13 +393,7 @@ func CreateNode(in *pb.ReqCreateNode) (*pb.Node, uint64, string) {
 	}
 
 	go func(uuid string, bmcIP string, wait *sync.WaitGroup) {
-		err := ipmi.DoUpdateStatusNodes(uuid, bmcIP, wait)
-		if err != nil {
-			logger.Logger.Println("CreateNode(): " + err.Error())
-		}
-	}(uuid, reqNode.BmcIP, &wait)
-	go func(uuid string, bmcIP string, wait *sync.WaitGroup) {
-		err := ipmi.DoUpdateNodesDetail(uuid, bmcIP, wait)
+		err := ipmi.DoUpdateStatusNodes(uuid, bmcIP, "none", wait)
 		if err != nil {
 			logger.Logger.Println("CreateNode(): " + err.Error())
 		}

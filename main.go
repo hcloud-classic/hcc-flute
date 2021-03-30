@@ -46,8 +46,6 @@ func init() {
 	ipmi.CheckNodeStatus()
 	logger.Logger.Println("Starting ipmi.CheckServerStatus(). Interval is " + strconv.Itoa(int(config.Ipmi.CheckServerStatusIntervalMs)) + "ms")
 	ipmi.CheckServerStatus()
-	logger.Logger.Println("Starting ipmi.CheckNodeDetail(). Interval is " + strconv.Itoa(int(config.Ipmi.CheckNodeDetailIntervalMs)) + "ms")
-	ipmi.CheckNodeDetail()
 }
 
 func end() {

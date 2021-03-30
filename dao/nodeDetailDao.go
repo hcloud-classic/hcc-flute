@@ -1,44 +1,12 @@
 package dao
 
 import (
+	"hcc/flute/daoext"
 	"hcc/flute/lib/logger"
 	"hcc/flute/lib/mysql"
 	"innogrid.com/hcloud-classic/hcc_errors"
 	"innogrid.com/hcloud-classic/pb"
-	"strings"
 )
-
-// ReadNodeDetail : Get detail infos of the node
-func ReadNodeDetail(nodeUUID string) (*pb.NodeDetail, uint64, string) {
-	var nodeDetail pb.NodeDetail
-
-	var cpuModel string
-	var cpuProcessors int
-	var cpuThreads int
-
-	sql := "select * from node_detail where node_uuid = ?"
-	row := mysql.Db.QueryRow(sql, nodeUUID)
-	err := mysql.QueryRowScan(row,
-		&nodeUUID,
-		&cpuModel,
-		&cpuProcessors,
-		&cpuThreads)
-	if err != nil {
-		errStr := "ReadNodeDetail(): " + err.Error()
-		logger.Logger.Println(errStr)
-		if strings.Contains(err.Error(), "no rows in result set") {
-			return nil, hcc_errors.FluteSQLNoResult, errStr
-		}
-		return nil, hcc_errors.FluteSQLOperationFail, errStr
-	}
-
-	nodeDetail.NodeUUID = nodeUUID
-	nodeDetail.CPUModel = cpuModel
-	nodeDetail.CPUProcessors = int32(cpuProcessors)
-	nodeDetail.CPUThreads = int32(cpuThreads)
-
-	return &nodeDetail, 0, ""
-}
 
 // CreateNodeDetail : Create detail infos of the node
 func CreateNodeDetail(in *pb.ReqCreateNodeDetail) (*pb.NodeDetail, uint64, string) {
@@ -54,13 +22,11 @@ func CreateNodeDetail(in *pb.ReqCreateNodeDetail) (*pb.NodeDetail, uint64, strin
 	}
 
 	nodeDetail := pb.NodeDetail{
-		NodeUUID:      nodeUUID,
-		CPUModel:      reqNodeDetail.CPUModel,
-		CPUProcessors: reqNodeDetail.CPUProcessors,
-		CPUThreads:    reqNodeDetail.CPUThreads,
+		NodeUUID:       nodeUUID,
+		NodeDetailData: reqNodeDetail.NodeDetailData,
 	}
 
-	sql := "insert into node_detail(node_uuid, cpu_model, cpu_processors, cpu_threads) values (?, ?, ?, ?)"
+	sql := "insert into node_detail(node_uuid, node_detail_data) values (?, ?)"
 	stmt, err := mysql.Prepare(sql)
 	if err != nil {
 		errStr := "CreateNodeDetail(): " + err.Error()
@@ -72,9 +38,49 @@ func CreateNodeDetail(in *pb.ReqCreateNodeDetail) (*pb.NodeDetail, uint64, strin
 		_ = stmt.Close()
 	}()
 
-	_, err = stmt.Exec(nodeDetail.NodeUUID, nodeDetail.CPUModel, nodeDetail.CPUProcessors, nodeDetail.CPUThreads)
+	_, err = stmt.Exec(nodeDetail.NodeUUID, nodeDetail.NodeDetailData)
 	if err != nil {
 		errStr := "CreateNodeDetail(): " + err.Error()
+		logger.Logger.Println(errStr)
+		return nil, hcc_errors.FluteSQLOperationFail, errStr
+	}
+
+	return &nodeDetail, 0, ""
+}
+
+// UpdateNodeDetail : Update detail infos of the node
+func UpdateNodeDetail(in *pb.ReqUpdateNodeDetail) (*pb.NodeDetail, uint64, string) {
+	reqNodeDetail := in.GetNodeDetail()
+	if reqNodeDetail == nil {
+		return nil, hcc_errors.FluteGrpcRequestError, "UpdateNodeDetail(): nodeDetail is nil"
+	}
+
+	nodeUUID := reqNodeDetail.GetNodeUUID()
+	nodeUUIDOk := len(nodeUUID) != 0
+	if !nodeUUIDOk {
+		return nil, hcc_errors.FluteGrpcRequestError, "UpdateNodeDetail(): need a nodeUUID argument"
+	}
+
+	nodeDetail := pb.NodeDetail{
+		NodeUUID:       nodeUUID,
+		NodeDetailData: reqNodeDetail.NodeDetailData,
+	}
+
+	sql := "update node_detail set node_detail_data = ? where node_uuid = ?"
+	stmt, err := mysql.Prepare(sql)
+	if err != nil {
+		errStr := "UpdateNodeDetail(): " + err.Error()
+		logger.Logger.Println(errStr)
+		return nil, hcc_errors.FluteSQLOperationFail, errStr
+	}
+
+	defer func() {
+		_ = stmt.Close()
+	}()
+
+	_, err = stmt.Exec(nodeDetail.NodeDetailData, nodeDetail.NodeUUID)
+	if err != nil {
+		errStr := "UpdateNodeDetail(): " + err.Error()
 		logger.Logger.Println(errStr)
 		return nil, hcc_errors.FluteSQLOperationFail, errStr
 	}
@@ -90,7 +96,7 @@ func DeleteNodeDetail(in *pb.ReqDeleteNodeDetail) (*pb.NodeDetail, uint64, strin
 		return nil, hcc_errors.FluteGrpcRequestError, "DeleteNodeDetail(): need a nodeUUID argument"
 	}
 
-	nodeDetail, errCode, errText := ReadNodeDetail(nodeUUID)
+	nodeDetail, errCode, errText := daoext.ReadNodeDetail(nodeUUID)
 	if errCode != 0 {
 		return nil, hcc_errors.FluteGrpcRequestError, "DeleteNodeDetail(): " + errText
 	}
