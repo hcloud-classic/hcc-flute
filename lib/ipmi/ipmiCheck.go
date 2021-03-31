@@ -103,7 +103,7 @@ func makeRackNumber(bmcIPCIDR string) (int, error) {
 
 func checkGroupIDExist(groupID int64) error {
 	resGetGroupList, hccErrStack := client.RC.GetGroupList(&pb.Empty{})
-	if hccErrStack != nil {
+	if hccErrStack != nil && (*hccErrStack.Stack())[0].Code() != 0 {
 		return (*hccErrStack.Stack())[0].ToError()
 	}
 
