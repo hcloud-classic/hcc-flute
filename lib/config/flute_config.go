@@ -47,4 +47,11 @@ violin_server_port 7500
 violin_connection_timeout_ms 5000
 violin_connection_retry_count 5
 violin_request_timeout_ms 5000
+
+[piccolo]
+piccolo_server_address 127.0.0.1
+piccolo_server_port 7500
+piccolo_connection_timeout_ms 5000
+piccolo_connection_retry_count 5
+piccolo_request_timeout_ms 5000
 -----------------------------------*/
