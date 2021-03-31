@@ -45,14 +45,14 @@ func GetSerialNo(bmcIP string) (string, error) {
 
 			str := string(respBody)
 
-			var ipmiNode ipmiNode
-			err = json.Unmarshal([]byte(str), &ipmiNode)
+			var ipmiNodes ipmiMembers
+			err = json.Unmarshal([]byte(str), &ipmiNodes)
 			if err != nil {
 				_ = resp.Body.Close()
 				return "", err
 			}
 
-			serialNo := ipmiNode.Members[0].OdataID[len("/redfish/v1/Systems/"):]
+			serialNo := ipmiNodes.Members[0].OdataID[len("/redfish/v1/Systems/"):]
 
 			_ = resp.Body.Close()
 			return serialNo, nil
@@ -159,220 +159,6 @@ func GetPowerState(bmcIP string, serialNo string) (string, error) {
 	}
 
 	return "", errors.New("GetPowerState(): retry count exceeded for " + bmcIP)
-}
-
-// GetProcessors : Get count of CPU processors from IPMI node
-func GetProcessors(bmcIP string, serialNo string) (int, error) {
-	http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
-	client := &http.Client{Timeout: time.Duration(config.Ipmi.RequestTimeoutMs) * time.Millisecond}
-	req, err := http.NewRequest("GET", "https://"+bmcIP+"/redfish/v1/Systems/"+serialNo+"/Processors", nil)
-	if err != nil {
-		return 0, err
-	}
-	req.SetBasicAuth(config.Ipmi.Username, config.Ipmi.Password)
-
-	for i := 0; i < int(config.Ipmi.RequestRetry); i++ {
-		resp, err := client.Do(req)
-		if err != nil || resp.StatusCode < 200 || resp.StatusCode > 299 {
-			if err != nil {
-				logger.Logger.Println(err)
-			} else {
-				_ = resp.Body.Close()
-				logger.Logger.Println("GetProcessors(): http response returned error code " + strconv.Itoa(resp.StatusCode) + " for " + bmcIP)
-			}
-			logger.Logger.Println("GetProcessors(): Retrying for " + bmcIP + " " + strconv.Itoa(i+1) + "/" + strconv.Itoa(int(config.Ipmi.RequestRetry)))
-			continue
-		} else {
-
-			// Check response
-			respBody, err := ioutil.ReadAll(resp.Body)
-			if err != nil {
-				_ = resp.Body.Close()
-				return 0, err
-			}
-
-			str := string(respBody)
-
-			var processors ipmiProcessors
-			err = json.Unmarshal([]byte(str), &processors)
-			if err != nil {
-				_ = resp.Body.Close()
-				return 0, err
-			}
-
-			count := len(processors.Members)
-
-			_ = resp.Body.Close()
-			return count, nil
-		}
-
-	}
-
-	return 0, errors.New("GetProcessors(): retry count exceeded for " + bmcIP)
-}
-
-// GetProcessorsCores : Get count of cores for selected processor from IPMI node
-func GetProcessorsCores(bmcIP string, serialNo string, processors int) (int, error) {
-	coreSum := 0
-
-	http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
-	client := &http.Client{Timeout: time.Duration(config.Ipmi.RequestTimeoutMs) * time.Millisecond}
-
-	for i := 1; i <= processors; i++ {
-		req, err := http.NewRequest("GET", "https://"+bmcIP+"/redfish/v1/Systems/"+serialNo+"/Processors/CPU"+strconv.Itoa(i), nil)
-		if err != nil {
-			return 0, err
-		}
-		req.SetBasicAuth(config.Ipmi.Username, config.Ipmi.Password)
-
-		var j = 0
-		for ; j < int(config.Ipmi.RequestRetry); j++ {
-			resp, err := client.Do(req)
-			if err != nil || resp.StatusCode < 200 || resp.StatusCode > 299 {
-				if err != nil {
-					logger.Logger.Println(err)
-				} else {
-					_ = resp.Body.Close()
-					logger.Logger.Println("GetProcessorsCores(): http response returned error code " + strconv.Itoa(resp.StatusCode) + " for " + bmcIP)
-				}
-				logger.Logger.Println("GetProcessorsCores(): Retrying for " + bmcIP + " " + strconv.Itoa(j+1) + "/" + strconv.Itoa(int(config.Ipmi.RequestRetry)))
-				continue
-			} else {
-				// Check response
-				respBody, err := ioutil.ReadAll(resp.Body)
-				if err != nil {
-					_ = resp.Body.Close()
-					return 0, err
-				}
-
-				str := string(respBody)
-
-				var cpu ipmiCPU
-				err = json.Unmarshal([]byte(str), &cpu)
-				if err != nil {
-					_ = resp.Body.Close()
-					return 0, err
-				}
-
-				totalCores := cpu.TotalCores
-
-				coreSum += totalCores
-
-				_ = resp.Body.Close()
-				break
-			}
-		}
-		if j == int(config.Ipmi.RequestRetry) {
-			return 0, errors.New("GetProcessorsCores(): retry count exceeded for " + bmcIP)
-		}
-	}
-
-	return coreSum, nil
-}
-
-// GetProcessorsThreads : Get count of threads for selected processor from IPMI node
-func GetProcessorsThreads(bmcIP string, serialNo string, processors int) (int, error) {
-	threadSum := 0
-
-	http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
-	client := &http.Client{Timeout: time.Duration(config.Ipmi.RequestTimeoutMs) * time.Millisecond}
-
-	for i := 1; i <= processors; i++ {
-		req, err := http.NewRequest("GET", "https://"+bmcIP+"/redfish/v1/Systems/"+serialNo+"/Processors/CPU"+strconv.Itoa(i), nil)
-		if err != nil {
-			return 0, err
-		}
-		req.SetBasicAuth(config.Ipmi.Username, config.Ipmi.Password)
-
-		var j = 0
-		for ; j < int(config.Ipmi.RequestRetry); j++ {
-			resp, err := client.Do(req)
-			if err != nil || resp.StatusCode < 200 || resp.StatusCode > 299 {
-				if err != nil {
-					logger.Logger.Println(err)
-				} else {
-					_ = resp.Body.Close()
-					logger.Logger.Println("GetProcessorsThreads(): http response returned error code " + strconv.Itoa(resp.StatusCode) + " for " + bmcIP)
-				}
-				logger.Logger.Println("GetProcessorsThreads(): Retrying for " + bmcIP + " " + strconv.Itoa(j+1) + "/" + strconv.Itoa(int(config.Ipmi.RequestRetry)))
-				continue
-			} else {
-				// Check response
-				respBody, err := ioutil.ReadAll(resp.Body)
-				if err != nil {
-					_ = resp.Body.Close()
-					return 0, err
-				}
-
-				str := string(respBody)
-
-				var cpu ipmiCPU
-				err = json.Unmarshal([]byte(str), &cpu)
-				if err != nil {
-					_ = resp.Body.Close()
-					return 0, err
-				}
-
-				totalThreads := cpu.TotalThreads
-
-				threadSum += totalThreads
-
-				_ = resp.Body.Close()
-				break
-			}
-		}
-		if j == int(config.Ipmi.RequestRetry) {
-			return 0, errors.New("GetProcessorsThreads(): retry count exceeded for " + bmcIP)
-		}
-	}
-
-	return threadSum, nil
-}
-
-// GetProcessorModel : Get model of first processor from IPMI node
-func GetProcessorModel(bmcIP string, serialNo string) (string, error) {
-	http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
-	client := &http.Client{Timeout: time.Duration(config.Ipmi.RequestTimeoutMs) * time.Millisecond}
-	req, err := http.NewRequest("GET", "https://"+bmcIP+"/redfish/v1/Systems/"+serialNo+"/Processors/CPU1", nil)
-	if err != nil {
-		return "", err
-	}
-	req.SetBasicAuth(config.Ipmi.Username, config.Ipmi.Password)
-
-	for i := 0; i < int(config.Ipmi.RequestRetry); i++ {
-		resp, err := client.Do(req)
-		if err != nil || resp.StatusCode < 200 || resp.StatusCode > 299 {
-			if err != nil {
-				logger.Logger.Println(err)
-			} else {
-				_ = resp.Body.Close()
-				logger.Logger.Println("GetProcessorModel(): http response returned error code " + strconv.Itoa(resp.StatusCode) + " for " + bmcIP)
-			}
-			logger.Logger.Println("GetProcessorModel(): Retrying for " + bmcIP + " " + strconv.Itoa(i+1) + "/" + strconv.Itoa(int(config.Ipmi.RequestRetry)))
-			continue
-		} else {
-			// Check response
-			respBody, err := ioutil.ReadAll(resp.Body)
-			if err != nil {
-				_ = resp.Body.Close()
-				return "", err
-			}
-
-			str := string(respBody)
-
-			var cpu ipmiCPU
-			err = json.Unmarshal([]byte(str), &cpu)
-			if err != nil {
-				_ = resp.Body.Close()
-				return "", err
-			}
-
-			_ = resp.Body.Close()
-			return cpu.ProcessorID.VendorID, nil
-		}
-	}
-
-	return "", errors.New("GetProcessorModel(): retry count exceeded for " + bmcIP)
 }
 
 // GetTotalSystemMemory : Get total system memory from IPMI node
@@ -538,4 +324,302 @@ func GetNICMac(bmcIP string, nicNO int, isBMC bool) (string, error) {
 	}
 
 	return "", errors.New("GetNICMac(): retry count exceeded for " + bmcIP)
+}
+
+func getMemberCounts(bmcIP string, serialNo string, member string) (int, error) {
+	http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
+	client := &http.Client{Timeout: time.Duration(config.Ipmi.RequestTimeoutMs) * time.Millisecond}
+	req, err := http.NewRequest("GET", "https://"+bmcIP+"/redfish/v1/Systems/"+serialNo+"/"+member, nil)
+	if err != nil {
+		return 0, err
+	}
+	req.SetBasicAuth(config.Ipmi.Username, config.Ipmi.Password)
+
+	for i := 0; i < int(config.Ipmi.RequestRetry); i++ {
+		resp, err := client.Do(req)
+		if err != nil || resp.StatusCode < 200 || resp.StatusCode > 299 {
+			if err != nil {
+				logger.Logger.Println(err)
+			} else {
+				_ = resp.Body.Close()
+				logger.Logger.Println("Get" + member + "(): http response returned error code " + strconv.Itoa(resp.StatusCode) + " for " + bmcIP)
+			}
+			logger.Logger.Println("Get" + member + "(): Retrying for " + bmcIP + " " + strconv.Itoa(i+1) + "/" + strconv.Itoa(int(config.Ipmi.RequestRetry)))
+			continue
+		} else {
+
+			// Check response
+			respBody, err := ioutil.ReadAll(resp.Body)
+			if err != nil {
+				_ = resp.Body.Close()
+				return 0, err
+			}
+
+			str := string(respBody)
+
+			var members ipmiMembers
+			err = json.Unmarshal([]byte(str), &members)
+			if err != nil {
+				_ = resp.Body.Close()
+				return 0, err
+			}
+
+			count := len(members.Members)
+
+			_ = resp.Body.Close()
+			return count, nil
+		}
+
+	}
+
+	return 0, errors.New("Get" + member + "(): retry count exceeded for " + bmcIP)
+}
+
+func getNumCPU(bmcIP string, serialNo string) (int, error) {
+	return getMemberCounts(bmcIP, serialNo, "Processors")
+}
+
+// GetProcessorsCores : Get count of cores for selected processor from IPMI node
+func GetProcessorsCores(bmcIP string, serialNo string, processors int) (int, error) {
+	coreSum := 0
+
+	http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
+	client := &http.Client{Timeout: time.Duration(config.Ipmi.RequestTimeoutMs) * time.Millisecond}
+
+	for i := 1; i <= processors; i++ {
+		req, err := http.NewRequest("GET", "https://"+bmcIP+"/redfish/v1/Systems/"+serialNo+"/Processors/CPU"+strconv.Itoa(i), nil)
+		if err != nil {
+			return 0, err
+		}
+		req.SetBasicAuth(config.Ipmi.Username, config.Ipmi.Password)
+
+		var j = 0
+		for ; j < int(config.Ipmi.RequestRetry); j++ {
+			resp, err := client.Do(req)
+			if err != nil || resp.StatusCode < 200 || resp.StatusCode > 299 {
+				if err != nil {
+					logger.Logger.Println(err)
+				} else {
+					_ = resp.Body.Close()
+					logger.Logger.Println("GetProcessorsCores(): http response returned error code " + strconv.Itoa(resp.StatusCode) + " for " + bmcIP)
+				}
+				logger.Logger.Println("GetProcessorsCores(): Retrying for " + bmcIP + " " + strconv.Itoa(j+1) + "/" + strconv.Itoa(int(config.Ipmi.RequestRetry)))
+				continue
+			} else {
+				// Check response
+				respBody, err := ioutil.ReadAll(resp.Body)
+				if err != nil {
+					_ = resp.Body.Close()
+					return 0, err
+				}
+
+				str := string(respBody)
+
+				var cpu ipmiProcessor
+				err = json.Unmarshal([]byte(str), &cpu)
+				if err != nil {
+					_ = resp.Body.Close()
+					return 0, err
+				}
+
+				totalCores := cpu.TotalCores
+
+				coreSum += totalCores
+
+				_ = resp.Body.Close()
+				break
+			}
+		}
+		if j == int(config.Ipmi.RequestRetry) {
+			return 0, errors.New("GetProcessorsCores(): retry count exceeded for " + bmcIP)
+		}
+	}
+
+	return coreSum, nil
+}
+
+func getCPUDetails(bmcIP string, serialNo string, ID string) (*cpu, error) {
+	http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
+	client := &http.Client{Timeout: time.Duration(config.Ipmi.RequestTimeoutMs) * time.Millisecond}
+	req, err := http.NewRequest("GET", "https://"+bmcIP+"/redfish/v1/Systems/"+serialNo+"/Processors/"+ID, nil)
+	if err != nil {
+		return nil, err
+	}
+	req.SetBasicAuth(config.Ipmi.Username, config.Ipmi.Password)
+
+	for i := 0; i < int(config.Ipmi.RequestRetry); i++ {
+		resp, err := client.Do(req)
+		if err != nil || resp.StatusCode < 200 || resp.StatusCode > 299 {
+			if err != nil {
+				logger.Logger.Println(err)
+			} else {
+				_ = resp.Body.Close()
+				logger.Logger.Println("getCPUDetails(): http response returned error code " + strconv.Itoa(resp.StatusCode) + " for " + bmcIP)
+			}
+			logger.Logger.Println("getCPUDetails(): Retrying for " + bmcIP + " " + strconv.Itoa(i+1) + "/" + strconv.Itoa(int(config.Ipmi.RequestRetry)))
+			continue
+		} else {
+			// Check response
+			respBody, err := ioutil.ReadAll(resp.Body)
+			if err != nil {
+				_ = resp.Body.Close()
+				return nil, err
+			}
+
+			str := string(respBody)
+
+			var ipmiProcessor ipmiProcessor
+			err = json.Unmarshal([]byte(str), &ipmiProcessor)
+			if err != nil {
+				_ = resp.Body.Close()
+				return nil, err
+			}
+			_ = resp.Body.Close()
+
+			cpu := cpu{
+				ID:          ipmiProcessor.ID,
+				Socket:      ipmiProcessor.Socket,
+				Manufacture: ipmiProcessor.Manufacturer,
+				Model:       ipmiProcessor.ProcessorID.VendorID,
+				MaxSpeedMHz: ipmiProcessor.MaxSpeedMHz,
+				Cores:       ipmiProcessor.TotalCores,
+				Threads:     ipmiProcessor.TotalThreads,
+				Status: status{
+					State:        ipmiProcessor.Status.State,
+					Health:       ipmiProcessor.Status.Health,
+					HealthRollup: ipmiProcessor.Status.HealthRollup,
+				},
+			}
+
+			return &cpu, nil
+		}
+	}
+
+	return nil, errors.New("getCPUDetails(): retry count exceeded for " + bmcIP)
+}
+
+func getCPUsDetail(bmcIP string, serialNo string) (*[]cpu, error) {
+	cpuNum, err := getNumCPU(bmcIP, serialNo)
+	if err != nil {
+		return nil, err
+	}
+
+	var cpus []cpu
+	for i := 1; i <= cpuNum; i++ {
+		cpu, err := getCPUDetails(bmcIP, serialNo, "CPU"+strconv.Itoa(i))
+		if err != nil {
+			return nil, err
+		}
+
+		cpus = append(cpus, *cpu)
+	}
+
+	return &cpus, nil
+}
+
+func getNumMemory(bmcIP string, serialNo string) (int, error) {
+	return getMemberCounts(bmcIP, serialNo, "Memory")
+}
+
+func getMemoryDetails(bmcIP string, serialNo string, ID string) (*memory, error) {
+	http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
+	client := &http.Client{Timeout: time.Duration(config.Ipmi.RequestTimeoutMs) * time.Millisecond}
+	req, err := http.NewRequest("GET", "https://"+bmcIP+"/redfish/v1/Systems/"+serialNo+"/Memory/"+ID, nil)
+	if err != nil {
+		return nil, err
+	}
+	req.SetBasicAuth(config.Ipmi.Username, config.Ipmi.Password)
+
+	for i := 0; i < int(config.Ipmi.RequestRetry); i++ {
+		resp, err := client.Do(req)
+		if err != nil || resp.StatusCode < 200 || resp.StatusCode > 299 {
+			if err != nil {
+				logger.Logger.Println(err)
+			} else {
+				_ = resp.Body.Close()
+				logger.Logger.Println("getMemoryDetails(): http response returned error code " + strconv.Itoa(resp.StatusCode) + " for " + bmcIP)
+			}
+			logger.Logger.Println("getMemoryDetails(): Retrying for " + bmcIP + " " + strconv.Itoa(i+1) + "/" + strconv.Itoa(int(config.Ipmi.RequestRetry)))
+			continue
+		} else {
+			// Check response
+			respBody, err := ioutil.ReadAll(resp.Body)
+			if err != nil {
+				_ = resp.Body.Close()
+				return nil, err
+			}
+
+			str := string(respBody)
+
+			var ipmiMemory ipmiMemory
+			err = json.Unmarshal([]byte(str), &ipmiMemory)
+			if err != nil {
+				_ = resp.Body.Close()
+				return nil, err
+			}
+			_ = resp.Body.Close()
+
+			memory := memory{
+				ID:            ipmiMemory.ID,
+				CapacityMB:    ipmiMemory.Capacitymib,
+				Manufacture:   ipmiMemory.Manufacturer,
+				SerialNumber:  ipmiMemory.Serialnumber,
+				PartNumber:    ipmiMemory.Partnumber,
+				DeviceLocator: ipmiMemory.Devicelocator,
+				SpeedMhz:      ipmiMemory.Operatingspeedmhz,
+				Status: status{
+					State:        ipmiMemory.Status.State,
+					Health:       ipmiMemory.Status.Health,
+					HealthRollup: ipmiMemory.Status.Healthrollup,
+				},
+			}
+
+			return &memory, nil
+		}
+	}
+
+	return nil, errors.New("getMemoryDetails(): retry count exceeded for " + bmcIP)
+}
+
+func getMemoriesDetail(bmcIP string, serialNo string) (*[]memory, error) {
+	memoryNum, err := getNumMemory(bmcIP, serialNo)
+	if err != nil {
+		return nil, err
+	}
+
+	var memories []memory
+	for i := 1; i <= memoryNum; i++ {
+		memory, err := getMemoryDetails(bmcIP, serialNo, "Memory"+strconv.Itoa(i))
+		if err != nil {
+			return nil, err
+		}
+
+		memories = append(memories, *memory)
+	}
+
+	return &memories, nil
+}
+
+func GetNodeDetailData(bmcIP string, serialNo string) (string, error) {
+	memoriesDetail, err := getMemoriesDetail(bmcIP, serialNo)
+	if err != nil {
+		return "", err
+	}
+
+	getCPUsDetail, err := getCPUsDetail(bmcIP, serialNo)
+	if err != nil {
+		return "", err
+	}
+
+	nodeDetailData := nodeDetailData{
+		Memories: *memoriesDetail,
+		CPUs:     *getCPUsDetail,
+	}
+
+	result, err := json.Marshal(nodeDetailData)
+	if err != nil {
+		return "", err
+	}
+
+	return string(result), nil
 }

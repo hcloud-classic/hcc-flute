@@ -1,6 +1,6 @@
 package ipmi
 
-type ipmiNode struct {
+type ipmiMembers struct {
 	OdataContext      string `json:"@odata.context"`
 	OdataID           string `json:"@odata.id"`
 	OdataType         string `json:"@odata.type"`
@@ -111,18 +111,7 @@ type ipmiNodeInfo struct {
 	} `json:"Actions"`
 }
 
-type ipmiProcessors struct {
-	OdataContext      string `json:"@odata.context"`
-	OdataID           string `json:"@odata.id"`
-	OdataType         string `json:"@odata.type"`
-	Name              string `json:"Name"`
-	MembersOdataCount int    `json:"Members@odata.count"`
-	Members           []struct {
-		OdataID string `json:"@odata.id"`
-	} `json:"Members"`
-}
-
-type ipmiCPU struct {
+type ipmiProcessor struct {
 	OdataContext          string `json:"@odata.context"`
 	OdataID               string `json:"@odata.id"`
 	OdataType             string `json:"@odata.type"`
@@ -156,6 +145,44 @@ type ipmiCPU struct {
 			} `json:"Metrics"`
 		} `json:"Intel_RackScale"`
 	} `json:"Oem"`
+}
+
+type ipmiMemory struct {
+	OdataContext      string   `json:"@odata.context"`
+	OdataID           string   `json:"@odata.id"`
+	OdataType         string   `json:"@odata.type"`
+	ID                string   `json:"Id"`
+	Name              string   `json:"Name"`
+	Description       string   `json:"Description"`
+	Memorytype        string   `json:"MemoryType"`
+	Memorydevicetype  string   `json:"MemoryDeviceType"`
+	Basemoduletype    string   `json:"BaseModuleType"`
+	Capacitymib       int      `json:"CapacityMiB"`
+	Datawidthbits     int      `json:"DataWidthBits"`
+	Buswidthbits      int      `json:"BusWidthBits"`
+	Manufacturer      string   `json:"Manufacturer"`
+	Serialnumber      string   `json:"SerialNumber"`
+	Partnumber        string   `json:"PartNumber"`
+	Allowedspeedsmhz  []int    `json:"AllowedSpeedsMHz"`
+	Memorymedia       []string `json:"MemoryMedia"`
+	Rankcount         int      `json:"RankCount"`
+	Devicelocator     string   `json:"DeviceLocator"`
+	Errorcorrection   string   `json:"ErrorCorrection"`
+	Operatingspeedmhz int      `json:"OperatingSpeedMhz"`
+	Metrics           struct {
+		OdataID string `json:"@odata.id"`
+	} `json:"Metrics"`
+	Oem struct {
+		IntelRackscale struct {
+			OdataType   string  `json:"@odata.type"`
+			Voltagevolt float64 `json:"VoltageVolt"`
+		} `json:"Intel_RackScale"`
+	} `json:"Oem"`
+	Status struct {
+		State        string `json:"State"`
+		Health       string `json:"Health"`
+		Healthrollup string `json:"HealthRollup"`
+	} `json:"Status"`
 }
 
 type ipmiResetType struct {

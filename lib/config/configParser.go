@@ -118,7 +118,7 @@ func parseIpmi() {
 		logger.Logger.Panicln(err)
 	}
 
-	Ipmi.CheckNodeDetailIntervalMs, err = config.IpmiConfig.Int("check_node_detail_interval_ms")
+	Ipmi.UpdateNodeDetailRetryIntervalMs, err = config.IpmiConfig.Int("update_node_detail_retry_interval_ms")
 	if err != nil {
 		logger.Logger.Panicln(err)
 	}

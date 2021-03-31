@@ -33,10 +33,8 @@ func returnNode(node *pb.Node) *pb.Node {
 
 func returnNodeDetail(nodeDetail *pb.NodeDetail) *pb.NodeDetail {
 	return &pb.NodeDetail{
-		NodeUUID:      nodeDetail.NodeUUID,
-		CPUModel:      nodeDetail.CPUModel,
-		CPUProcessors: nodeDetail.CPUProcessors,
-		CPUThreads:    nodeDetail.CPUThreads,
+		NodeUUID:       nodeDetail.NodeUUID,
+		NodeDetailData: nodeDetail.NodeDetailData,
 	}
 }
 
@@ -152,13 +150,25 @@ func (s *fluteServer) CreateNodeDetail(_ context.Context, in *pb.ReqCreateNodeDe
 func (s *fluteServer) GetNodeDetail(_ context.Context, in *pb.ReqGetNodeDetail) (*pb.ResGetNodeDetail, error) {
 	logger.Logger.Println("Request received: GetNodeDetail()")
 
-	nodeDetail, errCode, errStr := dao.ReadNodeDetail(in.GetNodeUUID())
+	nodeDetail, errCode, errStr := daoext.ReadNodeDetail(in.GetNodeUUID())
 	if errCode != 0 {
 		errStack := hcc_errors.NewHccErrorStack(hcc_errors.NewHccError(errCode, errStr))
 		return &pb.ResGetNodeDetail{NodeDetail: &pb.NodeDetail{}, HccErrorStack: errconv.HccStackToGrpc(errStack)}, nil
 	}
 
 	return &pb.ResGetNodeDetail{NodeDetail: returnNodeDetail(nodeDetail)}, nil
+}
+
+func (s *fluteServer) UpdateNodeDetail(_ context.Context, in *pb.ReqUpdateNodeDetail) (*pb.ResUpdateNodeDetail, error) {
+	logger.Logger.Println("Request received: UpdateNodeDetail()")
+
+	nodeDetail, errCode, errStr := dao.UpdateNodeDetail(in)
+	if errCode != 0 {
+		errStack := hcc_errors.NewHccErrorStack(hcc_errors.NewHccError(errCode, errStr))
+		return &pb.ResUpdateNodeDetail{NodeDetail: &pb.NodeDetail{}, HccErrorStack: errconv.HccStackToGrpc(errStack)}, nil
+	}
+
+	return &pb.ResUpdateNodeDetail{NodeDetail: returnNodeDetail(nodeDetail)}, nil
 }
 
 func (s *fluteServer) DeleteNodeDetail(_ context.Context, in *pb.ReqDeleteNodeDetail) (*pb.ResDeleteNodeDetail, error) {
