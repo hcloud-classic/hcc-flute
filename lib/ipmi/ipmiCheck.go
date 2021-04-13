@@ -711,7 +711,7 @@ func updateNodeDetail(uuid string) error {
 func queueCheckNodeAll() {
 	go func() {
 		if config.Ipmi.Debug == "on" {
-			logger.Logger.Println("queueCheckNodeAll(): Rerun CheckNodeAll() after " + strconv.Itoa(int(config.Ipmi.CheckNodeAllIntervalMs)) + "ms")
+			logger.Logger.Println("queueCheckNodeAll(): Queued of running CheckNodeAll() after " + strconv.Itoa(int(config.Ipmi.CheckNodeAllIntervalMs)) + "ms")
 		}
 		delayMillisecond(time.Duration(config.Ipmi.CheckNodeAllIntervalMs))
 		CheckNodeAll()
@@ -721,7 +721,7 @@ func queueCheckNodeAll() {
 func queueCheckNodeStatus() {
 	go func() {
 		if config.Ipmi.Debug == "on" {
-			logger.Logger.Println("queueCheckNodeStatus(): Rerun CheckNodeStatus() after " + strconv.Itoa(int(config.Ipmi.CheckNodeStatusIntervalMs)) + "ms")
+			logger.Logger.Println("queueCheckNodeStatus(): Queued of running CheckNodeStatus() after " + strconv.Itoa(int(config.Ipmi.CheckNodeStatusIntervalMs)) + "ms")
 		}
 		delayMillisecond(time.Duration(config.Ipmi.CheckNodeStatusIntervalMs))
 		CheckNodeStatus()
@@ -731,21 +731,10 @@ func queueCheckNodeStatus() {
 func queueCheckServerStatus() {
 	go func() {
 		if config.Ipmi.Debug == "on" {
-			logger.Logger.Println("queueCheckServerStatus(): Rerun CheckNodeStatus() after " + strconv.Itoa(int(config.Ipmi.CheckServerStatusIntervalMs)) + "ms")
+			logger.Logger.Println("queueCheckServerStatus(): Queued of running CheckServerStatus() after " + strconv.Itoa(int(config.Ipmi.CheckServerStatusIntervalMs)) + "ms")
 		}
 		delayMillisecond(time.Duration(config.Ipmi.CheckServerStatusIntervalMs))
 		CheckServerStatus()
-	}()
-}
-
-func queueScheduleUpdateNodeDetail(uuid string) {
-	go func() {
-		if config.Ipmi.Debug == "on" {
-			logger.Logger.Println("queueUpdateNodeDetail(): Rerun scheduleUpdateNodeDetail() after " +
-				strconv.Itoa(int(config.Ipmi.UpdateNodeDetailRetryIntervalMs)) + "ms for uuid=" + uuid)
-		}
-		delayMillisecond(time.Duration(config.Ipmi.UpdateNodeDetailRetryIntervalMs))
-		ScheduleUpdateNodeDetail(uuid)
 	}()
 }
 
@@ -755,8 +744,15 @@ func CheckNodeAll() {
 		if config.Ipmi.Debug == "on" {
 			logger.Logger.Println("CheckNodeAll(): Locked")
 		}
-		queueCheckNodeAll()
-		return
+		for true {
+			if !checkNodeAllLocked {
+				break
+			}
+			if config.Ipmi.Debug == "on" {
+				logger.Logger.Println("CheckNodeAll(): Rerun after " + strconv.Itoa(int(config.Ipmi.CheckNodeAllIntervalMs)) + "ms")
+			}
+			delayMillisecond(time.Duration(config.Ipmi.CheckNodeAllIntervalMs))
+		}
 	}
 
 	go func() {
@@ -777,8 +773,15 @@ func CheckNodeStatus() {
 		if config.Ipmi.Debug == "on" {
 			logger.Logger.Println("CheckNodeStatus(): Locked")
 		}
-		queueCheckNodeStatus()
-		return
+		for true {
+			if !checkNodeStatusLocked {
+				break
+			}
+			if config.Ipmi.Debug == "on" {
+				logger.Logger.Println("CheckNodeStatus(): Rerun after " + strconv.Itoa(int(config.Ipmi.CheckNodeStatusIntervalMs)) + "ms")
+			}
+			delayMillisecond(time.Duration(config.Ipmi.CheckNodeStatusIntervalMs))
+		}
 	}
 
 	go func() {
@@ -799,8 +802,15 @@ func CheckServerStatus() {
 		if config.Ipmi.Debug == "on" {
 			logger.Logger.Println("CheckServerStatus(): Locked")
 		}
-		queueCheckServerStatus()
-		return
+		for true {
+			if !checkServerStatusLocked {
+				break
+			}
+			if config.Ipmi.Debug == "on" {
+				logger.Logger.Println("CheckServerStatus(): Rerun after " + strconv.Itoa(int(config.Ipmi.CheckServerStatusIntervalMs)) + "ms")
+			}
+			delayMillisecond(time.Duration(config.Ipmi.CheckServerStatusIntervalMs))
+		}
 	}
 
 	go func() {
@@ -819,21 +829,29 @@ func CheckServerStatus() {
 func ScheduleUpdateNodeDetail(uuid string) {
 	if isUpdateNodeDetailLocked(uuid) {
 		if config.Ipmi.Debug == "on" {
-			logger.Logger.Println("scheduleUpdateNodeDetail(): Locked for uuid=" + uuid)
+			logger.Logger.Println("ScheduleUpdateNodeDetail(): Locked for uuid=" + uuid)
 		}
-		queueScheduleUpdateNodeDetail(uuid)
-		return
+		for true {
+			if !isUpdateNodeDetailLocked(uuid) {
+				break
+			}
+			if config.Ipmi.Debug == "on" {
+				logger.Logger.Println("ScheduleUpdateNodeDetail(): Rerun after " +
+					strconv.Itoa(int(config.Ipmi.UpdateNodeDetailRetryIntervalMs)) + "ms for uuid=" + uuid)
+			}
+			delayMillisecond(time.Duration(config.Ipmi.UpdateNodeDetailRetryIntervalMs))
+		}
 	}
 
 	go func() {
 		updateNodeDetailLock(uuid)
 		if config.Ipmi.Debug == "on" {
-			logger.Logger.Println("scheduleUpdateNodeDetail(): Running updateNodeDetail() for uuid=" + uuid)
+			logger.Logger.Println("ScheduleUpdateNodeDetail(): Running updateNodeDetail() for uuid=" + uuid)
 		}
 		err := updateNodeDetail(uuid)
 		updateNodeDetailUnlock(uuid)
 		if err != nil {
-			queueScheduleUpdateNodeDetail(uuid)
+			ScheduleUpdateNodeDetail(uuid)
 		}
 	}()
 }
