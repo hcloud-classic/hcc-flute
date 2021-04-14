@@ -78,7 +78,7 @@ func ReadNode(uuid string) (*pb.Node, uint64, string) {
 		return nil, hcc_errors.FluteGrpcRequestError, "ReadNode(): " + err.Error()
 	}
 	bmcIP := netIP.String()
-	bmcIPSubnetMask := netIPNet.Mask.String()
+	bmcIPSubnetMask := net.IP(netIPNet.Mask).To4().String()
 
 	node.UUID = uuid
 	node.GroupID = groupID
