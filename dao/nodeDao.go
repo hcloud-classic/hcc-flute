@@ -17,7 +17,7 @@ import (
 )
 
 var nodeSelectColumns = "uuid, group_id, server_uuid, node_num, node_ip, bmc_mac_addr, bmc_ip, pxe_mac_addr, status, cpu_cores, memory, " +
-	"nic_speed_mbps, description, rack_number, charge_cpu, charge_memory, charge_nic, active, created_at"
+	"nic_model, nic_speed_mbps, bmc_nic_model, bmc_nic_speed_mbps, description, rack_number, charge_cpu, charge_memory, charge_nic, active, created_at"
 
 // ReadNode : Get all of infos of a node by UUID from database.
 func ReadNode(uuid string) (*pb.Node, uint64, string) {
@@ -33,7 +33,10 @@ func ReadNode(uuid string) (*pb.Node, uint64, string) {
 	var status string
 	var cpuCores int
 	var memory int
+	var nicModel string
 	var nicSpeedMbps int
+	var bmcNicModel string
+	var bmcNicSpeedMbps int
 	var description string
 	var rackNumber int
 	var chargeCPU int
@@ -56,7 +59,10 @@ func ReadNode(uuid string) (*pb.Node, uint64, string) {
 		&status,
 		&cpuCores,
 		&memory,
+		&nicModel,
 		&nicSpeedMbps,
+		&bmcNicModel,
+		&bmcNicSpeedMbps,
 		&description,
 		&rackNumber,
 		&chargeCPU,
@@ -92,7 +98,10 @@ func ReadNode(uuid string) (*pb.Node, uint64, string) {
 	node.Status = status
 	node.CPUCores = int32(cpuCores)
 	node.Memory = int32(memory)
+	node.NicModel = nicModel
 	node.NicSpeedMbps = int32(nicSpeedMbps)
+	node.BmcNicModel = bmcNicModel
+	node.BmcNicSpeedMbps = int32(bmcNicSpeedMbps)
 	node.Description = description
 	node.RackNumber = int32(rackNumber)
 	node.ChargeCPU = int32(chargeCPU)
@@ -127,7 +136,10 @@ func ReadNodeList(in *pb.ReqGetNodeList) (*pb.ResGetNodeList, uint64, string) {
 	var status string
 	var cpuCores int
 	var memory int
+	var nicModel string
 	var nicSpeedMbps int
+	var bmcNicModel string
+	var bmcNicSpeedMbps int
 	var description string
 	var rackNumber int
 	var chargeCPU int
@@ -177,8 +189,14 @@ func ReadNodeList(in *pb.ReqGetNodeList) (*pb.ResGetNodeList, uint64, string) {
 		cpuCoresOk := cpuCores != 0
 		memory = int(reqNode.Memory)
 		memoryOk := memory != 0
+		nicModel = reqNode.NicModel
+		nicModelOk := len(nicModel) != 0
 		nicSpeedMbps = int(reqNode.NicSpeedMbps)
 		nicSpeedMbpsOk := nicSpeedMbps != 0
+		bmcNicModel = reqNode.BmcNicModel
+		bmcNicModelOk := len(bmcNicModel) != 0
+		bmcNicSpeedMbps = int(reqNode.BmcNicSpeedMbps)
+		bmcNicSpeedMbpsOk := bmcNicSpeedMbps != 0
 		description = reqNode.Description
 		descriptionOk := len(description) != 0
 		rackNumber = int(reqNode.GetRackNumber())
@@ -226,8 +244,17 @@ func ReadNodeList(in *pb.ReqGetNodeList) (*pb.ResGetNodeList, uint64, string) {
 		if memoryOk {
 			sql += " and memory = " + strconv.Itoa(memory)
 		}
+		if nicModelOk {
+			sql += " and nic_model = '" + nicModel + "'"
+		}
 		if nicSpeedMbpsOk {
 			sql += " and nic_speed_mbps = " + strconv.Itoa(nicSpeedMbps)
+		}
+		if bmcNicModelOk {
+			sql += " and bmc_nic_model = '" + bmcNicModel + "'"
+		}
+		if bmcNicSpeedMbpsOk {
+			sql += " and bmc_nic_speed_mbps = " + strconv.Itoa(bmcNicSpeedMbps)
 		}
 		if descriptionOk {
 			sql += " and description = '" + description + "'"
@@ -322,7 +349,10 @@ func ReadNodeList(in *pb.ReqGetNodeList) (*pb.ResGetNodeList, uint64, string) {
 			Status:          status,
 			CPUCores:        int32(cpuCores),
 			Memory:          int32(memory),
+			NicModel:        nicModel,
 			NicSpeedMbps:    int32(nicSpeedMbps),
+			BmcNicModel:     bmcNicModel,
+			BmcNicSpeedMbps: int32(bmcNicSpeedMbps),
 			Description:     description,
 			RackNumber:      int32(rackNumber),
 			ChargeCPU:       int32(chargeCPU),
@@ -561,7 +591,10 @@ func checkUpdateNodeArgs(reqNode *pb.Node) bool {
 	statusOk := len(reqNode.Status) != 0
 	cpuCoresOk := reqNode.CPUCores != 0
 	memoryOk := reqNode.Memory != 0
+	nicModelOk := len(reqNode.NicModel) != 0
 	nicSpeedMbpsOk := reqNode.NicSpeedMbps != 0
+	bmcNicModelOk := len(reqNode.BmcNicModel) != 0
+	bmcNicSpeedMbpsOk := reqNode.BmcNicSpeedMbps != 0
 	descriptionOk := len(reqNode.Description) != 0
 	rackNumberOk := reqNode.RackNumber != 0
 	chargeCPUOk := int(reqNode.GetChargeCPU()) != 0
@@ -571,7 +604,8 @@ func checkUpdateNodeArgs(reqNode *pb.Node) bool {
 	activeOk := reqNode.Active != 0
 
 	return !groupIDOk && !serverUUIDOk && !nodeNumOk && !nodeIPOk && !bmcMacAddrOk && !bmcIPOk && !pxeMacAdrOk &&
-		!statusOk && !cpuCoresOk && !memoryOk && !nicSpeedMbpsOk && !descriptionOk && !rackNumberOk &&
+		!statusOk && !cpuCoresOk && !memoryOk &&
+		!nicModelOk && !nicSpeedMbpsOk && !bmcNicModelOk && !bmcNicSpeedMbpsOk && !descriptionOk && !rackNumberOk &&
 		!chargeCPUOk && !chargeMemoryOk && !chargeNICOk && !activeOk
 }
 
@@ -602,7 +636,10 @@ func UpdateNode(in *pb.ReqUpdateNode) (*pb.Node, uint64, string) {
 	var status string
 	var cpuCores int
 	var memory int
+	var nicModel string
 	var nicSpeedMbps int
+	var bmcNicModel string
+	var bmcNicSpeedMbps int
 	var description string
 	var rackNumber int
 	var chargeCPU int
@@ -631,8 +668,14 @@ func UpdateNode(in *pb.ReqUpdateNode) (*pb.Node, uint64, string) {
 	cpuCoresOk := cpuCores != 0
 	memory = int(reqNode.Memory)
 	memoryOk := memory != 0
+	nicModel = reqNode.NicModel
+	nicModelOk := len(nicModel) != 0
 	nicSpeedMbps = int(reqNode.NicSpeedMbps)
 	nicSpeedMbpsOk := nicSpeedMbps != 0
+	bmcNicModel = reqNode.BmcNicModel
+	bmcNicModelOk := len(bmcNicModel) != 0
+	bmcNicSpeedMbps = int(reqNode.BmcNicSpeedMbps)
+	bmcNicSpeedMbpsOk := bmcNicSpeedMbps != 0
 	description = reqNode.Description
 	descriptionOk := len(description) != 0
 	rackNumber = int(reqNode.GetRackNumber())
@@ -699,8 +742,17 @@ func UpdateNode(in *pb.ReqUpdateNode) (*pb.Node, uint64, string) {
 	if memoryOk {
 		updateSet += " memory = " + strconv.Itoa(memory) + ", "
 	}
+	if nicModelOk {
+		updateSet += " nic_model = '" + nicModel + "', "
+	}
 	if nicSpeedMbpsOk {
 		updateSet += " nic_speed_mbps = " + strconv.Itoa(nicSpeedMbps) + ", "
+	}
+	if bmcNicModelOk {
+		updateSet += " bmc_nic_model = '" + bmcNicModel + "', "
+	}
+	if bmcNicSpeedMbpsOk {
+		updateSet += " bmc_nic_speed_mbps = " + strconv.Itoa(bmcNicSpeedMbps) + ", "
 	}
 	if descriptionOk {
 		updateSet += " description = '" + description + "', "
