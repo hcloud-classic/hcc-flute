@@ -259,10 +259,10 @@ func DoUpdateAllNodes(bmcIPCIDR string, wait *sync.WaitGroup, isNew bool, reqNod
 	}
 
 	if isNew {
-		sql := "insert into node(uuid, group_id, server_uuid, bmc_mac_addr, bmc_ip, pxe_mac_addr, status, cpu_cores, memory, " +
+		sql := "insert into node(uuid, node_name, group_id, server_uuid, bmc_mac_addr, bmc_ip, pxe_mac_addr, status, cpu_cores, memory, " +
 			"nic_model, nic_speed_mbps, bmc_nic_model, bmc_nic_speed_mbps, " +
 			"description, rack_number, charge_cpu, charge_memory, charge_nic, created_at, available) " +
-			"values (?, ?, '', ?, ?, ?, '', ?, ?, " +
+			"values (?, ?, ?, '', ?, ?, ?, '', ?, ?, " +
 			"?, ?, ?, ?, " +
 			"?, ?, ?, ?, ?, now(), 1)"
 
@@ -276,7 +276,7 @@ func DoUpdateAllNodes(bmcIPCIDR string, wait *sync.WaitGroup, isNew bool, reqNod
 		defer func() {
 			_ = stmt.Close()
 		}()
-		_, err = stmt.Exec(node.UUID, reqNode.GroupID, node.BmcMacAddr, node.BmcIP, node.PXEMacAddr, node.CPUCores, node.Memory,
+		_, err = stmt.Exec(node.UUID, reqNode.NodeName, reqNode.GroupID, node.BmcMacAddr, node.BmcIP, node.PXEMacAddr, node.CPUCores, node.Memory,
 			reqNode.NicModel, reqNode.NicSpeedMbps, reqNode.BmcNicModel, reqNode.BmcNicSpeedMbps,
 			reqNode.GetDescription(), node.RackNumber, reqNode.ChargeCPU, reqNode.ChargeMemory, reqNode.ChargeNIC)
 		if err != nil {

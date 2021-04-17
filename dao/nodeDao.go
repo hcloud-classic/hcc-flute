@@ -16,13 +16,14 @@ import (
 	"time"
 )
 
-var nodeSelectColumns = "uuid, group_id, server_uuid, node_num, node_ip, bmc_mac_addr, bmc_ip, pxe_mac_addr, status, cpu_cores, memory, " +
+var nodeSelectColumns = "uuid, node_name, group_id, server_uuid, node_num, node_ip, bmc_mac_addr, bmc_ip, pxe_mac_addr, status, cpu_cores, memory, " +
 	"nic_model, nic_speed_mbps, bmc_nic_model, bmc_nic_speed_mbps, description, rack_number, charge_cpu, charge_memory, charge_nic, active, created_at"
 
 // ReadNode : Get all of infos of a node by UUID from database.
 func ReadNode(uuid string) (*pb.Node, uint64, string) {
 	var node pb.Node
 
+	var nodeName string
 	var groupID int64
 	var serverUUID string
 	var nodeNum int
@@ -49,6 +50,7 @@ func ReadNode(uuid string) (*pb.Node, uint64, string) {
 	row := mysql.Db.QueryRow(sql, uuid)
 	err := mysql.QueryRowScan(row,
 		&uuid,
+		&nodeName,
 		&groupID,
 		&serverUUID,
 		&nodeNum,
@@ -87,6 +89,7 @@ func ReadNode(uuid string) (*pb.Node, uint64, string) {
 	bmcIPSubnetMask := net.IP(netIPNet.Mask).To4().String()
 
 	node.UUID = uuid
+	node.NodeName = nodeName
 	node.GroupID = groupID
 	node.ServerUUID = serverUUID
 	node.NodeNum = int32(nodeNum)
@@ -126,6 +129,7 @@ func ReadNodeList(in *pb.ReqGetNodeList) (*pb.ResGetNodeList, uint64, string) {
 	var pnodes []*pb.Node
 
 	var uuid string
+	var nodeName string
 	var groupID int64
 	var serverUUID string
 	var nodeNum int
@@ -168,6 +172,8 @@ func ReadNodeList(in *pb.ReqGetNodeList) (*pb.ResGetNodeList, uint64, string) {
 
 		uuid = reqNode.UUID
 		uuidOk := len(uuid) != 0
+		nodeName = reqNode.NodeName
+		nodeNameOk := len(nodeName) != 0
 		groupID = reqNode.GroupID
 		groupIDOk := groupID != 0
 		serverUUID = reqNode.ServerUUID
@@ -211,11 +217,14 @@ func ReadNodeList(in *pb.ReqGetNodeList) (*pb.ResGetNodeList, uint64, string) {
 		// gRPC use 0 value for unset. So I will use 9 value for inactive. - ish
 		activeOk := active != 0
 
-		if groupIDOk {
-			sql += " and group_id = " + strconv.Itoa(int(groupID))
-		}
 		if uuidOk {
 			sql += " and uuid = '" + uuid + "'"
+		}
+		if nodeNameOk {
+			sql += " and node_name = '" + nodeName + "'"
+		}
+		if groupIDOk {
+			sql += " and group_id = " + strconv.Itoa(int(groupID))
 		}
 		if serverUUIDOk {
 			sql += " and server_uuid = '" + serverUUID + "'"
@@ -296,8 +305,9 @@ func ReadNodeList(in *pb.ReqGetNodeList) (*pb.ResGetNodeList, uint64, string) {
 	}()
 
 	for stmt.Next() {
-		err := stmt.Scan(&uuid, &groupID, &serverUUID, &nodeNum, &nodeIP, &bmcMacAddr, &bmcIPCIDR, &pxeMacAdr, &status, &cpuCores, &memory,
-			&nicSpeedMbps, &description, &rackNumber, &chargeCPU, &chargeMemory, &chargeNIC, &active, &createdAt)
+		err := stmt.Scan(&uuid, &nodeName, &groupID, &serverUUID, &nodeNum, &nodeIP, &bmcMacAddr, &bmcIPCIDR, &pxeMacAdr, &status, &cpuCores, &memory,
+			&nicModel, &nicSpeedMbps, &bmcNicModel, &bmcNicSpeedMbps,
+			&description, &rackNumber, &chargeCPU, &chargeMemory, &chargeNIC, &active, &createdAt)
 		if err != nil {
 			errStr := "ReadNodeList(): " + err.Error()
 			logger.Logger.Println(errStr)
@@ -337,8 +347,9 @@ func ReadNodeList(in *pb.ReqGetNodeList) (*pb.ResGetNodeList, uint64, string) {
 		bmcIPSubnetMask := net.IPv4(netIPNet.Mask[0], netIPNet.Mask[1], netIPNet.Mask[2], netIPNet.Mask[3]).To4().String()
 
 		nodes = append(nodes, pb.Node{
-			GroupID:         groupID,
 			UUID:            uuid,
+			NodeName:        nodeName,
+			GroupID:         groupID,
 			ServerUUID:      serverUUID,
 			NodeNum:         int32(nodeNum),
 			NodeIP:          nodeIP,
@@ -379,6 +390,7 @@ func CreateNode(in *pb.ReqCreateNode) (*pb.Node, uint64, string) {
 		return nil, hcc_errors.FluteGrpcRequestError, "CreateNode(): node is nil"
 	}
 
+	nodeNameOk := len(reqNode.NodeName) != 0
 	groupIDOk := reqNode.GroupID != 0
 	bmcIPOk := len(reqNode.BmcIP) != 0
 	nicSpeedMbpsOk := reqNode.NicSpeedMbps != 0
@@ -386,9 +398,9 @@ func CreateNode(in *pb.ReqCreateNode) (*pb.Node, uint64, string) {
 	chargeCPUOk := reqNode.ChargeCPU != 0
 	chargeMemoryOk := reqNode.ChargeMemory != 0
 	chargeNICOk := reqNode.ChargeNIC != 0
-	if !groupIDOk || !bmcIPOk || !nicSpeedMbpsOk || !descriptionOk || !chargeCPUOk || !chargeMemoryOk || !chargeNICOk {
+	if !nodeNameOk || !groupIDOk || !bmcIPOk || !nicSpeedMbpsOk || !descriptionOk || !chargeCPUOk || !chargeMemoryOk || !chargeNICOk {
 		return nil, hcc_errors.FluteGrpcRequestError,
-			"CreateNode(): need group_id and bmc_ip, nic_speed_mbps, description, charge_cpu, charge_memory, charge_nic arguments"
+			"CreateNode(): need node_name, group_id and bmc_ip, nic_speed_mbps, description, charge_cpu, charge_memory, charge_nic arguments"
 	}
 
 	err := iputil.CheckCIDRStr(reqNode.BmcIP)
@@ -580,6 +592,7 @@ func GetNodePowerState(in *pb.ReqNodePowerState) (string, uint64, string) {
 }
 
 func checkUpdateNodeArgs(reqNode *pb.Node) bool {
+	nodeNameOk := len(reqNode.NodeName) != 0
 	groupIDOk := reqNode.GroupID != 0
 	serverUUIDOk := len(reqNode.ServerUUID) != 0
 	// gRPC use 0 value for unset. So I will use -1 for unset node_num. - ish
@@ -603,7 +616,7 @@ func checkUpdateNodeArgs(reqNode *pb.Node) bool {
 	// gRPC use 0 value for unset. So I will use 9 value for inactive. - ish
 	activeOk := reqNode.Active != 0
 
-	return !groupIDOk && !serverUUIDOk && !nodeNumOk && !nodeIPOk && !bmcMacAddrOk && !bmcIPOk && !pxeMacAdrOk &&
+	return !nodeNameOk && !groupIDOk && !serverUUIDOk && !nodeNumOk && !nodeIPOk && !bmcMacAddrOk && !bmcIPOk && !pxeMacAdrOk &&
 		!statusOk && !cpuCoresOk && !memoryOk &&
 		!nicModelOk && !nicSpeedMbpsOk && !bmcNicModelOk && !bmcNicSpeedMbpsOk && !descriptionOk && !rackNumberOk &&
 		!chargeCPUOk && !chargeMemoryOk && !chargeNICOk && !activeOk
@@ -626,6 +639,7 @@ func UpdateNode(in *pb.ReqUpdateNode) (*pb.Node, uint64, string) {
 		return nil, hcc_errors.FluteGrpcArgumentError, "UpdateNode(): need some arguments"
 	}
 
+	var nodeName string
 	var groupID int64
 	var serverUUID string
 	var nodeNum int
@@ -647,6 +661,8 @@ func UpdateNode(in *pb.ReqUpdateNode) (*pb.Node, uint64, string) {
 	var chargeNIC int
 	var active int
 
+	nodeName = reqNode.NodeName
+	nodeNameOk := len(nodeName) != 0
 	groupID = reqNode.GroupID
 	groupIDOk := groupID != 0
 	serverUUID = reqNode.ServerUUID
@@ -692,6 +708,10 @@ func UpdateNode(in *pb.ReqUpdateNode) (*pb.Node, uint64, string) {
 
 	sql := "update node set"
 	var updateSet = ""
+
+	if nodeNameOk {
+		updateSet += " node_name = '" + nodeName + "', "
+	}
 	if groupIDOk {
 		updateSet += " group_id = " + strconv.Itoa(int(groupID)) + ", "
 	}

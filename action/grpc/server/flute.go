@@ -17,6 +17,7 @@ type fluteServer struct {
 func returnNode(node *pb.Node) *pb.Node {
 	return &pb.Node{
 		UUID:            node.UUID,
+		NodeName:        node.NodeName,
 		GroupID:         node.GroupID,
 		NodeNum:         node.NodeNum,
 		NodeIP:          node.NodeIP,
