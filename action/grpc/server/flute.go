@@ -44,6 +44,7 @@ func returnNodeDetail(nodeDetail *pb.NodeDetail) *pb.NodeDetail {
 	return &pb.NodeDetail{
 		NodeUUID:       nodeDetail.NodeUUID,
 		NodeDetailData: nodeDetail.NodeDetailData,
+		NicDetailData: nodeDetail.NicDetailData,
 	}
 }
 

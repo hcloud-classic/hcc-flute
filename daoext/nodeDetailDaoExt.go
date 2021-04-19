@@ -13,11 +13,14 @@ func ReadNodeDetail(nodeUUID string) (*pb.NodeDetail, uint64, string) {
 	var nodeDetail pb.NodeDetail
 
 	var nodeDetailData string
+	var nicDetailData string
+
 	sql := "select * from node_detail where node_uuid = ?"
 	row := mysql.Db.QueryRow(sql, nodeUUID)
 	err := mysql.QueryRowScan(row,
 		&nodeUUID,
-		&nodeDetailData)
+		&nodeDetailData,
+		&nicDetailData)
 	if err != nil {
 		errStr := "ReadNodeDetail(): " + err.Error()
 		logger.Logger.Println(errStr)
@@ -29,6 +32,7 @@ func ReadNodeDetail(nodeUUID string) (*pb.NodeDetail, uint64, string) {
 
 	nodeDetail.NodeUUID = nodeUUID
 	nodeDetail.NodeDetailData = nodeDetailData
+	nodeDetail.NicDetailData = nicDetailData
 
 	return &nodeDetail, 0, ""
 }

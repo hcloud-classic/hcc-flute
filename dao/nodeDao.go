@@ -368,9 +368,14 @@ func CreateNode(in *pb.ReqCreateNode) (*pb.Node, uint64, string) {
 	chargeCPUOk := reqNode.ChargeCPU != 0
 	chargeMemoryOk := reqNode.ChargeMemory != 0
 	chargeNICOk := reqNode.ChargeNIC != 0
-	if !nodeNameOk || !groupIDOk || !bmcIPOk || !nicSpeedMbpsOk || !descriptionOk || !chargeCPUOk || !chargeMemoryOk || !chargeNICOk {
+
+	nicDetailDataOk := len(in.NicDetailData) != 0
+
+	if !nodeNameOk || !groupIDOk || !bmcIPOk || !nicSpeedMbpsOk || !descriptionOk || !chargeCPUOk || !chargeMemoryOk || !chargeNICOk ||
+		nicDetailDataOk {
 		return nil, hcc_errors.FluteGrpcRequestError,
-			"CreateNode(): need node_name, group_id and bmc_ip, nic_speed_mbps, description, charge_cpu, charge_memory, charge_nic arguments"
+			"CreateNode(): need node_name, group_id and bmc_ip, nic_speed_mbps, description, charge_cpu, charge_memory, charge_nic, " +
+			"nic_detail_data arguments"
 	}
 
 	err := iputil.CheckCIDRStr(reqNode.BmcIP)
@@ -397,7 +402,7 @@ func CreateNode(in *pb.ReqCreateNode) (*pb.Node, uint64, string) {
 
 	var pbNode *pb.Node
 	var wait sync.WaitGroup
-	wait.Add(3)
+	wait.Add(2)
 
 	uuid, err := ipmi.DoUpdateAllNodes(reqNode.BmcIP, &wait, true, reqNode)
 	if err != nil {
@@ -412,6 +417,17 @@ func CreateNode(in *pb.ReqCreateNode) (*pb.Node, uint64, string) {
 	}(uuid, reqNode.BmcIP, &wait)
 
 	wait.Wait()
+
+	_, errCode, errText = CreateNodeDetail(&pb.ReqCreateNodeDetail{
+		NodeDetail: &pb.NodeDetail{
+			NodeUUID: uuid,
+			NodeDetailData: "",
+			NicDetailData: in.NicDetailData,
+		},
+	})
+	if errCode != 0 {
+		return nil, errCode, "CreateNode(): CreateNodeDetail(): " + errText
+	}
 
 	pbNode, errCode, errText = ReadNode(uuid)
 	if errCode != 0 {
