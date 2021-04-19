@@ -279,7 +279,7 @@ func ReadNodeList(in *pb.ReqGetNodeList) (*pb.ResGetNodeList, uint64, string) {
 
 	for stmt.Next() {
 		err := stmt.Scan(&uuid, &nodeName, &groupID, &serverUUID, &nodeNum, &nodeIP, &bmcMacAddr, &bmcIPCIDR, &pxeMacAdr, &status, &cpuCores, &memory,
-			&nicModel, &nicSpeedMbps, &bmcNicModel, &bmcNicSpeedMbps,
+			&nicSpeedMbps,
 			&description, &rackNumber, &chargeCPU, &chargeMemory, &chargeNIC, &active, &createdAt)
 		if err != nil {
 			errStr := "ReadNodeList(): " + err.Error()
