@@ -600,6 +600,7 @@ func getMemoriesDetail(bmcIP string, serialNo string) (*[]memory, error) {
 	return &memories, nil
 }
 
+// GetNodeDetailData : Get JSON data of node's detail info
 func GetNodeDetailData(bmcIP string, serialNo string) (string, error) {
 	memoriesDetail, err := getMemoriesDetail(bmcIP, serialNo)
 	if err != nil {

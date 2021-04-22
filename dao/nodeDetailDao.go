@@ -29,7 +29,7 @@ func CreateNodeDetail(in *pb.ReqCreateNodeDetail) (*pb.NodeDetail, uint64, strin
 	nodeDetail := pb.NodeDetail{
 		NodeUUID:       nodeUUID,
 		NodeDetailData: reqNodeDetail.NodeDetailData,
-		NicDetailData: reqNodeDetail.NicDetailData,
+		NicDetailData:  reqNodeDetail.NicDetailData,
 	}
 
 	sql := "insert into node_detail(node_uuid, node_detail_data, nic_detail_data) values (?, ?, ?)"

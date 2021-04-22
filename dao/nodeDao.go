@@ -375,7 +375,7 @@ func CreateNode(in *pb.ReqCreateNode) (*pb.Node, uint64, string) {
 		nicDetailDataOk {
 		return nil, hcc_errors.FluteGrpcRequestError,
 			"CreateNode(): need node_name, group_id and bmc_ip, nic_speed_mbps, description, charge_cpu, charge_memory, charge_nic, " +
-			"nic_detail_data arguments"
+				"nic_detail_data arguments"
 	}
 
 	err := iputil.CheckCIDRStr(reqNode.BmcIP)
@@ -420,9 +420,9 @@ func CreateNode(in *pb.ReqCreateNode) (*pb.Node, uint64, string) {
 
 	_, errCode, errText = CreateNodeDetail(&pb.ReqCreateNodeDetail{
 		NodeDetail: &pb.NodeDetail{
-			NodeUUID: uuid,
+			NodeUUID:       uuid,
 			NodeDetailData: "",
-			NicDetailData: in.NicDetailData,
+			NicDetailData:  in.NicDetailData,
 		},
 	})
 	if errCode != 0 {
