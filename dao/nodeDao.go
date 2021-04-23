@@ -200,34 +200,34 @@ func ReadNodeList(in *pb.ReqGetNodeList) (*pb.ResGetNodeList, uint64, string) {
 		activeOk := active != 0
 
 		if uuidOk {
-			sql += " and uuid = '" + uuid + "'"
+			sql += " and uuid like '%" + uuid + "%'"
 		}
 		if nodeNameOk {
-			sql += " and node_name = '" + nodeName + "'"
+			sql += " and node_name like '%" + nodeName + "%'"
 		}
 		if groupIDOk {
 			sql += " and group_id = " + strconv.Itoa(int(groupID))
 		}
 		if serverUUIDOk {
-			sql += " and server_uuid = '" + serverUUID + "'"
+			sql += " and server_uuid like '%" + serverUUID + "%'"
 		}
 		if nodeNumOk {
 			sql += " and node_num = " + strconv.Itoa(nodeNum)
 		}
 		if nodeIPOk {
-			sql += " and node_ip = '" + nodeIP + "'"
+			sql += " and node_ip like '%" + nodeIP + "%'"
 		}
 		if bmcMacAddrOk {
-			sql += " and bmc_mac_addr = '" + bmcMacAddr + "'"
+			sql += " and bmc_mac_addr like '%" + bmcMacAddr + "%'"
 		}
 		if bmcIPOk {
-			sql += " and bmc_ip = '" + bmcIPCIDR + "'"
+			sql += " and bmc_ip like '%" + bmcIPCIDR + "%'"
 		}
 		if pxeMacAdrOk {
-			sql += " and pxe_mac_addr = '" + pxeMacAdr + "'"
+			sql += " and pxe_mac_addr like '%" + pxeMacAdr + "%'"
 		}
 		if statusOk {
-			sql += " and status = '" + status + "'"
+			sql += " and status like '%" + status + "%'"
 		}
 		if cpuCoresOk {
 			sql += " and cpu_cores = " + strconv.Itoa(cpuCores)
@@ -239,7 +239,7 @@ func ReadNodeList(in *pb.ReqGetNodeList) (*pb.ResGetNodeList, uint64, string) {
 			sql += " and nic_speed_mbps = " + strconv.Itoa(nicSpeedMbps)
 		}
 		if descriptionOk {
-			sql += " and description = '" + description + "'"
+			sql += " and description like '%" + description + "%'"
 		}
 		if rackNumberOk {
 			sql += " and rack_number = " + strconv.Itoa(rackNumber)
