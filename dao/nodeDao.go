@@ -200,34 +200,34 @@ func ReadNodeList(in *pb.ReqGetNodeList) (*pb.ResGetNodeList, uint64, string) {
 		activeOk := active != 0
 
 		if uuidOk {
-			sql += " and uuid = '" + uuid + "'"
+			sql += " and uuid like '%" + uuid + "%'"
 		}
 		if nodeNameOk {
-			sql += " and node_name = '" + nodeName + "'"
+			sql += " and node_name like '%" + nodeName + "%'"
 		}
 		if groupIDOk {
 			sql += " and group_id = " + strconv.Itoa(int(groupID))
 		}
 		if serverUUIDOk {
-			sql += " and server_uuid = '" + serverUUID + "'"
+			sql += " and server_uuid like '%" + serverUUID + "%'"
 		}
 		if nodeNumOk {
 			sql += " and node_num = " + strconv.Itoa(nodeNum)
 		}
 		if nodeIPOk {
-			sql += " and node_ip = '" + nodeIP + "'"
+			sql += " and node_ip like '%" + nodeIP + "%'"
 		}
 		if bmcMacAddrOk {
-			sql += " and bmc_mac_addr = '" + bmcMacAddr + "'"
+			sql += " and bmc_mac_addr like '%" + bmcMacAddr + "%'"
 		}
 		if bmcIPOk {
-			sql += " and bmc_ip = '" + bmcIPCIDR + "'"
+			sql += " and bmc_ip like '%" + bmcIPCIDR + "%'"
 		}
 		if pxeMacAdrOk {
-			sql += " and pxe_mac_addr = '" + pxeMacAdr + "'"
+			sql += " and pxe_mac_addr like '%" + pxeMacAdr + "%'"
 		}
 		if statusOk {
-			sql += " and status = '" + status + "'"
+			sql += " and status like '%" + status + "%'"
 		}
 		if cpuCoresOk {
 			sql += " and cpu_cores = " + strconv.Itoa(cpuCores)
@@ -239,7 +239,7 @@ func ReadNodeList(in *pb.ReqGetNodeList) (*pb.ResGetNodeList, uint64, string) {
 			sql += " and nic_speed_mbps = " + strconv.Itoa(nicSpeedMbps)
 		}
 		if descriptionOk {
-			sql += " and description = '" + description + "'"
+			sql += " and description like '%" + description + "%'"
 		}
 		if rackNumberOk {
 			sql += " and rack_number = " + strconv.Itoa(rackNumber)
@@ -279,7 +279,7 @@ func ReadNodeList(in *pb.ReqGetNodeList) (*pb.ResGetNodeList, uint64, string) {
 
 	for stmt.Next() {
 		err := stmt.Scan(&uuid, &nodeName, &groupID, &serverUUID, &nodeNum, &nodeIP, &bmcMacAddr, &bmcIPCIDR, &pxeMacAdr, &status, &cpuCores, &memory,
-			&nicModel, &nicSpeedMbps, &bmcNicModel, &bmcNicSpeedMbps,
+			&nicSpeedMbps,
 			&description, &rackNumber, &chargeCPU, &chargeMemory, &chargeNIC, &active, &createdAt)
 		if err != nil {
 			errStr := "ReadNodeList(): " + err.Error()
@@ -368,9 +368,14 @@ func CreateNode(in *pb.ReqCreateNode) (*pb.Node, uint64, string) {
 	chargeCPUOk := reqNode.ChargeCPU != 0
 	chargeMemoryOk := reqNode.ChargeMemory != 0
 	chargeNICOk := reqNode.ChargeNIC != 0
-	if !nodeNameOk || !groupIDOk || !bmcIPOk || !nicSpeedMbpsOk || !descriptionOk || !chargeCPUOk || !chargeMemoryOk || !chargeNICOk {
+
+	nicDetailDataOk := len(in.NicDetailData) != 0
+
+	if !nodeNameOk || !groupIDOk || !bmcIPOk || !nicSpeedMbpsOk || !descriptionOk || !chargeCPUOk || !chargeMemoryOk || !chargeNICOk ||
+		nicDetailDataOk {
 		return nil, hcc_errors.FluteGrpcRequestError,
-			"CreateNode(): need node_name, group_id and bmc_ip, nic_speed_mbps, description, charge_cpu, charge_memory, charge_nic arguments"
+			"CreateNode(): need node_name, group_id and bmc_ip, nic_speed_mbps, description, charge_cpu, charge_memory, charge_nic, " +
+				"nic_detail_data arguments"
 	}
 
 	err := iputil.CheckCIDRStr(reqNode.BmcIP)
@@ -397,7 +402,7 @@ func CreateNode(in *pb.ReqCreateNode) (*pb.Node, uint64, string) {
 
 	var pbNode *pb.Node
 	var wait sync.WaitGroup
-	wait.Add(3)
+	wait.Add(2)
 
 	uuid, err := ipmi.DoUpdateAllNodes(reqNode.BmcIP, &wait, true, reqNode)
 	if err != nil {
@@ -412,6 +417,17 @@ func CreateNode(in *pb.ReqCreateNode) (*pb.Node, uint64, string) {
 	}(uuid, reqNode.BmcIP, &wait)
 
 	wait.Wait()
+
+	_, errCode, errText = CreateNodeDetail(&pb.ReqCreateNodeDetail{
+		NodeDetail: &pb.NodeDetail{
+			NodeUUID:       uuid,
+			NodeDetailData: "",
+			NicDetailData:  in.NicDetailData,
+		},
+	})
+	if errCode != 0 {
+		return nil, errCode, "CreateNode(): CreateNodeDetail(): " + errText
+	}
 
 	pbNode, errCode, errText = ReadNode(uuid)
 	if errCode != 0 {

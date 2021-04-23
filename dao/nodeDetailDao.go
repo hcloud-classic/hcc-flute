@@ -17,16 +17,22 @@ func CreateNodeDetail(in *pb.ReqCreateNodeDetail) (*pb.NodeDetail, uint64, strin
 
 	nodeUUID := reqNodeDetail.GetNodeUUID()
 	nodeUUIDOk := len(nodeUUID) != 0
-	if !nodeUUIDOk {
-		return nil, hcc_errors.FluteGrpcRequestError, "CreateNodeDetail(): need a nodeUUID argument"
+	nodeDetailData := reqNodeDetail.GetNodeDetailData()
+	nodeDetailDataOk := len(nodeDetailData) != 0
+	nicDetailData := reqNodeDetail.GetNicDetailData()
+	nicDetailDataOk := len(nicDetailData) != 0
+
+	if !nodeUUIDOk || !nodeDetailDataOk || !nicDetailDataOk {
+		return nil, hcc_errors.FluteGrpcRequestError, "CreateNodeDetail(): need nodeUUID and nodeDetailData, nicDetailData arguments"
 	}
 
 	nodeDetail := pb.NodeDetail{
 		NodeUUID:       nodeUUID,
 		NodeDetailData: reqNodeDetail.NodeDetailData,
+		NicDetailData:  reqNodeDetail.NicDetailData,
 	}
 
-	sql := "insert into node_detail(node_uuid, node_detail_data) values (?, ?)"
+	sql := "insert into node_detail(node_uuid, node_detail_data, nic_detail_data) values (?, ?, ?)"
 	stmt, err := mysql.Prepare(sql)
 	if err != nil {
 		errStr := "CreateNodeDetail(): " + err.Error()
@@ -57,19 +63,42 @@ func UpdateNodeDetail(in *pb.ReqUpdateNodeDetail) (*pb.NodeDetail, uint64, strin
 
 	nodeUUID := reqNodeDetail.GetNodeUUID()
 	nodeUUIDOk := len(nodeUUID) != 0
+	nodeDetailData := reqNodeDetail.GetNodeDetailData()
+	nodeDetailDataOk := len(nodeDetailData) != 0
+	nicDetailData := reqNodeDetail.GetNicDetailData()
+	nicDetailDataOk := len(nicDetailData) != 0
+
 	if !nodeUUIDOk {
 		return nil, hcc_errors.FluteGrpcRequestError, "UpdateNodeDetail(): need a nodeUUID argument"
 	}
 
-	nodeDetail := pb.NodeDetail{
-		NodeUUID:       nodeUUID,
-		NodeDetailData: reqNodeDetail.NodeDetailData,
+	sql := "update node_detail set"
+	var updateSet = ""
+
+	if nodeDetailDataOk {
+		updateSet += " node_detail_data = '" + nodeDetailData + "', "
+	}
+	if nicDetailDataOk {
+		updateSet += " nic_detail_data = '" + nicDetailData + "', "
 	}
 
-	sql := "update node_detail set node_detail_data = ? where node_uuid = ?"
+	sql += updateSet[0:len(updateSet)-2] + " where node_uuid = ?"
+
+	logger.Logger.Println("update_node_detail sql : ", sql)
+
 	stmt, err := mysql.Prepare(sql)
 	if err != nil {
 		errStr := "UpdateNodeDetail(): " + err.Error()
+		logger.Logger.Println(errStr)
+		return nil, hcc_errors.FluteSQLOperationFail, errStr
+	}
+	defer func() {
+		_ = stmt.Close()
+	}()
+
+	_, err2 := stmt.Exec(nodeUUID)
+	if err2 != nil {
+		errStr := "UpdateNodeDetail(): " + err2.Error()
 		logger.Logger.Println(errStr)
 		return nil, hcc_errors.FluteSQLOperationFail, errStr
 	}
@@ -78,14 +107,12 @@ func UpdateNodeDetail(in *pb.ReqUpdateNodeDetail) (*pb.NodeDetail, uint64, strin
 		_ = stmt.Close()
 	}()
 
-	_, err = stmt.Exec(nodeDetail.NodeDetailData, nodeDetail.NodeUUID)
-	if err != nil {
-		errStr := "UpdateNodeDetail(): " + err.Error()
-		logger.Logger.Println(errStr)
-		return nil, hcc_errors.FluteSQLOperationFail, errStr
+	nodeDetail, errCode, errStr := daoext.ReadNodeDetail(nodeUUID)
+	if errCode != 0 {
+		logger.Logger.Println("UpdateNode(): " + errStr)
 	}
 
-	return &nodeDetail, 0, ""
+	return nodeDetail, 0, ""
 }
 
 // DeleteNodeDetail : Delete detail infos of the node
