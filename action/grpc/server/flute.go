@@ -32,9 +32,6 @@ func returnNode(node *pb.Node) *pb.Node {
 		NicSpeedMbps:    node.NicSpeedMbps,
 		Description:     node.Description,
 		RackNumber:      node.RackNumber,
-		ChargeCPU:       node.ChargeCPU,
-		ChargeMemory:    node.ChargeMemory,
-		ChargeNIC:       node.ChargeNIC,
 		Active:          node.Active,
 		CreatedAt:       node.CreatedAt,
 	}

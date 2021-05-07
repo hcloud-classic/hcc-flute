@@ -103,8 +103,8 @@ func makeRackNumber(bmcIPCIDR string) (int, error) {
 
 func checkGroupIDExist(groupID int64) error {
 	resGetGroupList, hccErrStack := client.RC.GetGroupList(&pb.Empty{})
-	if hccErrStack != nil && (*hccErrStack.Stack())[0].Code() != 0 {
-		return (*hccErrStack.Stack())[0].ToError()
+	if hccErrStack != nil {
+		return hccErrStack.Pop().ToError()
 	}
 
 	for _, pGroup := range resGetGroupList.Group {
@@ -251,11 +251,9 @@ func DoUpdateAllNodes(bmcIPCIDR string, wait *sync.WaitGroup, isNew bool, reqNod
 
 	if isNew {
 		sql := "insert into node(uuid, node_name, group_id, server_uuid, bmc_mac_addr, bmc_ip, pxe_mac_addr, status, cpu_cores, memory, " +
-			"nic_speed_mbps, " +
-			"description, rack_number, charge_cpu, charge_memory, charge_nic, created_at, available) " +
+			"nic_speed_mbps, description, rack_number, created_at, available) " +
 			"values (?, ?, ?, '', ?, ?, ?, '', ?, ?, " +
-			"?, " +
-			"?, ?, ?, ?, ?, now(), 1)"
+			"?, ?, ?, now(), 1)"
 
 		var stmt *dbsql.Stmt
 		stmt, err := mysql.Prepare(sql)
@@ -268,8 +266,7 @@ func DoUpdateAllNodes(bmcIPCIDR string, wait *sync.WaitGroup, isNew bool, reqNod
 			_ = stmt.Close()
 		}()
 		_, err = stmt.Exec(node.UUID, reqNode.NodeName, reqNode.GroupID, node.BmcMacAddr, node.BmcIP, node.PXEMacAddr, node.CPUCores, node.Memory,
-			reqNode.NicSpeedMbps,
-			reqNode.GetDescription(), node.RackNumber, reqNode.ChargeCPU, reqNode.ChargeMemory, reqNode.ChargeNIC)
+			reqNode.NicSpeedMbps, reqNode.GetDescription(), node.RackNumber)
 		if err != nil {
 			logger.Logger.Println("DoUpdateAllNodes(): " + bmcIPCIDR + " err=" + err.Error())
 			wait.Done()
