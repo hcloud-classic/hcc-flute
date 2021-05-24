@@ -37,6 +37,15 @@ func returnNode(node *pb.Node) *pb.Node {
 	}
 }
 
+func returnNodeUptime(nodeUptime *pb.NodeUptime) *pb.NodeUptime {
+	return &pb.NodeUptime{
+		NodeUUID: nodeUptime.NodeUUID,
+		GroupID:  nodeUptime.GroupID,
+		Day:      nodeUptime.Day,
+		UptimeMs: nodeUptime.UptimeMs,
+	}
+}
+
 func returnNodeDetail(nodeDetail *pb.NodeDetail) *pb.NodeDetail {
 	return &pb.NodeDetail{
 		NodeUUID:       nodeDetail.NodeUUID,
@@ -188,4 +197,14 @@ func (s *fluteServer) DeleteNodeDetail(_ context.Context, in *pb.ReqDeleteNodeDe
 	}
 
 	return &pb.ResDeleteNodeDetail{NodeDetail: nodeDetail}, nil
+}
+
+func (s *fluteServer) GetNodeUptime(_ context.Context, in *pb.ReqGetNodeUptime) (*pb.ResGetNodeUptime, error) {
+	traffic, errCode, errStr := dao.GetNodeUptime(in.GetNodeUUID(), in.GetDay())
+	if errCode != 0 {
+		errStack := hcc_errors.NewHccErrorStack(hcc_errors.NewHccError(errCode, errStr))
+		return &pb.ResGetNodeUptime{NodeUptime: &pb.NodeUptime{}, HccErrorStack: errconv.HccStackToGrpc(errStack)}, nil
+	}
+
+	return &pb.ResGetNodeUptime{NodeUptime: returnNodeUptime(traffic)}, nil
 }
