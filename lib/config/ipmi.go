@@ -12,6 +12,7 @@ type ipmi struct {
 	CheckNodeStatusIntervalMs       int64    `goconf:"ipmi:check_node_status_interval_ms"`        // CheckNodeStatusIntervalMs : IPMI check interval for node's status (ms)
 	CheckServerStatusIntervalMs     int64    `goconf:"ipmi:check_server_status_interval_ms"`      // CheckServerStatusIntervalMs : IPMI check interval for server's status (ms)
 	UpdateNodeDetailRetryIntervalMs int64    `goconf:"ipmi:update_node_detail_retry_interval_ms"` // UpdateNodeDetailRetryIntervalMs : Node update retry interval by IPMI (ms)
+	UpdateNodeUptimeIntervalMs      int64    `goconf:"ipmi:update_node_uptime_interval_ms"`       // UpdateNodeUptimeIntervalMs : Node uptime update interval (ms)
 	BaseboardNICNumPXE              int64    `goconf:"ipmi:baseboard_nic_num_pxe"`                // BaseboardNICNoPXE : Baseboard NIC num used for PXE boot
 	BaseboardNICNumBMC              int64    `goconf:"ipmi:baseboard_nic_num_bmc"`                // BaseboardNICNoIPMI : Baseboard NIC num used for control IPMI
 }

@@ -14,7 +14,7 @@ type fluteConfig struct {
 
 /*-----------------------------------
          Config File Example
-/*-----------------------------------
+-------------------------------------
 [mysql]
 id root
 password qwe1212!Q
@@ -38,6 +38,7 @@ check_node_all_interval_ms 10000
 check_node_status_interval_ms 1000
 check_server_status_interval_ms 5000
 update_node_detail_retry_interval_ms 3000
+update_node_uptime_interval_ms 1000
 baseboard_nic_num_pxe 2
 baseboard_nic_num_bmc 3
 

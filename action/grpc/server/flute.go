@@ -60,7 +60,7 @@ func (s *fluteServer) CreateNode(_ context.Context, in *pb.ReqCreateNode) (*pb.R
 func (s *fluteServer) GetNode(_ context.Context, in *pb.ReqGetNode) (*pb.ResGetNode, error) {
 	logger.Logger.Println("Request received: GetNode()")
 
-	node, errCode, errStr := dao.ReadNode(in.GetUUID())
+	node, errCode, errStr := daoext.ReadNode(in.GetUUID())
 	if errCode != 0 {
 		errStack := hcc_errors.NewHccErrorStack(hcc_errors.NewHccError(errCode, errStr))
 		return &pb.ResGetNode{Node: &pb.Node{}, HccErrorStack: errconv.HccStackToGrpc(errStack)}, nil
@@ -72,7 +72,7 @@ func (s *fluteServer) GetNode(_ context.Context, in *pb.ReqGetNode) (*pb.ResGetN
 func (s *fluteServer) GetNodeList(_ context.Context, in *pb.ReqGetNodeList) (*pb.ResGetNodeList, error) {
 	logger.Logger.Println("Request received: GetNodeList()")
 
-	nodeList, errCode, errStr := dao.ReadNodeList(in)
+	nodeList, errCode, errStr := daoext.ReadNodeList(in)
 	if errCode != 0 {
 		errStack := hcc_errors.NewHccErrorStack(hcc_errors.NewHccError(errCode, errStr))
 		return &pb.ResGetNodeList{Node: []*pb.Node{}, HccErrorStack: errconv.HccStackToGrpc(errStack)}, nil
