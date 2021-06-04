@@ -13,6 +13,7 @@ import (
 	"os/signal"
 	"strconv"
 	"syscall"
+	"time"
 )
 
 func init() {
@@ -46,6 +47,8 @@ func init() {
 	ipmi.CheckNodeStatus()
 	logger.Logger.Println("Starting ipmi.CheckServerStatus(). Interval is " + strconv.Itoa(int(config.Ipmi.CheckServerStatusIntervalMs)) + "ms")
 	ipmi.CheckServerStatus()
+	logger.Logger.Println("Starting ipmi.UpdateNodeUptime(). Interval is " + strconv.Itoa(int(config.Ipmi.UpdateNodeUptimeIntervalMs)) + "ms")
+	ipmi.UpdateNodeUptime(time.Now())
 }
 
 func end() {

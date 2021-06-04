@@ -23,6 +23,7 @@ var checkNodeAllLocked = false
 var checkNodeStatusLocked = false
 var checkServerStatusLocked = false
 var updateNodeDetailLocked = make(map[string]bool)
+var updateNodeUptimeLocked = false
 
 func delayMillisecond(n time.Duration) {
 	time.Sleep(n * time.Millisecond)
@@ -69,6 +70,14 @@ func updateNodeDetailUnlock(uuid string) {
 	updateNodeDetailLocked[uuid] = false
 }
 
+func updateNodeUptimeLock() {
+	updateNodeUptimeLocked = true
+}
+
+func updateNodeUptimeUnlock() {
+	updateNodeUptimeLocked = false
+}
+
 // makeRackNumber : Split IP address and add numbers of 4 sections with prefix length.
 func makeRackNumber(bmcIPCIDR string) (int, error) {
 	err := iputil.CheckCIDRStr(bmcIPCIDR)
@@ -103,8 +112,8 @@ func makeRackNumber(bmcIPCIDR string) (int, error) {
 
 func checkGroupIDExist(groupID int64) error {
 	resGetGroupList, hccErrStack := client.RC.GetGroupList(&pb.Empty{})
-	if hccErrStack != nil && (*hccErrStack.Stack())[0].Code() != 0 {
-		return (*hccErrStack.Stack())[0].ToError()
+	if hccErrStack != nil {
+		return hccErrStack.Pop().ToError()
 	}
 
 	for _, pGroup := range resGetGroupList.Group {
@@ -251,11 +260,9 @@ func DoUpdateAllNodes(bmcIPCIDR string, wait *sync.WaitGroup, isNew bool, reqNod
 
 	if isNew {
 		sql := "insert into node(uuid, node_name, group_id, server_uuid, bmc_mac_addr, bmc_ip, pxe_mac_addr, status, cpu_cores, memory, " +
-			"nic_speed_mbps, " +
-			"description, rack_number, charge_cpu, charge_memory, charge_nic, created_at, available) " +
+			"nic_speed_mbps, description, rack_number, created_at, available) " +
 			"values (?, ?, ?, '', ?, ?, ?, '', ?, ?, " +
-			"?, " +
-			"?, ?, ?, ?, ?, now(), 1)"
+			"?, ?, ?, now(), 1)"
 
 		var stmt *dbsql.Stmt
 		stmt, err := mysql.Prepare(sql)
@@ -268,8 +275,7 @@ func DoUpdateAllNodes(bmcIPCIDR string, wait *sync.WaitGroup, isNew bool, reqNod
 			_ = stmt.Close()
 		}()
 		_, err = stmt.Exec(node.UUID, reqNode.NodeName, reqNode.GroupID, node.BmcMacAddr, node.BmcIP, node.PXEMacAddr, node.CPUCores, node.Memory,
-			reqNode.NicSpeedMbps,
-			reqNode.GetDescription(), node.RackNumber, reqNode.ChargeCPU, reqNode.ChargeMemory, reqNode.ChargeNIC)
+			reqNode.NicSpeedMbps, reqNode.GetDescription(), node.RackNumber)
 		if err != nil {
 			logger.Logger.Println("DoUpdateAllNodes(): " + bmcIPCIDR + " err=" + err.Error())
 			wait.Done()
@@ -686,6 +692,28 @@ func updateNodeDetail(uuid string) error {
 	return nil
 }
 
+func doUpdateNodeUptime(launchedTime time.Time) {
+	nodeList, errCode, errText := daoext.ReadNodeList(&pb.ReqGetNodeList{})
+	if errCode != 0 {
+		logger.Logger.Println("updateNodeUptime(): Failed to get node list (err=" + errText + ")")
+		return
+	}
+
+	var wait sync.WaitGroup
+	wait.Add(len(nodeList.Node))
+	for _, node := range nodeList.Node {
+		go func(time time.Time, uuid string) {
+			err := updateTodayNodeUptime(time, uuid)
+			if err != nil {
+				logger.Logger.Println("updateNodeUptime(): Failed to update the node's uptime " +
+					"(nodeUUID=" + uuid + ", err=" + err.Error() + ")")
+			}
+		}(launchedTime, node.UUID)
+		wait.Done()
+	}
+	wait.Wait()
+}
+
 func queueCheckNodeAll() {
 	go func() {
 		if config.Ipmi.Debug == "on" {
@@ -713,6 +741,17 @@ func queueCheckServerStatus() {
 		}
 		delayMillisecond(time.Duration(config.Ipmi.CheckServerStatusIntervalMs))
 		CheckServerStatus()
+	}()
+}
+
+func queueUpdateNodeUptime() {
+	go func() {
+		if config.Ipmi.Debug == "on" {
+			logger.Logger.Println("queueUpdateNodeUptime(): Queued of running UpdateNodeUptime() after " + strconv.Itoa(int(config.Ipmi.UpdateNodeUptimeIntervalMs)) + "ms")
+		}
+		launchedTime := time.Now()
+		delayMillisecond(time.Duration(config.Ipmi.UpdateNodeUptimeIntervalMs))
+		UpdateNodeUptime(launchedTime)
 	}()
 }
 
@@ -832,4 +871,33 @@ func ScheduleUpdateNodeDetail(uuid string) {
 			ScheduleUpdateNodeDetail(uuid)
 		}
 	}()
+}
+
+// UpdateNodeUptime : Update uptime of nodes
+func UpdateNodeUptime(launchedTime time.Time) {
+	if updateNodeUptimeLocked {
+		if config.Ipmi.Debug == "on" {
+			logger.Logger.Println("UpdateNodeUptime(): Locked")
+		}
+		for true {
+			if !checkNodeStatusLocked {
+				break
+			}
+			if config.Ipmi.Debug == "on" {
+				logger.Logger.Println("UpdateNodeUptime(): Rerun after " + strconv.Itoa(int(config.Ipmi.UpdateNodeUptimeIntervalMs)) + "ms")
+			}
+			delayMillisecond(time.Duration(config.Ipmi.UpdateNodeUptimeIntervalMs))
+		}
+	}
+
+	go func() {
+		updateNodeUptimeLock()
+		if config.Ipmi.Debug == "on" {
+			logger.Logger.Println("UpdateNodeUptime(): Running doUpdateNodeUptime()")
+		}
+		doUpdateNodeUptime(launchedTime)
+		updateNodeUptimeUnlock()
+	}()
+
+	queueUpdateNodeUptime()
 }

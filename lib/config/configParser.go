@@ -123,6 +123,11 @@ func parseIpmi() {
 		logger.Logger.Panicln(err)
 	}
 
+	Ipmi.UpdateNodeUptimeIntervalMs, err = config.IpmiConfig.Int("update_node_uptime_interval_ms")
+	if err != nil {
+		logger.Logger.Panicln(err)
+	}
+
 	Ipmi.BaseboardNICNumPXE, err = config.IpmiConfig.Int("baseboard_nic_num_pxe")
 	if err != nil {
 		logger.Logger.Panicln(err)
