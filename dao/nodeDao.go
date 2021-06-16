@@ -21,16 +21,15 @@ func CreateNode(in *pb.ReqCreateNode) (*pb.Node, uint64, string) {
 	}
 
 	nodeNameOk := len(reqNode.NodeName) != 0
-	groupIDOk := reqNode.GroupID != 0
 	bmcIPOk := len(reqNode.BmcIP) != 0
 	nicSpeedMbpsOk := reqNode.NicSpeedMbps != 0
 	descriptionOk := len(reqNode.Description) != 0
 
 	nicDetailDataOk := len(in.NicDetailData) != 0
 
-	if !nodeNameOk || !groupIDOk || !bmcIPOk || !nicSpeedMbpsOk || !descriptionOk || !nicDetailDataOk {
+	if !nodeNameOk || !bmcIPOk || !nicSpeedMbpsOk || !descriptionOk || !nicDetailDataOk {
 		return nil, hcc_errors.FluteGrpcRequestError,
-			"CreateNode(): need node_name, group_id and bmc_ip, nic_speed_mbps, description, " +
+			"CreateNode(): need node_name and bmc_ip, nic_speed_mbps, description, " +
 				"nic_detail_data arguments"
 	}
 
