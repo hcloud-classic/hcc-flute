@@ -37,7 +37,7 @@ func ReadNode(uuid string) (*pb.Node, uint64, string) {
 	var createdAt time.Time
 	var active int
 
-	sql := "select " + nodeSelectColumns + " from node where uuid = ? and available = 1 and and group_id is not null"
+	sql := "select " + nodeSelectColumns + " from node where uuid = ? and available = 1"
 	row := mysql.Db.QueryRow(sql, uuid)
 	err := mysql.QueryRowScan(row,
 		&uuid,
@@ -138,7 +138,7 @@ func ReadNodeList(in *pb.ReqGetNodeList) (*pb.ResGetNodeList, uint64, string) {
 		return nil, hcc_errors.FluteGrpcArgumentError, "ReadNodeList(): please insert row and page arguments or leave arguments as empty state"
 	}
 
-	sql := "select " + nodeSelectColumns + " from node where available = 1 and group_id is not null"
+	sql := "select " + nodeSelectColumns + " from node where available = 1"
 
 	if in.Node != nil {
 		reqNode := in.Node
