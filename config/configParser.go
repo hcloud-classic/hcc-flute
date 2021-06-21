@@ -72,4 +72,14 @@ func Parser() {
 	if err != nil {
 		logger.Logger.Panicln(err)
 	}
+
+	Ipmi.CheckAllIntervalMs, err = config.IpmiConfig.Int("check_all_interval_ms")
+	if err != nil {
+		logger.Logger.Panicln(err)
+	}
+
+	Ipmi.CheckStatusIntervalMs, err = config.IpmiConfig.Int("check_status_interval_ms")
+	if err != nil {
+		logger.Logger.Panicln(err)
+	}
 }
