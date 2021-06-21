@@ -87,7 +87,9 @@ var queryTypes = graphql.NewObject(
 						logger.Logger.Println(err)
 						return nil, nil
 					}
-					defer stmt.Close()
+					defer func() {
+						_ = stmt.Close()
+					}()
 
 					for stmt.Next() {
 						err := stmt.Scan(&uuid, &macAddr, &ipmiIP, &status, &cpu, &memory, &detail, &createdAt)
@@ -159,7 +161,9 @@ var queryTypes = graphql.NewObject(
 						logger.Logger.Println(err)
 						return nil, nil
 					}
-					defer stmt.Close()
+					defer func() {
+						_ = stmt.Close()
+					}()
 
 					for stmt.Next() {
 						err := stmt.Scan(&uuid)
