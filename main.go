@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"hcc/flute/action/grpc/client"
 	"hcc/flute/action/grpc/server"
 	"hcc/flute/lib/config"
 	"hcc/flute/lib/errors"
@@ -27,6 +28,11 @@ func init() {
 	err = mysql.Init()
 	if err != nil {
 		errors.NewHccError(errors.FluteInternalInitFail, "mysql.Init(): "+err.Error()).Fatal()
+	}
+
+	err = client.Init()
+	if err != nil {
+		errors.NewHccError(errors.FluteInternalInitFail, "client.Init(): "+err.Error()).Fatal()
 	}
 
 	err = ipmi.BMCIPParser()
