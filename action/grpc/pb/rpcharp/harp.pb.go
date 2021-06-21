@@ -57,7 +57,6 @@ type AdaptiveIPSetting = rpcmsgType.AdaptiveIPSetting
 type AdaptiveIPAvailableIPList = rpcmsgType.AdaptiveIPAvailableIPList
 type AdaptiveIPServer = rpcmsgType.AdaptiveIPServer
 type Subnet = rpcmsgType.Subnet
-type Series = rpcmsgType.Series
 type MetricInfo = rpcmsgType.MetricInfo
 type MonitoringData = rpcmsgType.MonitoringData
 type NormalAction = rpcmsgType.NormalAction
