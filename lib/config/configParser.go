@@ -120,19 +120,6 @@ func parseIpmi() {
 	}
 }
 
-func parseWOL() {
-	config.WOLConfig = conf.Get("wol")
-	if config.WOLConfig == nil {
-		logger.Logger.Panicln("no wol section")
-	}
-
-	WOL = wol{}
-	WOL.BroadcastAddress, err = config.WOLConfig.String("broadcast_address")
-	if err != nil {
-		logger.Logger.Panicln(err)
-	}
-}
-
 // Parser : Parse config file
 func Parser() {
 	if err = conf.Parse(configLocation); err != nil {
@@ -142,5 +129,4 @@ func Parser() {
 	parseMysql()
 	parseHTTP()
 	parseIpmi()
-	parseWOL()
 }

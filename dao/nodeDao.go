@@ -4,6 +4,7 @@ import (
 	dbsql "database/sql"
 	"errors"
 	gouuid "github.com/nu7hatch/gouuid"
+	"hcc/flute/lib/ipmi"
 	"hcc/flute/lib/logger"
 	"hcc/flute/lib/mysql"
 	"hcc/flute/model"
@@ -11,7 +12,7 @@ import (
 	"time"
 )
 
-// ReadNode - cgs
+// ReadNode : Get all of infos of a node by UUID from database.
 func ReadNode(args map[string]interface{}) (interface{}, error) {
 	var node model.Node
 	var err error
@@ -68,7 +69,7 @@ func checkReadNodeListPageRow(args map[string]interface{}) bool {
 	return !rowOk || !pageOk
 }
 
-// ReadNodeList - cgs
+// ReadNodeList : Get selected infos of nodes from database.
 func ReadNodeList(args map[string]interface{}) (interface{}, error) {
 	var nodes []model.Node
 	var uuid string
@@ -143,7 +144,7 @@ func ReadNodeList(args map[string]interface{}) (interface{}, error) {
 	return nodes, nil
 }
 
-// ReadNodeAll - cgs
+// ReadNodeAll : Get all of infos of nodes from database.
 func ReadNodeAll(args map[string]interface{}) (interface{}, error) {
 	var nodes []model.Node
 	var uuid string
@@ -201,7 +202,7 @@ func ReadNodeAll(args map[string]interface{}) (interface{}, error) {
 	return nodes, nil
 }
 
-// ReadNodeNum - cgs
+// ReadNodeNum : Get count of nodes from database.
 func ReadNodeNum(args map[string]interface{}) (interface{}, error) {
 	var nodeNum model.NodeNum
 	var nodeNr int
@@ -219,7 +220,7 @@ func ReadNodeNum(args map[string]interface{}) (interface{}, error) {
 	return nodeNum, nil
 }
 
-// CreateNode - cgs
+// CreateNode : Add a node to database.
 func CreateNode(args map[string]interface{}) (interface{}, error) {
 	out, err := gouuid.NewV4()
 	if err != nil {
@@ -259,6 +260,83 @@ func CreateNode(args map[string]interface{}) (interface{}, error) {
 	return node, nil
 }
 
+func OnNode(args map[string]interface{}) (interface{}, error) {
+	uuid, uuidOk := args["uuid"].(string)
+
+	if uuidOk {
+		var bmcIP string
+
+		sql := "select bmc_ip from node where uuid = ?"
+		err := mysql.Db.QueryRow(sql, uuid).Scan(&bmcIP)
+		if err != nil {
+			logger.Logger.Println(err)
+			return nil, err
+		}
+
+		serialNo, err := ipmi.GetSerialNo(bmcIP)
+		if err != nil {
+			logger.Logger.Println(err)
+			return nil, err
+		}
+
+		state, _ := ipmi.GetPowerState(bmcIP, serialNo)
+		if state == "On" {
+			return "Already turned on", nil
+		}
+
+		result, err := ipmi.ChangePowerState(bmcIP, serialNo, "On")
+		if err != nil {
+			logger.Logger.Println(err)
+			return nil, err
+		}
+
+		return result, nil
+	}
+
+	return nil, errors.New("need uuid argument")
+}
+
+func OffNode(args map[string]interface{}) (interface{}, error) {
+	uuid, uuidOk := args["uuid"].(string)
+	forceOff, _ := args["force_off"].(bool)
+
+	if uuidOk {
+		var bmcIP string
+
+		sql := "select bmc_ip from node where uuid = ?"
+		err := mysql.Db.QueryRow(sql, uuid).Scan(&bmcIP)
+		if err != nil {
+			logger.Logger.Println(err)
+			return nil, err
+		}
+
+		serialNo, err := ipmi.GetSerialNo(bmcIP)
+		if err != nil {
+			logger.Logger.Println(err)
+			return nil, err
+		}
+
+		state, _ := ipmi.GetPowerState(bmcIP, serialNo)
+		if state == "Off" {
+			return "Already turned off", nil
+		}
+
+		changeState := "GracefulShutdown"
+		if forceOff {
+			changeState = "ForceOff"
+		}
+		result, err := ipmi.ChangePowerState(bmcIP, serialNo, changeState)
+		if err != nil {
+			logger.Logger.Println(err)
+			return nil, err
+		}
+
+		return result, nil
+	}
+
+	return nil, errors.New("need uuid argument")
+}
+
 func checkUpdateNodeArgs(args map[string]interface{}) bool {
 	_, serverUUIDOk := args["server_uuid"].(string)
 	_, bmcMacAddrOk := args["bmc_mac_addr"].(string)
@@ -273,7 +351,7 @@ func checkUpdateNodeArgs(args map[string]interface{}) bool {
 	return !serverUUIDOk && !bmcMacAddrOk && !bmcIPOk && !pxeMacAdrOk && !statusOk && !cpuCoresOk && !memoryOk && !descriptionOk && !activeOk
 }
 
-// UpdateNode - cgs
+// UpdateNode : Update infos of a node.
 func UpdateNode(args map[string]interface{}) (interface{}, error) {
 	requestUUIDD, requestUUIDDOK := args["uuid"].(string)
 	serverUUID, serverUUIDOk := args["server_uuid"].(string)
@@ -356,7 +434,7 @@ func UpdateNode(args map[string]interface{}) (interface{}, error) {
 	return nil, nil
 }
 
-// DeleteNode - cgs
+// DeleteNode : Delete a node from database.
 func DeleteNode(args map[string]interface{}) (interface{}, error) {
 	var err error
 

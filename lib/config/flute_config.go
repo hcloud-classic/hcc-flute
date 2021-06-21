@@ -8,6 +8,5 @@ type fluteConfig struct {
 	MysqlConfig *goconf.Section
 	HTTPConfig  *goconf.Section
 	IpmiConfig  *goconf.Section
-	WOLConfig   *goconf.Section
 }
 
