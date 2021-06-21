@@ -57,11 +57,7 @@ func CreateNodeDetail(args map[string]interface{}) (interface{}, error) {
 		logger.Logger.Println(err.Error())
 		return nil, err
 	}
-
-	defer func() {
-		_ = stmt.Close()
-	}()
-
+	defer stmt.Close()
 	result, err := stmt.Exec(nodeDetail.NodeUUID, nodeDetail.CPUModel, nodeDetail.CPUProcessors, nodeDetail.CPUThreads)
 	if err != nil {
 		logger.Logger.Println(err)
@@ -84,11 +80,7 @@ func DeleteNodeDetail(args map[string]interface{}) (interface{}, error) {
 			logger.Logger.Println(err.Error())
 			return nil, err
 		}
-
-		defer func() {
-			_ = stmt.Close()
-		}()
-
+		defer stmt.Close()
 		result, err2 := stmt.Exec(requestedUUID)
 		if err2 != nil {
 			logger.Logger.Println(err2)

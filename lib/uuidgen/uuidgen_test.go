@@ -1,13 +1,14 @@
-package mysql
+package uuidgen
 
 import (
-	"hcc/flute/lib/syscheck"
 	"hcc/flute/lib/config"
 	"hcc/flute/lib/logger"
+	"hcc/flute/lib/mysql"
+	"hcc/flute/lib/syscheck"
 	"testing"
 )
 
-func Test_DB_Prepare(t *testing.T) {
+func Test_UUIDgen(t *testing.T) {
 	if !syscheck.CheckRoot() {
 		t.Fatal("Failed to get root permission!")
 	}
@@ -21,11 +22,16 @@ func Test_DB_Prepare(t *testing.T) {
 
 	config.Parser()
 
-	err := Prepare()
+	err := mysql.Prepare()
 	if err != nil {
-		t.Fatal(err)
+		return
 	}
 	defer func() {
-		_ = Db.Close()
+		_ = mysql.Db.Close()
 	}()
+
+	_, err = UUIDgen()
+	if err != nil {
+		t.Fatal("Failed to generate uuid!")
+	}
 }

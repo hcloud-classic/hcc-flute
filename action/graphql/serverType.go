@@ -1,40 +1,42 @@
-package graphqlType
+package graphql
 
 import "github.com/graphql-go/graphql"
 
-// NodeType : Graphql object type of Node
-var NodeType = graphql.NewObject(
+var serverType = graphql.NewObject(
 	graphql.ObjectConfig{
-		Name: "Node",
+		Name: "Server",
 		Fields: graphql.Fields{
 			"uuid": &graphql.Field{
 				Type: graphql.String,
 			},
-			"server_uuid": &graphql.Field{
+			"subnet_uuid": &graphql.Field{
 				Type: graphql.String,
 			},
-			"bmc_mac_addr": &graphql.Field{
+			"os": &graphql.Field{
 				Type: graphql.String,
 			},
-			"bmc_ip": &graphql.Field{
+			"server_name": &graphql.Field{
 				Type: graphql.String,
 			},
-			"pxe_mac_addr": &graphql.Field{
+			"server_desc": &graphql.Field{
 				Type: graphql.String,
 			},
-			"status": &graphql.Field{
-				Type: graphql.String,
-			},
-			"cpu_cores": &graphql.Field{
+			"cpu": &graphql.Field{
 				Type: graphql.Int,
 			},
 			"memory": &graphql.Field{
 				Type: graphql.Int,
 			},
-			"description": &graphql.Field{
+			"disk_size": &graphql.Field{
+				Type: graphql.Int,
+			},
+			"status": &graphql.Field{
 				Type: graphql.String,
 			},
-			"active": &graphql.Field{
+			"user_uuid": &graphql.Field{
+				Type: graphql.String,
+			},
+			"node_nr": &graphql.Field{
 				Type: graphql.Int,
 			},
 			"created_at": &graphql.Field{

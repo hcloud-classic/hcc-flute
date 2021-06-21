@@ -1,17 +1,10 @@
 package ipmi
 
 import (
-<<<<<<< HEAD
-	"fmt"
 	"hcc/flute/lib/config"
 	"hcc/flute/lib/logger"
 	"hcc/flute/lib/mysql"
 	"hcc/flute/model"
-=======
-	"hcc/flute/lib/config"
-	"hcc/flute/lib/logger"
-	"hcc/flute/lib/mysql"
->>>>>>> f41ff24 (Refactoring packages structure)
 	"strconv"
 	"time"
 )
@@ -50,11 +43,7 @@ func checkNodesDetailUnlock() {
 
 // UpdateAllNodes : Get all infos from IPMI nodes and update database (except power state)
 func UpdateAllNodes() (interface{}, error) {
-<<<<<<< HEAD
 	var nodes []model.Node
-=======
-	var nodes []types.Node
->>>>>>> f41ff24 (Refactoring packages structure)
 	var bmcIP string
 
 	sql := "select bmc_ip from node where active = 1"
@@ -74,108 +63,49 @@ func UpdateAllNodes() (interface{}, error) {
 			continue
 		}
 
-<<<<<<< HEAD
-		if config.Ipmi.Debug == "on" {
-			logger.Logger.Println("UpdateAllNodes(): Updating for bmc IP " + bmcIP)
-		}
-
-=======
->>>>>>> f41ff24 (Refactoring packages structure)
 		serialNo, err := GetSerialNo(bmcIP)
 		if err != nil {
 			logger.Logger.Println(err)
 			continue
 		}
 
-<<<<<<< HEAD
-		if config.Ipmi.Debug == "on" {
-			logger.Logger.Println("UpdateAllNodes(): " + bmcIP + " Serial No: " + serialNo)
-		}
-
-=======
->>>>>>> f41ff24 (Refactoring packages structure)
 		uuid, err := GetUUID(bmcIP, serialNo)
 		if err != nil {
 			logger.Logger.Println(err)
 			continue
 		}
 
-<<<<<<< HEAD
-		if config.Ipmi.Debug == "on" {
-			logger.Logger.Println("UpdateAllNodes(): " + bmcIP + " UUID: " + uuid)
-		}
-
-		bmcMAC, err := GetNICMac(bmcIP, int(config.Ipmi.BaseboardNICNumBMC), true)
-=======
 		bmcMAC, err := GetNICMac(bmcIP, int(config.Ipmi.BaseboardNICNoBMC), true)
->>>>>>> f41ff24 (Refactoring packages structure)
 		if err != nil {
 			logger.Logger.Println(err)
 			continue
 		}
 
-<<<<<<< HEAD
-		if config.Ipmi.Debug == "on" {
-			logger.Logger.Println("UpdateAllNodes(): " + bmcIP + " BMC MAC Addr: " + bmcMAC)
-		}
-
-		pxeMAC, err := GetNICMac(bmcIP, int(config.Ipmi.BaseboardNICNumPXE), false)
-=======
 		pxeMAC, err := GetNICMac(bmcIP, int(config.Ipmi.BaseboardNICNoPXE), false)
->>>>>>> f41ff24 (Refactoring packages structure)
 		if err != nil {
 			logger.Logger.Println(err)
 			continue
 		}
 
-<<<<<<< HEAD
-		if config.Ipmi.Debug == "on" {
-			logger.Logger.Println("UpdateAllNodes(): " + bmcIP + " PXE MAC Addr: " + pxeMAC)
-		}
-
-=======
->>>>>>> f41ff24 (Refactoring packages structure)
 		processors, err := GetProcessors(bmcIP, serialNo)
 		if err != nil {
 			logger.Logger.Println(err)
 			continue
 		}
 
-<<<<<<< HEAD
-		if config.Ipmi.Debug == "on" {
-			logger.Logger.Println("UpdateAllNodes(): " + bmcIP + " Processors: " + strconv.Itoa(processors))
-		}
-
-=======
->>>>>>> f41ff24 (Refactoring packages structure)
 		cpuCores, err := GetProcessorsCores(bmcIP, serialNo, processors)
 		if err != nil {
 			logger.Logger.Println(err)
 			continue
 		}
 
-<<<<<<< HEAD
-		if config.Ipmi.Debug == "on" {
-			logger.Logger.Println("UpdateAllNodes(): " + bmcIP + " CPU Cores: " + strconv.Itoa(cpuCores))
-		}
-
-=======
->>>>>>> f41ff24 (Refactoring packages structure)
 		memory, err := GetTotalSystemMemory(bmcIP, serialNo)
 		if err != nil {
 			logger.Logger.Println(err)
 			continue
 		}
 
-<<<<<<< HEAD
-		if config.Ipmi.Debug == "on" {
-			logger.Logger.Println("UpdateAllNodes(): " + bmcIP + " Memory: " + strconv.Itoa(memory))
-		}
-
 		node := model.Node{
-=======
-		node := types.Node{
->>>>>>> f41ff24 (Refactoring packages structure)
 			UUID:       uuid,
 			BmcMacAddr: bmcMAC,
 			BmcIP:      bmcIP,
@@ -184,22 +114,14 @@ func UpdateAllNodes() (interface{}, error) {
 			Memory:     memory,
 		}
 
-<<<<<<< HEAD
-		sql := "update node set uuid = ?, bmc_mac_addr = ?, pxe_mac_addr = ?, cpu_cores = ?, memory = ? where bmc_ip = ?"
-=======
 		sql := "update node set bmc_mac_addr = ?, pxe_mac_addr = ?, cpu_cores = ?, memory = ? where uuid = ?"
->>>>>>> f41ff24 (Refactoring packages structure)
 		stmt, err := mysql.Db.Prepare(sql)
 		if err != nil {
 			logger.Logger.Println(err)
 			continue
 		}
 
-<<<<<<< HEAD
-		result, err2 := stmt.Exec(node.UUID, node.BmcMacAddr, node.PXEMacAddr, node.CPUCores, node.Memory, node.BmcIP)
-=======
 		result, err2 := stmt.Exec(node.BmcMacAddr, node.PXEMacAddr, node.CPUCores, node.Memory, node.UUID)
->>>>>>> f41ff24 (Refactoring packages structure)
 		if err2 != nil {
 			logger.Logger.Println(err2)
 			_ = stmt.Close()
@@ -208,16 +130,7 @@ func UpdateAllNodes() (interface{}, error) {
 		_ = stmt.Close()
 
 		if config.Ipmi.Debug == "on" {
-<<<<<<< HEAD
-			result, err := result.LastInsertId()
-			if err != nil {
-				logger.Logger.Print("UpdateAllNodes(): err=" + err.Error())
-			} else {
-				logger.Logger.Print("UpdateAllNodes(): result=" + strconv.Itoa(int(result)))
-			}
-=======
 			logger.Logger.Println(result.LastInsertId())
->>>>>>> f41ff24 (Refactoring packages structure)
 		}
 		nodes = append(nodes, node)
 	}
@@ -227,13 +140,8 @@ func UpdateAllNodes() (interface{}, error) {
 
 // UpdateStatusNodes : Get status from IPMI nodes and update database
 func UpdateStatusNodes() (interface{}, error) {
-<<<<<<< HEAD
 	var nodes []model.Node
-	var uuid interface{}
-=======
-	var nodes []types.Node
 	var uuid string
->>>>>>> f41ff24 (Refactoring packages structure)
 	var bmcIP string
 
 	sql := "select uuid, bmc_ip from node where active = 1"
@@ -253,50 +161,20 @@ func UpdateStatusNodes() (interface{}, error) {
 			continue
 		}
 
-<<<<<<< HEAD
-		if uuid == nil || len(fmt.Sprintf("%s", uuid)) == 0 {
-			if config.Ipmi.Debug == "on" {
-				logger.Logger.Println("UpdateAllNodes(): " + bmcIP + "'s UUID is currently empty. Skipping...")
-			}
-			continue
-		}
-
-		if config.Ipmi.Debug == "on" {
-			logger.Logger.Println("UpdateStatusNodes(): Updating for bmc IP " + bmcIP)
-		}
-
-=======
->>>>>>> f41ff24 (Refactoring packages structure)
 		serialNo, err := GetSerialNo(bmcIP)
 		if err != nil {
 			logger.Logger.Println(err)
 			continue
 		}
 
-<<<<<<< HEAD
-		if config.Ipmi.Debug == "on" {
-			logger.Logger.Println("UpdateStatusNodes(): " + bmcIP + " Serial No: " + serialNo)
-		}
-
-=======
->>>>>>> f41ff24 (Refactoring packages structure)
 		powerState, err := GetPowerState(bmcIP, serialNo)
 		if err != nil {
 			logger.Logger.Println(err)
 			continue
 		}
 
-<<<<<<< HEAD
-		if config.Ipmi.Debug == "on" {
-			logger.Logger.Println("UpdateStatusNodes(): " + bmcIP + " Power State: " + powerState)
-		}
-
-		node := model.Node {
-			UUID:   fmt.Sprintf("%s", uuid),
-=======
-		node := types.Node{
+		node := model.Node{
 			UUID:   uuid,
->>>>>>> f41ff24 (Refactoring packages structure)
 			Status: powerState,
 		}
 
@@ -316,16 +194,7 @@ func UpdateStatusNodes() (interface{}, error) {
 		_ = stmt.Close()
 
 		if config.Ipmi.Debug == "on" {
-<<<<<<< HEAD
-			result, err := result.LastInsertId()
-			if err != nil {
-				logger.Logger.Print("UpdateStatusNodes(): err=" + err.Error())
-			} else {
-				logger.Logger.Print("UpdateStatusNodes(): result=" + strconv.Itoa(int(result)))
-			}
-=======
 			logger.Logger.Println(result.LastInsertId())
->>>>>>> f41ff24 (Refactoring packages structure)
 		}
 		nodes = append(nodes, node)
 	}
@@ -335,13 +204,8 @@ func UpdateStatusNodes() (interface{}, error) {
 
 // UpdateNodesDetail : Get detail infos from IPMI nodes and update database
 func UpdateNodesDetail() (interface{}, error) {
-<<<<<<< HEAD
 	var nodedetails []model.NodeDetail
-	var uuid interface{}
-=======
-	var nodedetails []types.NodeDetail
 	var uuid string
->>>>>>> f41ff24 (Refactoring packages structure)
 	var bmcIP string
 
 	sql := "select uuid, bmc_ip from node where active = 1"
@@ -361,80 +225,33 @@ func UpdateNodesDetail() (interface{}, error) {
 			continue
 		}
 
-<<<<<<< HEAD
-		if uuid == nil || len(fmt.Sprintf("%s", uuid)) == 0 {
-			if config.Ipmi.Debug == "on" {
-				logger.Logger.Println("UpdateAllNodes(): " + bmcIP + "'s UUID is currently empty. Skipping...")
-			}
-			continue
-		}
-
-		if config.Ipmi.Debug == "on" {
-			logger.Logger.Println("UpdateNodesDetail(): Updating for bmc IP " + bmcIP)
-		}
-
-=======
->>>>>>> f41ff24 (Refactoring packages structure)
 		serialNo, err := GetSerialNo(bmcIP)
 		if err != nil {
 			logger.Logger.Println(err)
 			continue
 		}
 
-<<<<<<< HEAD
-		if config.Ipmi.Debug == "on" {
-			logger.Logger.Println("UpdateNodesDetail(): " + bmcIP + " Serial No: " + serialNo)
-		}
-
 		processorModel, err := GetProcessorModel(bmcIP, serialNo)
-=======
-		model, err := GetProcessorModel(bmcIP, serialNo)
->>>>>>> f41ff24 (Refactoring packages structure)
 		if err != nil {
 			logger.Logger.Println(err)
 			continue
 		}
 
-<<<<<<< HEAD
-		if config.Ipmi.Debug == "on" {
-			logger.Logger.Println("UpdateNodesDetail(): " + bmcIP + " Processor Model: " + processorModel)
-		}
-
-=======
->>>>>>> f41ff24 (Refactoring packages structure)
 		processors, err := GetProcessors(bmcIP, serialNo)
 		if err != nil {
 			logger.Logger.Println(err)
 			continue
 		}
 
-<<<<<<< HEAD
-		if config.Ipmi.Debug == "on" {
-			logger.Logger.Println("UpdateNodesDetail(): " + bmcIP + " Processors : " + strconv.Itoa(processors))
-		}
-
-=======
->>>>>>> f41ff24 (Refactoring packages structure)
 		threads, err := GetProcessorsThreads(bmcIP, serialNo, processors)
 		if err != nil {
 			logger.Logger.Println(err)
 			continue
 		}
 
-<<<<<<< HEAD
-		if config.Ipmi.Debug == "on" {
-			logger.Logger.Println("UpdateNodesDetail(): " + bmcIP + " Threads : " + strconv.Itoa(threads))
-		}
-
-		nodeUUID := fmt.Sprintf("%s", uuid)
-		nodeDetail := model.NodeDetail{
-			NodeUUID:      nodeUUID,
-			CPUModel:      processorModel,
-=======
-		nodedetail := types.NodeDetail{
+		nodedetail := model.NodeDetail{
 			NodeUUID:      uuid,
-			CPUModel:      model,
->>>>>>> f41ff24 (Refactoring packages structure)
+			CPUModel:      processorModel,
 			CPUProcessors: processors,
 			CPUThreads:    threads,
 		}
@@ -442,11 +259,7 @@ func UpdateNodesDetail() (interface{}, error) {
 		sql := "select node_uuid from node_detail where node_uuid = ?"
 		err = mysql.Db.QueryRow(sql, uuid).Scan(&uuid)
 		if err != nil {
-<<<<<<< HEAD
-			logger.Logger.Println("UpdateNodesDetail(): Inserting not existing new node_detail")
-=======
 			logger.Logger.Println("Inserting not existing new node_detail")
->>>>>>> f41ff24 (Refactoring packages structure)
 
 			sql = "insert into node_detail(node_uuid, cpu_model, cpu_processors, cpu_threads) values (?, ?, ?, ?)"
 			stmt, err := mysql.Db.Prepare(sql)
@@ -455,11 +268,7 @@ func UpdateNodesDetail() (interface{}, error) {
 				continue
 			}
 
-<<<<<<< HEAD
-			result, err2 := stmt.Exec(nodeDetail.NodeUUID, nodeDetail.CPUModel, nodeDetail.CPUProcessors, nodeDetail.CPUThreads)
-=======
 			result, err2 := stmt.Exec(nodedetail.NodeUUID, nodedetail.CPUModel, nodedetail.CPUProcessors, nodedetail.CPUThreads)
->>>>>>> f41ff24 (Refactoring packages structure)
 			if err2 != nil {
 				logger.Logger.Println(err2)
 				_ = stmt.Close()
@@ -467,18 +276,7 @@ func UpdateNodesDetail() (interface{}, error) {
 			}
 			_ = stmt.Close()
 
-<<<<<<< HEAD
-			if config.Ipmi.Debug == "on" {
-				result, err := result.LastInsertId()
-				if err != nil {
-					logger.Logger.Print("UpdateNodesDetail(): err=" + err.Error())
-				} else {
-					logger.Logger.Print("UpdateNodesDetail(): result=" + strconv.Itoa(int(result)))
-				}
-			}
-=======
 			logger.Logger.Println(result.LastInsertId())
->>>>>>> f41ff24 (Refactoring packages structure)
 		} else {
 			sql = "update node_detail set cpu_model = ?, cpu_processors = ?, cpu_threads = ? where node_uuid = ?"
 			stmt, err := mysql.Db.Prepare(sql)
@@ -487,11 +285,7 @@ func UpdateNodesDetail() (interface{}, error) {
 				continue
 			}
 
-<<<<<<< HEAD
-			result, err2 := stmt.Exec(nodeDetail.CPUModel, nodeDetail.CPUProcessors, nodeDetail.CPUThreads, nodeDetail.NodeUUID)
-=======
 			result, err2 := stmt.Exec(nodedetail.CPUModel, nodedetail.CPUProcessors, nodedetail.CPUThreads, nodedetail.NodeUUID)
->>>>>>> f41ff24 (Refactoring packages structure)
 			if err2 != nil {
 				logger.Logger.Println(err2)
 				_ = stmt.Close()
@@ -500,24 +294,11 @@ func UpdateNodesDetail() (interface{}, error) {
 			_ = stmt.Close()
 
 			if config.Ipmi.Debug == "on" {
-<<<<<<< HEAD
-				result, err := result.LastInsertId()
-				if err != nil {
-					logger.Logger.Print("UpdateNodesDetail(): err=" + err.Error())
-				} else {
-					logger.Logger.Print("UpdateNodesDetail(): result=" + strconv.Itoa(int(result)))
-				}
-			}
-		}
-
-		nodedetails = append(nodedetails, nodeDetail)
-=======
 				logger.Logger.Println(result.LastInsertId())
 			}
 		}
 
 		nodedetails = append(nodedetails, nodedetail)
->>>>>>> f41ff24 (Refactoring packages structure)
 	}
 
 	return nodedetails, nil
