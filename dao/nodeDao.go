@@ -35,7 +35,8 @@ func ReadNode(uuid string) (*pb.Node, uint64, string) {
 	var active int
 
 	sql := "select " + nodeSelectColumns + " from node where uuid = ? and available = 1"
-	err := mysql.Db.QueryRow(sql, uuid).Scan(
+	row := mysql.Db.QueryRow(sql, uuid)
+	err := mysql.QueryRowScan(row,
 		&uuid,
 		&serverUUID,
 		&bmcMacAddr,
@@ -186,10 +187,10 @@ func ReadNodeList(in *pb.ReqGetNodeList) (*pb.ResGetNodeList, uint64, string) {
 	var err error
 	if isLimit {
 		sql += " order by created_at desc limit ? offset ?"
-		stmt, err = mysql.Db.Query(sql, row, row*(page-1))
+		stmt, err = mysql.Query(sql, row, row*(page-1))
 	} else {
 		sql += " order by created_at desc"
-		stmt, err = mysql.Db.Query(sql)
+		stmt, err = mysql.Query(sql)
 	}
 
 	if err != nil {
@@ -370,7 +371,8 @@ func NodePowerControl(in *pb.ReqNodePowerControl) ([]string, uint64, string) {
 			var serialNo string
 
 			sql := "select bmc_ip from node where uuid = ?"
-			err := mysql.Db.QueryRow(sql, node.UUID).Scan(&bmcIPCIDR)
+			row := mysql.Db.QueryRow(sql, node.UUID)
+			err := mysql.QueryRowScan(row, &bmcIPCIDR)
 			if err != nil {
 				result = err.Error()
 				logger.Logger.Println("NodePowerControl(): " + err.Error())
@@ -439,7 +441,8 @@ func GetNodePowerState(in *pb.ReqNodePowerState) (string, uint64, string) {
 	var bmcIPCIDR string
 
 	sql := "select bmc_ip from node where uuid = ?"
-	err := mysql.Db.QueryRow(sql, uuid).Scan(&bmcIPCIDR)
+	row := mysql.Db.QueryRow(sql, uuid)
+	err := mysql.QueryRowScan(row, &bmcIPCIDR)
 	if err != nil {
 		errStr := "GetNodePowerState(): " + err.Error()
 		logger.Logger.Println(errStr)
@@ -598,7 +601,7 @@ func UpdateNode(in *pb.ReqUpdateNode) (*pb.Node, uint64, string) {
 
 	logger.Logger.Println("update_node sql : ", sql)
 
-	stmt, err := mysql.Db.Prepare(sql)
+	stmt, err := mysql.Prepare(sql)
 	if err != nil {
 		errStr := "UpdateNode(): " + err.Error()
 		logger.Logger.Println(errStr)
@@ -639,7 +642,7 @@ func DeleteNode(in *pb.ReqDeleteNode) (*pb.Node, uint64, string) {
 	}
 
 	sql := "delete from node where uuid = ?"
-	stmt, err := mysql.Db.Prepare(sql)
+	stmt, err := mysql.Prepare(sql)
 	if err != nil {
 		errStr := "DeleteNode(): " + err.Error()
 		logger.Logger.Println(errStr)
