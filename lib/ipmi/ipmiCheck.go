@@ -63,10 +63,18 @@ func UpdateAllNodes() (interface{}, error) {
 			continue
 		}
 
+		if config.Ipmi.Debug == "on" {
+			logger.Logger.Println("UpdateAllNodes(): Updating for bmc IP " + bmcIP)
+		}
+
 		serialNo, err := GetSerialNo(bmcIP)
 		if err != nil {
 			logger.Logger.Println(err)
 			continue
+		}
+
+		if config.Ipmi.Debug == "on" {
+			logger.Logger.Println("UpdateAllNodes(): " + bmcIP + " Serial No: " + serialNo)
 		}
 
 		uuid, err := GetUUID(bmcIP, serialNo)
@@ -75,16 +83,28 @@ func UpdateAllNodes() (interface{}, error) {
 			continue
 		}
 
-		bmcMAC, err := GetNICMac(bmcIP, int(config.Ipmi.BaseboardNICNoBMC), true)
+		if config.Ipmi.Debug == "on" {
+			logger.Logger.Println("UpdateAllNodes(): " + bmcIP + " UUID: " + uuid)
+		}
+
+		bmcMAC, err := GetNICMac(bmcIP, int(config.Ipmi.BaseboardNICNumBMC), true)
 		if err != nil {
 			logger.Logger.Println(err)
 			continue
 		}
 
-		pxeMAC, err := GetNICMac(bmcIP, int(config.Ipmi.BaseboardNICNoPXE), false)
+		if config.Ipmi.Debug == "on" {
+			logger.Logger.Println("UpdateAllNodes(): " + bmcIP + " BMC MAC Addr: " + bmcMAC)
+		}
+
+		pxeMAC, err := GetNICMac(bmcIP, int(config.Ipmi.BaseboardNICNumPXE), false)
 		if err != nil {
 			logger.Logger.Println(err)
 			continue
+		}
+
+		if config.Ipmi.Debug == "on" {
+			logger.Logger.Println("UpdateAllNodes(): " + bmcIP + " PXE MAC Addr: " + pxeMAC)
 		}
 
 		processors, err := GetProcessors(bmcIP, serialNo)
@@ -93,16 +113,28 @@ func UpdateAllNodes() (interface{}, error) {
 			continue
 		}
 
+		if config.Ipmi.Debug == "on" {
+			logger.Logger.Println("UpdateAllNodes(): " + bmcIP + " Processors: " + strconv.Itoa(processors))
+		}
+
 		cpuCores, err := GetProcessorsCores(bmcIP, serialNo, processors)
 		if err != nil {
 			logger.Logger.Println(err)
 			continue
 		}
 
+		if config.Ipmi.Debug == "on" {
+			logger.Logger.Println("UpdateAllNodes(): " + bmcIP + " CPU Cores: " + strconv.Itoa(cpuCores))
+		}
+
 		memory, err := GetTotalSystemMemory(bmcIP, serialNo)
 		if err != nil {
 			logger.Logger.Println(err)
 			continue
+		}
+
+		if config.Ipmi.Debug == "on" {
+			logger.Logger.Println("UpdateAllNodes(): " + bmcIP + " Memory: " + strconv.Itoa(memory))
 		}
 
 		node := model.Node{
@@ -114,14 +146,14 @@ func UpdateAllNodes() (interface{}, error) {
 			Memory:     memory,
 		}
 
-		sql := "update node set bmc_mac_addr = ?, pxe_mac_addr = ?, cpu_cores = ?, memory = ? where uuid = ?"
+		sql := "update node set uuid = ?, bmc_mac_addr = ?, pxe_mac_addr = ?, cpu_cores = ?, memory = ? where bmc_ip = ?"
 		stmt, err := mysql.Db.Prepare(sql)
 		if err != nil {
 			logger.Logger.Println(err)
 			continue
 		}
 
-		result, err2 := stmt.Exec(node.BmcMacAddr, node.PXEMacAddr, node.CPUCores, node.Memory, node.UUID)
+		result, err2 := stmt.Exec(node.UUID, node.BmcMacAddr, node.PXEMacAddr, node.CPUCores, node.Memory, node.BmcIP)
 		if err2 != nil {
 			logger.Logger.Println(err2)
 			_ = stmt.Close()
@@ -161,10 +193,18 @@ func UpdateStatusNodes() (interface{}, error) {
 			continue
 		}
 
+		if config.Ipmi.Debug == "on" {
+			logger.Logger.Println("UpdateStatusNodes(): Updating for bmc IP " + bmcIP)
+		}
+
 		serialNo, err := GetSerialNo(bmcIP)
 		if err != nil {
 			logger.Logger.Println(err)
 			continue
+		}
+
+		if config.Ipmi.Debug == "on" {
+			logger.Logger.Println("UpdateStatusNodes(): " + bmcIP + " Serial No: " + serialNo)
 		}
 
 		powerState, err := GetPowerState(bmcIP, serialNo)
@@ -173,7 +213,11 @@ func UpdateStatusNodes() (interface{}, error) {
 			continue
 		}
 
-		node := model.Node{
+		if config.Ipmi.Debug == "on" {
+			logger.Logger.Println("UpdateStatusNodes(): " + bmcIP + " Power State: " + powerState)
+		}
+
+		node := model.Node {
 			UUID:   uuid,
 			Status: powerState,
 		}
@@ -225,10 +269,18 @@ func UpdateNodesDetail() (interface{}, error) {
 			continue
 		}
 
+		if config.Ipmi.Debug == "on" {
+			logger.Logger.Println("UpdateNodesDetail(): Updating for bmc IP " + bmcIP)
+		}
+
 		serialNo, err := GetSerialNo(bmcIP)
 		if err != nil {
 			logger.Logger.Println(err)
 			continue
+		}
+
+		if config.Ipmi.Debug == "on" {
+			logger.Logger.Println("UpdateNodesDetail(): " + bmcIP + " Serial No: " + serialNo)
 		}
 
 		processorModel, err := GetProcessorModel(bmcIP, serialNo)
@@ -237,16 +289,28 @@ func UpdateNodesDetail() (interface{}, error) {
 			continue
 		}
 
+		if config.Ipmi.Debug == "on" {
+			logger.Logger.Println("UpdateNodesDetail(): " + bmcIP + " Processor Model: " + processorModel)
+		}
+
 		processors, err := GetProcessors(bmcIP, serialNo)
 		if err != nil {
 			logger.Logger.Println(err)
 			continue
 		}
 
+		if config.Ipmi.Debug == "on" {
+			logger.Logger.Println("UpdateNodesDetail(): " + bmcIP + " Processors : " + strconv.Itoa(processors))
+		}
+
 		threads, err := GetProcessorsThreads(bmcIP, serialNo, processors)
 		if err != nil {
 			logger.Logger.Println(err)
 			continue
+		}
+
+		if config.Ipmi.Debug == "on" {
+			logger.Logger.Println("UpdateNodesDetail(): " + bmcIP + " Threads : " + strconv.Itoa(threads))
 		}
 
 		nodedetail := model.NodeDetail{

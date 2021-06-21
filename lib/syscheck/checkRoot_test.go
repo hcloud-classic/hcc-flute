@@ -3,7 +3,8 @@ package syscheck
 import "testing"
 
 func Test_Root(t *testing.T) {
-	if !CheckRoot() {
+	err := CheckRoot()
+	if err != nil {
 		t.Fatal("Failed to get root permission!")
 	}
 }

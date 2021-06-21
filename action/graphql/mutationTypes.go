@@ -3,6 +3,7 @@ package graphql
 import (
 	"errors"
 	"github.com/graphql-go/graphql"
+	graphqlType "hcc/flute/action/graphql/type"
 	"hcc/flute/dao"
 	"hcc/flute/lib/logger"
 	"hcc/flute/lib/wol"
@@ -36,7 +37,7 @@ var mutationTypes = graphql.NewObject(graphql.ObjectConfig{
 		},
 		// node DB
 		"create_node": &graphql.Field{
-			Type:        nodeType,
+			Type:        graphqlType.NodeType,
 			Description: "Create new node",
 			Args: graphql.FieldConfigArgument{
 				"bmc_mac_addr": &graphql.ArgumentConfig{
@@ -70,7 +71,7 @@ var mutationTypes = graphql.NewObject(graphql.ObjectConfig{
 			},
 		},
 		"update_node": &graphql.Field{
-			Type:        nodeType,
+			Type:        graphqlType.NodeType,
 			Description: "Update node",
 			Args: graphql.FieldConfigArgument{
 				"uuid": &graphql.ArgumentConfig{
@@ -110,7 +111,7 @@ var mutationTypes = graphql.NewObject(graphql.ObjectConfig{
 			},
 		},
 		"delete_node": &graphql.Field{
-			Type:        nodeType,
+			Type:        graphqlType.NodeType,
 			Description: "Delete node by uuid",
 			Args: graphql.FieldConfigArgument{
 				"uuid": &graphql.ArgumentConfig{
@@ -118,13 +119,13 @@ var mutationTypes = graphql.NewObject(graphql.ObjectConfig{
 				},
 			},
 			Resolve: func(params graphql.ResolveParams) (interface{}, error) {
-				logger.Logger.Println("Resolving: delete_bide")
+				logger.Logger.Println("Resolving: delete_node")
 				return dao.DeleteNode(params.Args)
 			},
 		},
 		// node_detail DB
 		"create_node_detail": &graphql.Field{
-			Type:        nodeDetailType,
+			Type:        graphqlType.NodeDetailType,
 			Description: "Create new node_detail",
 			Args: graphql.FieldConfigArgument{
 				"node_uuid": &graphql.ArgumentConfig{
@@ -146,7 +147,7 @@ var mutationTypes = graphql.NewObject(graphql.ObjectConfig{
 			},
 		},
 		"delete_node_detail": &graphql.Field{
-			Type:        nodeDetailType,
+			Type:        graphqlType.NodeDetailType,
 			Description: "Delete node_detail by node_uuid",
 			Args: graphql.FieldConfigArgument{
 				"node_uuid": &graphql.ArgumentConfig{

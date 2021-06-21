@@ -2,6 +2,7 @@ package graphql
 
 import (
 	"github.com/graphql-go/graphql"
+	graphqlType "hcc/flute/action/graphql/type"
 	"hcc/flute/dao"
 	"hcc/flute/lib/logger"
 )
@@ -12,7 +13,7 @@ var queryTypes = graphql.NewObject(
 		Fields: graphql.Fields{
 			// node DB
 			"node": &graphql.Field{
-				Type:        nodeType,
+				Type:        graphqlType.NodeType,
 				Description: "Get a node by uuid",
 				Args: graphql.FieldConfigArgument{
 					"uuid": &graphql.ArgumentConfig{
@@ -25,7 +26,7 @@ var queryTypes = graphql.NewObject(
 				},
 			},
 			"list_node": &graphql.Field{
-				Type:        graphql.NewList(nodeType),
+				Type:        graphql.NewList(graphqlType.NodeType),
 				Description: "Get node list",
 				Args: graphql.FieldConfigArgument{
 					"server_uuid": &graphql.ArgumentConfig{
@@ -68,9 +69,12 @@ var queryTypes = graphql.NewObject(
 				},
 			},
 			"all_node": &graphql.Field{
-				Type:        graphql.NewList(nodeType),
+				Type:        graphql.NewList(graphqlType.NodeType),
 				Description: "Get all node list",
 				Args: graphql.FieldConfigArgument{
+					"active": &graphql.ArgumentConfig{
+						Type: graphql.Int,
+					},
 					"row": &graphql.ArgumentConfig{
 						Type: graphql.Int,
 					},
@@ -84,16 +88,16 @@ var queryTypes = graphql.NewObject(
 				},
 			},
 			"num_node": &graphql.Field{
-				Type:        nodeNum,
+				Type:        graphqlType.NodeNumType,
 				Description: "Get the number of node",
 				Resolve: func(params graphql.ResolveParams) (interface{}, error) {
 					logger.Logger.Println("Resolving: num_node")
 					return dao.ReadNodeNum(params.Args)
 				},
 			},
-			// node_detail DB
-			"node_detail": &graphql.Field{
-				Type:        nodeDetailType,
+			// detail_node DB
+			"detail_node": &graphql.Field{
+				Type:        graphqlType.NodeDetailType,
 				Description: "Get a node_detail by uuid",
 				Args: graphql.FieldConfigArgument{
 					"node_uuid": &graphql.ArgumentConfig{
