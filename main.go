@@ -2,6 +2,7 @@ package main
 
 import (
 <<<<<<< HEAD
+<<<<<<< HEAD
 	"hcc/flute/action/graphql"
 	fluteEnd "hcc/flute/end"
 	fluteInit "hcc/flute/init"
@@ -14,6 +15,13 @@ import (
 	"hcloud-flute/logger"
 	"hcloud-flute/mysql"
 >>>>>>> 50a1eafd315a248c5306efee36c4307de82b59cb
+=======
+	"hcc/flute/checkroot"
+	"hcc/flute/config"
+	"hcc/flute/graphql"
+	"hcc/flute/logger"
+	"hcc/flute/mysql"
+>>>>>>> 4afd3e80898e7f57c1dec709a37df8b08235a21b
 	"net/http"
 	"strconv"
 )
@@ -49,7 +57,7 @@ func main() {
 	}
 	defer logger.FpLog.Close()
 
-	config.ConfigParser()
+	config.Parser()
 
 	err := mysql.Prepare()
 	if err != nil {
@@ -59,8 +67,8 @@ func main() {
 
 	http.Handle("/graphql", graphql.GraphqlHandler)
 
-	logger.Logger.Println("Server is running on port " + strconv.Itoa(int(config.Http.Port)))
-	err = http.ListenAndServe(":" + strconv.Itoa(int(config.Http.Port)), nil)
+	logger.Logger.Println("Server is running on port " + strconv.Itoa(int(config.HTTP.Port)))
+	err = http.ListenAndServe(":"+strconv.Itoa(int(config.HTTP.Port)), nil)
 	if err != nil {
 		logger.Logger.Println("Failed to prepare http server!")
 >>>>>>> 50a1eafd315a248c5306efee36c4307de82b59cb

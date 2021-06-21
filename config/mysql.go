@@ -8,4 +8,5 @@ type mysql struct {
 	Database    string    `goconf:"mysql:database"` // Database : MySQL server database name of module
 }
 
+// Mysql : mysql config structure
 var Mysql mysql

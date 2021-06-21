@@ -1,8 +1,9 @@
 package mysql
 
 import (
-	"hcloud-flute/checkroot"
-	"hcloud-flute/logger"
+	"hcc/flute/checkroot"
+	"hcc/flute/config"
+	"hcc/flute/logger"
 	"testing"
 )
 
@@ -15,6 +16,8 @@ func Test_DB_Prepare(t *testing.T) {
 		t.Fatal("Failed to prepare logger!")
 	}
 	defer logger.FpLog.Close()
+
+	config.Parser()
 
 	err := Prepare()
 	if err != nil {
