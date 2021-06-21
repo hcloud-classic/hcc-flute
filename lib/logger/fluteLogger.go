@@ -31,8 +31,7 @@ func CreateDirIfNotExist(dir string) error {
 	return nil
 }
 
-// Prepare : Prepare logger
-func Prepare() bool {
+func prepare() bool {
 	var err error
 	returnValue := false
 

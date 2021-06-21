@@ -11,6 +11,20 @@ var queryTypes = graphql.NewObject(
 	graphql.ObjectConfig{
 		Name: "Query",
 		Fields: graphql.Fields{
+			// IPMI
+			"power_state_node": &graphql.Field{
+				Type:        graphql.String,
+				Description: "Get the node's power state",
+				Args: graphql.FieldConfigArgument{
+					"uuid": &graphql.ArgumentConfig{
+						Type: graphql.String,
+					},
+				},
+				Resolve: func(params graphql.ResolveParams) (interface{}, error) {
+					logger.Logger.Println("Resolving: power_state_node")
+					return dao.GetPowerStateNode(params.Args)
+				},
+			},
 			// node DB
 			"node": &graphql.Field{
 				Type:        graphqlType.NodeType,

@@ -53,9 +53,9 @@ func BMCIPParser() error {
 
 		var sqlStr string
 		if ipMatched {
-			sqlStr = "update node set active = 1 where bmc_ip = ?"
+			sqlStr = "update node set available = 1 where bmc_ip = ?"
 		} else {
-			sqlStr = "update node set active = 0 where bmc_ip = ?"
+			sqlStr = "update node set available = 0 where bmc_ip = ?"
 		}
 
 		stmt, err := mysql.Db.Prepare(sqlStr)

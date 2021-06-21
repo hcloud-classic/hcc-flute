@@ -4,6 +4,7 @@ import (
 	dbsql "database/sql"
 	"errors"
 	gouuid "github.com/nu7hatch/gouuid"
+	pb "hcc/flute/action/grpc/rpcflute"
 	"hcc/flute/lib/ipmi"
 	"hcc/flute/lib/logger"
 	"hcc/flute/lib/mysql"
@@ -11,6 +12,8 @@ import (
 	"strconv"
 	"time"
 )
+
+var nodeSelectColumns = "uuid, server_uuid, bmc_mac_addr, bmc_ip, pxe_mac_addr, status, cpu_cores, memory, description, active, created_at"
 
 // ReadNode : Get all of infos of a node by UUID from database.
 func ReadNode(args map[string]interface{}) (interface{}, error) {
@@ -29,7 +32,7 @@ func ReadNode(args map[string]interface{}) (interface{}, error) {
 	var createdAt time.Time
 	var active int
 
-	sql := "select * from node where uuid = ?"
+	sql := "select " + nodeSelectColumns + " from node where uuid = ? and available = 1"
 	err = mysql.Db.QueryRow(sql, uuid).Scan(
 		&uuid,
 		&serverUUID,
@@ -62,18 +65,12 @@ func ReadNode(args map[string]interface{}) (interface{}, error) {
 	return node, nil
 }
 
-func checkReadNodeListPageRow(args map[string]interface{}) bool {
-	_, rowOk := args["row"].(int)
-	_, pageOk := args["page"].(int)
-
-	return !rowOk || !pageOk
-}
-
 // ReadNodeList : Get selected infos of nodes from database.
 func ReadNodeList(args map[string]interface{}) (interface{}, error) {
 	var nodes []model.Node
 	var uuid string
 	var createdAt time.Time
+	var noLimit bool
 
 	serverUUID, serverUUIDOk := args["server_uuid"].(string)
 	bmcMacAddr, bmcMacAddrOk := args["bmc_mac_addr"].(string)
@@ -84,13 +81,18 @@ func ReadNodeList(args map[string]interface{}) (interface{}, error) {
 	memory, memoryOk := args["memory"].(int)
 	description, descriptionOk := args["description"].(string)
 	active, activeOk := args["active"].(int)
-	row, _ := args["row"].(int)
-	page, _ := args["page"].(int)
-	if checkReadNodeListPageRow(args) {
-		return nil, errors.New("need row and page arguments")
+	row, rowOk := args["row"].(int)
+	page, pageOk := args["page"].(int)
+
+	if !rowOk && !pageOk {
+		noLimit = true
+	} else if rowOk && pageOk {
+		noLimit = false
+	} else {
+		return nil, errors.New("please insert row and page arguments or leave arguments as empty state")
 	}
 
-	sql := "select * from node where 1=1"
+	sql := "select " + nodeSelectColumns + " from node where available = 1"
 
 	if serverUUIDOk {
 		sql += " and server_uuid = '" + serverUUID + "'"
@@ -120,11 +122,21 @@ func ReadNodeList(args map[string]interface{}) (interface{}, error) {
 		sql += " and active = " + strconv.Itoa(active)
 	}
 
-	sql += " order by created_at desc limit ? offset ?"
+	if !noLimit {
+		sql += " order by created_at desc limit ? offset ?"
+	}
 
 	logger.Logger.Println("list_node sql : ", sql)
 
-	stmt, err := mysql.Db.Query(sql, row, row*(page-1))
+	var stmt *dbsql.Rows
+	var err error
+
+	if noLimit {
+		stmt, err = mysql.Db.Query(sql)
+	} else {
+		stmt, err = mysql.Db.Query(sql, row, row*(page-1))
+	}
+
 	if err != nil {
 		logger.Logger.Println(err)
 		return nil, err
@@ -167,15 +179,15 @@ func ReadNodeAll(args map[string]interface{}) (interface{}, error) {
 	var err error
 
 	if !rowOk && !pageOk {
-		sql = "select * from node order by created_at desc"
+		sql = "select " + nodeSelectColumns + " from node order by created_at desc"
 		if activeOk {
-			sql = "select * from node where active = " + strconv.Itoa(active) + " order by created_at desc"
+			sql = "select " + nodeSelectColumns + " from node where available = 1 and active = " + strconv.Itoa(active) + " order by created_at desc"
 		}
 		stmt, err = mysql.Db.Query(sql)
 	} else if rowOk && pageOk {
-		sql = "select * from node order by created_at desc limit ? offset ?"
+		sql = "select " + nodeSelectColumns + " from node order by created_at desc limit ? offset ?"
 		if activeOk {
-			sql = "select * from node where active = " + strconv.Itoa(active) +" order by created_at desc limit ? offset ?"
+			sql = "select " + nodeSelectColumns + " from node where available = 1 and active = " + strconv.Itoa(active) + " order by created_at desc limit ? offset ?"
 		}
 		stmt, err = mysql.Db.Query(sql, row, row*(page-1))
 	} else {
@@ -207,7 +219,7 @@ func ReadNodeNum(args map[string]interface{}) (interface{}, error) {
 	var nodeNum model.NodeNum
 	var nodeNr int
 
-	sql := "select count(*) from node"
+	sql := "select count(*) from node where available = 1"
 	err := mysql.Db.QueryRow(sql).Scan(&nodeNr)
 	if err != nil {
 		logger.Logger.Println(err)
@@ -241,7 +253,7 @@ func CreateNode(args map[string]interface{}) (interface{}, error) {
 		Active:      args["active"].(int),
 	}
 
-	sql := "insert into node(uuid, bmc_mac_addr, bmc_ip, pxe_mac_addr, status, cpu_cores, memory, description, active, created_at) values (?, ?, ?, ?, ?, ?, ?, ?, ?, now())"
+	sql := "insert into node(uuid, bmc_mac_addr, bmc_ip, pxe_mac_addr, status, cpu_cores, memory, description, active, available, created_at) values (?, ?, ?, ?, ?, ?, ?, ?, ?, 0, now())"
 	stmt, err := mysql.Db.Prepare(sql)
 	if err != nil {
 		logger.Logger.Println(err)
@@ -250,7 +262,7 @@ func CreateNode(args map[string]interface{}) (interface{}, error) {
 	defer func() {
 		_ = stmt.Close()
 	}()
-	result, err := stmt.Exec(node.UUID, node.ServerUUID, node.BmcMacAddr, node.BmcIP, node.PXEMacAddr, node.Status, node.CPUCores, node.Memory, node.Description, node.Active)
+	result, err := stmt.Exec(node.UUID, node.BmcMacAddr, node.BmcIP, node.PXEMacAddr, node.Status, node.CPUCores, node.Memory, node.Description, node.Active)
 	if err != nil {
 		logger.Logger.Println(err)
 		return nil, err
@@ -260,45 +272,88 @@ func CreateNode(args map[string]interface{}) (interface{}, error) {
 	return node, nil
 }
 
-func OnNode(args map[string]interface{}) (interface{}, error) {
-	uuid, uuidOk := args["uuid"].(string)
-
-	if uuidOk {
-		var bmcIP string
-
-		sql := "select bmc_ip from node where uuid = ?"
-		err := mysql.Db.QueryRow(sql, uuid).Scan(&bmcIP)
-		if err != nil {
-			logger.Logger.Println(err)
-			return nil, err
-		}
-
-		serialNo, err := ipmi.GetSerialNo(bmcIP)
-		if err != nil {
-			logger.Logger.Println(err)
-			return nil, err
-		}
-
-		state, _ := ipmi.GetPowerState(bmcIP, serialNo)
-		if state == "On" {
-			return "Already turned on", nil
-		}
-
-		result, err := ipmi.ChangePowerState(bmcIP, serialNo, "On")
-		if err != nil {
-			logger.Logger.Println(err)
-			return nil, err
-		}
-
-		return result, nil
+func NodePowerControl(in *pb.ReqNodePowerControl) ([]string, error) {
+	nodes := in.GetNodes()
+	if nodes == nil {
+		return nil, errors.New("need some Nodes")
 	}
 
-	return nil, errors.New("need uuid argument")
+	var results []string
+
+	var changeState string
+	switch in.GetPowerState() {
+	case pb.ReqNodePowerControl_ON:
+		changeState = "On"
+		break
+	case pb.ReqNodePowerControl_OFF:
+		changeState = "GracefulShutdown"
+		break
+	case pb.ReqNodePowerControl_FORCE_OFF:
+		changeState = "ForceOff"
+		break
+	case pb.ReqNodePowerControl_FORCE_RESTART:
+		changeState = "ForceRestart"
+		break
+	}
+
+	for _, node := range nodes {
+		if len(node.UUID) == 0 {
+			continue
+		}
+
+		var bmcIP string
+		var result string
+		var serialNo string
+
+		sql := "select bmc_ip from node where uuid = ?"
+		err := mysql.Db.QueryRow(sql, node.UUID).Scan(&bmcIP)
+		if err != nil {
+			result = err.Error()
+			logger.Logger.Println("NodePowerControl(): "+err.Error())
+			goto APPEND
+		}
+
+		serialNo, err = ipmi.GetSerialNo(bmcIP)
+		if err != nil {
+			result = "["+bmcIP+"]: "+err.Error()
+			logger.Logger.Println("NodePowerControl(): "+result)
+			goto APPEND
+		}
+
+		if changeState == "On" {
+			state, _ := ipmi.GetPowerState(bmcIP, serialNo)
+			if state == "On" {
+				result = "["+bmcIP+"]: Already turned on"
+				logger.Logger.Println("NodePowerControl(): "+result)
+				goto APPEND
+			}
+		} else if changeState == "GracefulShutdown" ||
+			changeState == "ForceOff" {
+			state, _ := ipmi.GetPowerState(bmcIP, serialNo)
+			if state == "Off" {
+				result = "["+bmcIP+"]: Already turned off"
+				logger.Logger.Println("NodePowerControl(): "+result)
+				goto APPEND
+			}
+		}
+
+		result, err = ipmi.ChangePowerState(bmcIP, serialNo, changeState)
+		if err != nil {
+			result = "["+bmcIP+"]: "+err.Error()
+			logger.Logger.Println("NodePowerControl(): "+result)
+			goto APPEND
+		}
+		result = "["+bmcIP+"]: "+result
+
+	APPEND:
+		results = append(results, result)
+	}
+
+	return results, nil
 }
 
-func OffNode(args map[string]interface{}) (interface{}, error) {
+func GetPowerStateNode(args map[string]interface{}) (interface{}, error) {
 	uuid, uuidOk := args["uuid"].(string)
-	forceOff, _ := args["force_off"].(bool)
 
 	if uuidOk {
 		var bmcIP string
@@ -316,16 +371,7 @@ func OffNode(args map[string]interface{}) (interface{}, error) {
 			return nil, err
 		}
 
-		state, _ := ipmi.GetPowerState(bmcIP, serialNo)
-		if state == "Off" {
-			return "Already turned off", nil
-		}
-
-		changeState := "GracefulShutdown"
-		if forceOff {
-			changeState = "ForceOff"
-		}
-		result, err := ipmi.ChangePowerState(bmcIP, serialNo, changeState)
+		result, err := ipmi.GetPowerState(bmcIP, serialNo)
 		if err != nil {
 			logger.Logger.Println(err)
 			return nil, err
@@ -334,7 +380,7 @@ func OffNode(args map[string]interface{}) (interface{}, error) {
 		return result, nil
 	}
 
-	return nil, errors.New("need uuid argument")
+	return nil, errors.New("need a uuid argument")
 }
 
 func checkUpdateNodeArgs(args map[string]interface{}) bool {

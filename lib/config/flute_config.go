@@ -6,7 +6,7 @@ var configLocation = "/etc/hcc/flute/flute.conf"
 
 type fluteConfig struct {
 	MysqlConfig *goconf.Section
-	HTTPConfig  *goconf.Section
+	GrpcConfig  *goconf.Section
 	IpmiConfig  *goconf.Section
 }
 
