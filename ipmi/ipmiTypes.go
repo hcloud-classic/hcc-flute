@@ -162,7 +162,7 @@ type ipmiResetType struct {
 	ResetType string `json:"ResetType"`
 }
 
-type ipmiBMCNIC struct {
+type ipmiNIC struct {
 	OdataType    string `json:"@odata.type"`
 	OdataContext string `json:"@odata.context"`
 	OdataID      string `json:"@odata.id"`

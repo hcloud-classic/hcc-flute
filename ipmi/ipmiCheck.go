@@ -11,6 +11,7 @@ import (
 
 var checkAllLocked = false
 var checkStatusLocked = false
+var checkNodesDetailLocked = false
 
 func delayMillisecond(n time.Duration) {
 	time.Sleep(n * time.Millisecond)
@@ -32,13 +33,20 @@ func checkStatusUnlock() {
 	checkStatusLocked = false
 }
 
-// UpdateAllNodes : Get all infos from IPMI nodes and update database
+func checkNodesDetailLock() {
+	checkNodesDetailLocked = true
+}
+
+func checkNodesDetailUnlock() {
+	checkNodesDetailLocked = false
+}
+
+// UpdateAllNodes : Get all infos from IPMI nodes and update database (except power state)
 func UpdateAllNodes() (interface{}, error) {
 	var nodes []types.Node
-	var uuid string
-	var ipmiIP string
+	var bmcIP string
 
-	sql := "select uuid, ipmi_ip from node"
+	sql := "select bmc_ip from node where active = 1"
 	stmt, err := mysql.Db.Query(sql)
 	if err != nil {
 		logger.Logger.Println(err)
@@ -49,65 +57,71 @@ func UpdateAllNodes() (interface{}, error) {
 	}()
 
 	for stmt.Next() {
-		err := stmt.Scan(&uuid, &ipmiIP)
+		err := stmt.Scan(&bmcIP)
 		if err != nil {
 			logger.Logger.Println(err)
 			return nil, nil
 		}
 
-		serialNo, err := GetSerialNo(ipmiIP)
+		serialNo, err := GetSerialNo(bmcIP)
 		if err != nil {
 			logger.Logger.Println(err)
 			return nil, nil
 		}
 
-		mac, err := GetBMCNICMac(ipmiIP)
+		uuid, err := GetUUID(bmcIP, serialNo)
 		if err != nil {
 			logger.Logger.Println(err)
 			return nil, nil
 		}
 
-		powerState, err := GetPowerState(ipmiIP, serialNo)
+		bmcMAC, err := GetNICMac(bmcIP, int(config.Ipmi.BaseboardNICNoBMC), true)
 		if err != nil {
 			logger.Logger.Println(err)
 			return nil, nil
 		}
 
-		processors, err := GetProcessors(ipmiIP, serialNo)
+		pxeMAC, err := GetNICMac(bmcIP, int(config.Ipmi.BaseboardNICNoPXE), false)
 		if err != nil {
 			logger.Logger.Println(err)
 			return nil, nil
 		}
 
-		cores, err := GetProcessorsCores(ipmiIP, serialNo, processors)
+		processors, err := GetProcessors(bmcIP, serialNo)
 		if err != nil {
 			logger.Logger.Println(err)
 			return nil, nil
 		}
 
-		memory, err := GetTotalSystemMemory(ipmiIP, serialNo)
+		cpuCores, err := GetProcessorsCores(bmcIP, serialNo, processors)
+		if err != nil {
+			logger.Logger.Println(err)
+			return nil, nil
+		}
+
+		memory, err := GetTotalSystemMemory(bmcIP, serialNo)
 		if err != nil {
 			logger.Logger.Println(err)
 			return nil, nil
 		}
 
 		node := types.Node{
-			UUID:    uuid,
-			MacAddr: mac,
-			IpmiIP:  ipmiIP,
-			Status:  powerState,
-			CPU:     cores,
-			Memory:  memory,
+			UUID:       uuid,
+			BmcMacAddr: bmcMAC,
+			BmcIP:      bmcIP,
+			PXEMacAddr: pxeMAC,
+			CPUCores:   cpuCores,
+			Memory:     memory,
 		}
 
-		sql := "update node set mac_addr = ?, status = ?, cpu = ?, memory = ? where uuid = ?"
+		sql := "update node set bmc_mac_addr = ?, pxe_mac_addr = ?, cpu_cores = ?, memory = ? where uuid = ?"
 		stmt, err := mysql.Db.Prepare(sql)
 		if err != nil {
 			logger.Logger.Println(err.Error())
 			return nil, nil
 		}
 
-		result, err2 := stmt.Exec(node.MacAddr, node.Status, node.CPU, node.Memory, node.UUID)
+		result, err2 := stmt.Exec(node.BmcMacAddr, node.PXEMacAddr, node.CPUCores, node.Memory, node.UUID)
 		if err2 != nil {
 			logger.Logger.Println(err2)
 			return nil, nil
@@ -127,9 +141,9 @@ func UpdateAllNodes() (interface{}, error) {
 func UpdateStatusNodes() (interface{}, error) {
 	var nodes []types.Node
 	var uuid string
-	var ipmiIP string
+	var bmcIP string
 
-	sql := "select uuid, ipmi_ip from node"
+	sql := "select uuid, bmc_ip from node where active = 1"
 	stmt, err := mysql.Db.Query(sql)
 	if err != nil {
 		logger.Logger.Println(err)
@@ -140,19 +154,19 @@ func UpdateStatusNodes() (interface{}, error) {
 	}()
 
 	for stmt.Next() {
-		err := stmt.Scan(&uuid, &ipmiIP)
+		err := stmt.Scan(&uuid, &bmcIP)
 		if err != nil {
 			logger.Logger.Println(err)
 			return nil, nil
 		}
 
-		serialNo, err := GetSerialNo(ipmiIP)
+		serialNo, err := GetSerialNo(bmcIP)
 		if err != nil {
 			logger.Logger.Println(err)
 			return nil, nil
 		}
 
-		powerState, err := GetPowerState(ipmiIP, serialNo)
+		powerState, err := GetPowerState(bmcIP, serialNo)
 		if err != nil {
 			logger.Logger.Println(err)
 			return nil, nil
@@ -186,6 +200,110 @@ func UpdateStatusNodes() (interface{}, error) {
 	return nodes, nil
 }
 
+// UpdateNodesDetail : Get detail infos from IPMI nodes and update database
+func UpdateNodesDetail() (interface{}, error) {
+	var nodedetails []types.NodeDetail
+	var uuid string
+	var bmcIP string
+
+	sql := "select uuid, bmc_ip from node where active = 1"
+	stmt, err := mysql.Db.Query(sql)
+	if err != nil {
+		logger.Logger.Println(err)
+		return nil, nil
+	}
+	defer func() {
+		_ = stmt.Close()
+	}()
+
+	for stmt.Next() {
+		err := stmt.Scan(&uuid, &bmcIP)
+		if err != nil {
+			logger.Logger.Println(err)
+			return nil, nil
+		}
+
+		serialNo, err := GetSerialNo(bmcIP)
+		if err != nil {
+			logger.Logger.Println(err)
+			return nil, nil
+		}
+
+		model, err := GetProcessorModel(bmcIP, serialNo)
+		if err != nil {
+			logger.Logger.Println(err)
+			return nil, nil
+		}
+
+		processors, err := GetProcessors(bmcIP, serialNo)
+		if err != nil {
+			logger.Logger.Println(err)
+			return nil, nil
+		}
+
+		threads, err := GetProcessorsThreads(bmcIP, serialNo, processors)
+		if err != nil {
+			logger.Logger.Println(err)
+			return nil, nil
+		}
+
+		nodedetail := types.NodeDetail{
+			NodeUUID:      uuid,
+			CPUModel:      model,
+			CPUProcessors: processors,
+			CPUThreads:    threads,
+		}
+
+		sql := "select node_uuid from node_detail where node_uuid = ?"
+		err = mysql.Db.QueryRow(sql, uuid).Scan(&uuid)
+		logger.Logger.Println(err)
+		if err != nil {
+			logger.Logger.Println("Inserting not existing new node_detail")
+
+			sql = "insert into node_detail(node_uuid, cpu_model, cpu_processors, cpu_threads) values (?, ?, ?, ?)"
+			stmt, err := mysql.Db.Prepare(sql)
+			if err != nil {
+				logger.Logger.Println(err.Error())
+				return nil, nil
+			}
+			defer func() {
+				_ = stmt.Close()
+			}()
+			result, err2 := stmt.Exec(nodedetail.NodeUUID, nodedetail.CPUModel, nodedetail.CPUProcessors, nodedetail.CPUThreads)
+			if err2 != nil {
+				logger.Logger.Println(err2)
+				return nil, nil
+			}
+			logger.Logger.Println(result.LastInsertId())
+		} else {
+			sql = "update node_detail set cpu_model = ?, cpu_processors = ?, cpu_threads = ? where node_uuid = ?"
+			stmt, err := mysql.Db.Prepare(sql)
+			if err != nil {
+				logger.Logger.Println(err.Error())
+				return nil, nil
+			}
+
+			result, err2 := stmt.Exec(nodedetail.CPUModel, nodedetail.CPUProcessors, nodedetail.CPUThreads, nodedetail.NodeUUID)
+			if err2 != nil {
+				logger.Logger.Println(err2)
+				return nil, nil
+			}
+			_ = stmt.Close()
+
+			if config.Ipmi.Debug == "on" {
+				logger.Logger.Println(result.LastInsertId())
+			}
+		}
+		defer func() {
+			_ = stmt.Close()
+		}()
+
+		nodedetails = append(nodedetails, nodedetail)
+	}
+
+	return nodedetails, nil
+}
+
 func queueCheckAll() {
 	go func() {
 		if config.Ipmi.Debug == "on" {
@@ -203,6 +321,16 @@ func queueCheckStatus() {
 		}
 		delayMillisecond(time.Duration(config.Ipmi.CheckStatusIntervalMs))
 		CheckStatus()
+	}()
+}
+
+func queueNodesDetail() {
+	go func() {
+		if config.Ipmi.Debug == "on" {
+			logger.Logger.Println("queueNodesDetail(): Rerun NodesDetail() after " + strconv.Itoa(int(config.Ipmi.CheckNodesDetailIntervalMs)) + "ms")
+		}
+		delayMillisecond(time.Duration(config.Ipmi.CheckNodesDetailIntervalMs))
+		CheckNodesDetail()
 	}()
 }
 
@@ -248,4 +376,26 @@ func CheckStatus() {
 	}()
 
 	queueCheckStatus()
+}
+
+// CheckNodesDetail : Check detail infos of IPMI nodes by 'check_nodes_detail_interval_ms' config option
+func CheckNodesDetail() {
+	if checkNodesDetailLocked {
+		if config.Ipmi.Debug == "on" {
+			logger.Logger.Println("NodesDetail(): Locked")
+		}
+		queueNodesDetail()
+		return
+	}
+
+	go func() {
+		checkNodesDetailLock()
+		if config.Ipmi.Debug == "on" {
+			logger.Logger.Println("NodesDetail(): Running UpdateNodesDetail()")
+		}
+		_, _ = UpdateNodesDetail()
+		checkNodesDetailUnlock()
+	}()
+
+	queueNodesDetail()
 }
