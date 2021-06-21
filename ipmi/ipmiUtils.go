@@ -1,11 +1,11 @@
 package ipmi
 
 import (
-	"hcc/flute/logger"
 	"bytes"
 	"crypto/tls"
 	"encoding/json"
 	"errors"
+	"hcc/flute/logger"
 	"io/ioutil"
 	"net/http"
 	"strconv"
@@ -16,7 +16,7 @@ func GetSerialNo(ipmiIP string) (string, error) {
 	http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
 
 	client := &http.Client{}
-	req, err := http.NewRequest("GET", "https://" +ipmiIP+ "/redfish/v1/Systems/", nil)
+	req, err := http.NewRequest("GET", "https://"+ipmiIP+"/redfish/v1/Systems/", nil)
 	req.SetBasicAuth(username, password)
 	resp, err := client.Do(req)
 
@@ -53,7 +53,7 @@ func GetUUID(ipmiIP string, serialNo string) (string, error) {
 	http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
 
 	client := &http.Client{}
-	req, err := http.NewRequest("GET", "https://" + ipmiIP + "/redfish/v1/Systems/" + serialNo, nil)
+	req, err := http.NewRequest("GET", "https://"+ipmiIP+"/redfish/v1/Systems/"+serialNo, nil)
 	req.SetBasicAuth(username, password)
 	resp, err := client.Do(req)
 
@@ -90,7 +90,7 @@ func GetPowerState(ipmiIP string, serialNo string) (string, error) {
 	http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
 
 	client := &http.Client{}
-	req, err := http.NewRequest("GET", "https://" + ipmiIP + "/redfish/v1/Systems/" + serialNo, nil)
+	req, err := http.NewRequest("GET", "https://"+ipmiIP+"/redfish/v1/Systems/"+serialNo, nil)
 	req.SetBasicAuth(username, password)
 	resp, err := client.Do(req)
 
@@ -127,7 +127,7 @@ func GetProcessors(ipmiIP string, serialNo string) (int, error) {
 	http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
 
 	client := &http.Client{}
-	req, err := http.NewRequest("GET", "https://" + ipmiIP + "/redfish/v1/Systems/" + serialNo + "/Processors", nil)
+	req, err := http.NewRequest("GET", "https://"+ipmiIP+"/redfish/v1/Systems/"+serialNo+"/Processors", nil)
 	req.SetBasicAuth(username, password)
 	resp, err := client.Do(req)
 
@@ -168,7 +168,7 @@ func GetProcessorsCores(ipmiIP string, serialNo string, processors int) (int, er
 	coreSum := 0
 
 	for i := 1; i <= processors; i++ {
-		req, err := http.NewRequest("GET", "https://" + ipmiIP + "/redfish/v1/Systems/" + serialNo + "/Processors/CPU" + strconv.Itoa(i), nil)
+		req, err := http.NewRequest("GET", "https://"+ipmiIP+"/redfish/v1/Systems/"+serialNo+"/Processors/CPU"+strconv.Itoa(i), nil)
 		req.SetBasicAuth(username, password)
 		resp, err := client.Do(req)
 
@@ -211,7 +211,7 @@ func GetProcessorsThreads(ipmiIP string, serialNo string, processors int) (int, 
 	threadSum := 0
 
 	for i := 1; i <= processors; i++ {
-		req, err := http.NewRequest("GET", "https://" + ipmiIP + "/redfish/v1/Systems/" + serialNo + "/Processors/CPU" + strconv.Itoa(i), nil)
+		req, err := http.NewRequest("GET", "https://"+ipmiIP+"/redfish/v1/Systems/"+serialNo+"/Processors/CPU"+strconv.Itoa(i), nil)
 		req.SetBasicAuth(username, password)
 		resp, err := client.Do(req)
 
@@ -251,7 +251,7 @@ func GetTotalSystemMemory(ipmiIP string, serialNo string) (int, error) {
 	http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
 
 	client := &http.Client{}
-	req, err := http.NewRequest("GET", "https://" + ipmiIP + "/redfish/v1/Systems/" + serialNo, nil)
+	req, err := http.NewRequest("GET", "https://"+ipmiIP+"/redfish/v1/Systems/"+serialNo, nil)
 	req.SetBasicAuth(username, password)
 	resp, err := client.Do(req)
 
@@ -347,7 +347,7 @@ func ChangePowerState(ipmiIP string, serialNo string, state string) (string, err
 		logger.Logger.Fatal(err)
 	}
 
-	req, err := http.NewRequest("POST", "https://" + ipmiIP + "/redfish/v1/Systems/" + serialNo + "/Actions/ComputerSystem.Reset", bytes.NewBuffer(jsonBytes))
+	req, err := http.NewRequest("POST", "https://"+ipmiIP+"/redfish/v1/Systems/"+serialNo+"/Actions/ComputerSystem.Reset", bytes.NewBuffer(jsonBytes))
 	req.SetBasicAuth(username, password)
 
 	resp, err := client.Do(req)
@@ -384,7 +384,7 @@ func GetBMCNICMac(ipmiIP string) (string, error) {
 	http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
 
 	client := &http.Client{}
-	req, err := http.NewRequest("GET", "https://" +ipmiIP+ "/redfish/v1/Managers/BMC/EthernetInterfaces/3", nil)
+	req, err := http.NewRequest("GET", "https://"+ipmiIP+"/redfish/v1/Managers/BMC/EthernetInterfaces/3", nil)
 	req.SetBasicAuth(username, password)
 	resp, err := client.Do(req)
 

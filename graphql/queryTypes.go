@@ -1,10 +1,10 @@
 package graphql
 
 import (
+	"github.com/graphql-go/graphql"
 	"hcc/flute/logger"
 	"hcc/flute/mysql"
 	"hcc/flute/types"
-	"github.com/graphql-go/graphql"
 	"time"
 )
 

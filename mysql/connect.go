@@ -1,10 +1,10 @@
 package mysql
 
 import (
-	"hcc/flute/config"
-	"hcc/flute/logger"
 	"database/sql"
 	_ "github.com/go-sql-driver/mysql" // Needed for connect mysql
+	"hcc/flute/config"
+	"hcc/flute/logger"
 	"strconv"
 )
 
@@ -15,9 +15,9 @@ var Db *sql.DB
 func Prepare() error {
 	var err error
 	Db, err = sql.Open("mysql",
-		config.Mysql.ID + ":" + config.Mysql.Password + "@tcp(" +
-		config.Mysql.Address + ":" + strconv.Itoa(int(config.Mysql.Port)) + ")/" +
-		config.Mysql.Database + "?parseTime=true")
+		config.Mysql.ID+":"+config.Mysql.Password+"@tcp("+
+			config.Mysql.Address+":"+strconv.Itoa(int(config.Mysql.Port))+")/"+
+			config.Mysql.Database+"?parseTime=true")
 	if err != nil {
 		logger.Logger.Println(err)
 		return err

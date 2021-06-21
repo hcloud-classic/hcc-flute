@@ -2,7 +2,7 @@ package types
 
 // Ipmi : Struct of ipmi
 type Ipmi struct {
-	UUID      string `json:"uuid"`
+	UUID string `json:"uuid"`
 }
 
 // Ipmis : Array struct of ipmis
