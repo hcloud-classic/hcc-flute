@@ -56,4 +56,20 @@ func Parser() {
 	if err != nil {
 		logger.Logger.Panicln(err)
 	}
+
+	config.IpmiConfig = conf.Get("ipmi")
+	if config.IpmiConfig == nil {
+		logger.Logger.Panicln("no ipmi section")
+	}
+
+	Ipmi = ipmi{}
+	Ipmi.Username, err = config.IpmiConfig.String("username")
+	if err != nil {
+		logger.Logger.Panicln(err)
+	}
+
+	Ipmi.Password, err = config.IpmiConfig.String("password")
+	if err != nil {
+		logger.Logger.Panicln(err)
+	}
 }
