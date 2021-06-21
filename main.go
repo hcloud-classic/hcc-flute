@@ -19,6 +19,7 @@ import (
 	"hcc/flute/checkroot"
 	"hcc/flute/config"
 	"hcc/flute/graphql"
+	"hcc/flute/ipmi"
 	"hcc/flute/logger"
 	"hcc/flute/mysql"
 >>>>>>> 4afd3e80898e7f57c1dec709a37df8b08235a21b
@@ -68,6 +69,11 @@ func main() {
 	defer func() {
 		_ = mysql.Db.Close()
 	}()
+
+	logger.Logger.Println("Starting ipmi.CheckAll(). Interval is " + strconv.Itoa(int(config.Ipmi.CheckAllIntervalMs)) + "ms")
+	ipmi.CheckAll()
+	logger.Logger.Println("Starting ipmi.CheckStatus(). Interval is " + strconv.Itoa(int(config.Ipmi.CheckStatusIntervalMs)) + "ms")
+	ipmi.CheckStatus()
 
 	http.Handle("/graphql", graphql.Handler)
 

@@ -13,9 +13,9 @@ var Schema, _ = graphql.NewSchema(
 	},
 )
 
-// GraphqlHandler : GraphQL schema handler
+// Handler : GraphQL schema handler
 //
-// Handler config options
+// Config options of handler
 //
 // Schema : GraphQL schema definition variable name
 //
