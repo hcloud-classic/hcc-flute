@@ -1,103 +1,118 @@
 package dao
 
 import (
+	pb "hcc/flute/action/grpc/pb/rpcflute"
+	hccerr "hcc/flute/lib/errors"
 	"hcc/flute/lib/logger"
 	"hcc/flute/lib/mysql"
-	"hcc/flute/model"
+	"strings"
 )
 
-// ReadNodeDetail - cgs
-func ReadNodeDetail(args map[string]interface{}) (interface{}, error) {
-	var nodeDetail model.NodeDetail
-	var err error
+// ReadNodeDetail : Get detail infos of the node
+func ReadNodeDetail(nodeUUID string) (*pb.NodeDetail, uint64, string) {
+	var nodeDetail pb.NodeDetail
 
-	nodeUUID := args["node_uuid"].(string)
 	var cpuModel string
 	var cpuProcessors int
 	var cpuThreads int
 
 	sql := "select * from node_detail where node_uuid = ?"
-	err = mysql.Db.QueryRow(sql, nodeUUID).Scan(
+	err := mysql.Db.QueryRow(sql, nodeUUID).Scan(
 		&nodeUUID,
 		&cpuModel,
 		&cpuProcessors,
 		&cpuThreads)
 	if err != nil {
-		logger.Logger.Println(err)
-		return nil, err
+		errStr := "ReadNodeDetail(): " + err.Error()
+		logger.Logger.Println(errStr)
+		if strings.Contains(err.Error(), "no rows in result set") {
+			return nil, hccerr.FluteSQLNoResult, errStr
+		}
+		return nil, hccerr.FluteSQLOperationFail, errStr
 	}
 
 	nodeDetail.NodeUUID = nodeUUID
 	nodeDetail.CPUModel = cpuModel
-	nodeDetail.CPUProcessors = cpuProcessors
-	nodeDetail.CPUThreads = cpuThreads
+	nodeDetail.CPUProcessors = int32(cpuProcessors)
+	nodeDetail.CPUThreads = int32(cpuThreads)
 
-	return nodeDetail, nil
+	return &nodeDetail, 0, ""
 }
 
-// CreateNodeDetail - cgs
-func CreateNodeDetail(args map[string]interface{}) (interface{}, error) {
-	var err error
-
-	nodeUUID, nodeUUIDOk := args["node_uuid"].(string)
-	if !nodeUUIDOk {
-		return nil, err
+// CreateNodeDetail : Create detail infos of the node
+func CreateNodeDetail(in *pb.ReqCreateNodeDetail) (*pb.NodeDetail, uint64, string) {
+	reqNodeDetail := in.GetNodeDetail()
+	if reqNodeDetail == nil {
+		return nil, hccerr.FluteGrpcRequestError, "CreateNodeDetail(): nodeDetail is nil"
 	}
 
-	nodeDetail := model.NodeDetail{
+	nodeUUID := reqNodeDetail.GetNodeUUID()
+	nodeUUIDOk := len(nodeUUID) != 0
+	if !nodeUUIDOk {
+		return nil, hccerr.FluteGrpcRequestError, "CreateNodeDetail(): need a nodeUUID argument"
+	}
+
+	nodeDetail := pb.NodeDetail{
 		NodeUUID:      nodeUUID,
-		CPUModel:      args["cpu_model"].(string),
-		CPUProcessors: args["cpu_processors"].(int),
-		CPUThreads:    args["cpu_threads"].(int),
+		CPUModel:      reqNodeDetail.CPUModel,
+		CPUProcessors: reqNodeDetail.CPUProcessors,
+		CPUThreads:    reqNodeDetail.CPUThreads,
 	}
 
 	sql := "insert into node_detail(node_uuid, cpu_model, cpu_processors, cpu_threads) values (?, ?, ?, ?)"
 	stmt, err := mysql.Db.Prepare(sql)
 	if err != nil {
-		logger.Logger.Println(err.Error())
-		return nil, err
+		errStr := "CreateNodeDetail(): " + err.Error()
+		logger.Logger.Println(errStr)
+		return nil, hccerr.FluteSQLOperationFail, errStr
 	}
 
 	defer func() {
 		_ = stmt.Close()
 	}()
 
-	result, err := stmt.Exec(nodeDetail.NodeUUID, nodeDetail.CPUModel, nodeDetail.CPUProcessors, nodeDetail.CPUThreads)
+	_, err = stmt.Exec(nodeDetail.NodeUUID, nodeDetail.CPUModel, nodeDetail.CPUProcessors, nodeDetail.CPUThreads)
 	if err != nil {
-		logger.Logger.Println(err)
-		return nil, err
+		errStr := "CreateNodeDetail(): " + err.Error()
+		logger.Logger.Println(errStr)
+		return nil, hccerr.FluteSQLOperationFail, errStr
 	}
-	logger.Logger.Println(result.LastInsertId())
 
-	return nodeDetail, nil
+	return &nodeDetail, 0, ""
 }
 
-// DeleteNodeDetail - cgs
-func DeleteNodeDetail(args map[string]interface{}) (interface{}, error) {
-	var err error
-
-	requestedUUID, ok := args["node_uuid"].(string)
-	if ok {
-		sql := "delete from node_detail where node_uuid = ?"
-		stmt, err := mysql.Db.Prepare(sql)
-		if err != nil {
-			logger.Logger.Println(err.Error())
-			return nil, err
-		}
-
-		defer func() {
-			_ = stmt.Close()
-		}()
-
-		result, err2 := stmt.Exec(requestedUUID)
-		if err2 != nil {
-			logger.Logger.Println(err2)
-			return nil, err
-		}
-		logger.Logger.Println(result.RowsAffected())
-
-		return requestedUUID, nil
+// DeleteNodeDetail : Delete detail infos of the node
+func DeleteNodeDetail(in *pb.ReqDeleteNodeDetail) (*pb.NodeDetail, uint64, string) {
+	nodeUUID := in.GetNodeUUID()
+	nodeUUIDOk := len(nodeUUID) != 0
+	if !nodeUUIDOk {
+		return nil, hccerr.FluteGrpcRequestError, "DeleteNodeDetail(): need a nodeUUID argument"
 	}
 
-	return requestedUUID, err
+	nodeDetail, errCode, errText := ReadNodeDetail(nodeUUID)
+	if errCode != 0 {
+		return nil, hccerr.FluteGrpcRequestError, "DeleteNodeDetail(): " + errText
+	}
+
+	sql := "delete from node_detail where node_uuid = ?"
+	stmt, err := mysql.Db.Prepare(sql)
+	if err != nil {
+		errStr := "DeleteNodeDetail(): " + err.Error()
+		logger.Logger.Println(errStr)
+		return nil, hccerr.FluteSQLOperationFail, errStr
+	}
+
+	defer func() {
+		_ = stmt.Close()
+	}()
+
+	result, err2 := stmt.Exec(nodeUUID)
+	if err2 != nil {
+		errStr := "DeleteNodeDetail(): " + err2.Error()
+		logger.Logger.Println(errStr)
+		return nil, hccerr.FluteSQLOperationFail, errStr
+	}
+	logger.Logger.Println(result.RowsAffected())
+
+	return nodeDetail, 0, ""
 }

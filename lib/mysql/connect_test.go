@@ -2,27 +2,25 @@ package mysql
 
 import (
 	"hcc/flute/lib/config"
+	"hcc/flute/lib/errors"
 	"hcc/flute/lib/logger"
-	"hcc/flute/lib/syscheck"
 	"testing"
 )
 
 func Test_DB_Prepare(t *testing.T) {
-	err := syscheck.CheckRoot()
+	err := logger.Init()
 	if err != nil {
-		t.Fatal("Failed to get root permission!")
+		errors.SetErrLogger(logger.Logger)
+		errors.NewHccError(errors.FluteInternalInitFail, "logger.Init(): "+err.Error()).Fatal()
 	}
-
-	if !logger.Prepare() {
-		t.Fatal("Failed to prepare logger!")
-	}
+	errors.SetErrLogger(logger.Logger)
 	defer func() {
 		_ = logger.FpLog.Close()
 	}()
 
-	config.Parser()
+	config.Init()
 
-	err = Prepare()
+	err = Init()
 	if err != nil {
 		t.Fatal(err)
 	}

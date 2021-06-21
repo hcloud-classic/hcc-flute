@@ -1,51 +1,64 @@
 package main
 
 import (
-	"hcc/flute/driver/grpcsrv"
+	"fmt"
+	"hcc/flute/action/grpc/server"
 	"hcc/flute/lib/config"
+	"hcc/flute/lib/errors"
 	"hcc/flute/lib/ipmi"
 	"hcc/flute/lib/logger"
 	"hcc/flute/lib/mysql"
-	"hcc/flute/lib/syscheck"
+	"os"
+	"os/signal"
 	"strconv"
+	"syscall"
 )
 
 func init() {
-	err := syscheck.CheckRoot()
+	err := logger.Init()
 	if err != nil {
-		panic(err)
+		errors.SetErrLogger(logger.Logger)
+		errors.NewHccError(errors.FluteInternalInitFail, "logger.Init(): "+err.Error()).Fatal()
 	}
+	errors.SetErrLogger(logger.Logger)
 
-	err = logger.Init()
-	if err != nil {
-		panic(err)
-	}
-
-	config.Parser()
+	config.Init()
 
 	err = mysql.Init()
 	if err != nil {
-		panic(err)
+		errors.NewHccError(errors.FluteInternalInitFail, "mysql.Init(): "+err.Error()).Fatal()
 	}
 
 	err = ipmi.BMCIPParser()
 	if err != nil {
-		panic(err)
+		errors.NewHccError(errors.FluteInternalInitFail, "ipmi.BMCIPParser(): "+err.Error()).Fatal()
 	}
 
-	logger.Logger.Println("Starting ipmi.CheckAll(). Interval is " + strconv.Itoa(int(config.Ipmi.CheckAllIntervalMs)) + "ms")
-	ipmi.CheckAll()
-	logger.Logger.Println("Starting ipmi.CheckStatus(). Interval is " + strconv.Itoa(int(config.Ipmi.CheckStatusIntervalMs)) + "ms")
-	ipmi.CheckStatus()
-	logger.Logger.Println("Starting ipmi.CheckNodesDetail(). Interval is " + strconv.Itoa(int(config.Ipmi.CheckNodesDetailIntervalMs)) + "ms")
-	ipmi.CheckNodesDetail()
+	logger.Logger.Println("Starting ipmi.CheckNodeAll(). Interval is " + strconv.Itoa(int(config.Ipmi.CheckNodeAllIntervalMs)) + "ms")
+	ipmi.CheckNodeAll()
+	logger.Logger.Println("Starting ipmi.CheckNodeStatus(). Interval is " + strconv.Itoa(int(config.Ipmi.CheckNodeStatusIntervalMs)) + "ms")
+	ipmi.CheckNodeStatus()
+	logger.Logger.Println("Starting ipmi.CheckServerStatus(). Interval is " + strconv.Itoa(int(config.Ipmi.CheckServerStatusIntervalMs)) + "ms")
+	ipmi.CheckServerStatus()
+	logger.Logger.Println("Starting ipmi.CheckNodeDetail(). Interval is " + strconv.Itoa(int(config.Ipmi.CheckNodeDetailIntervalMs)) + "ms")
+	ipmi.CheckNodeDetail()
+}
+
+func end() {
+	mysql.End()
+	logger.End()
 }
 
 func main() {
-	defer func() {
-		mysql.End()
-		logger.End()
+	// Catch the exit signal
+	sigChan := make(chan os.Signal)
+	signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
+	go func() {
+		<-sigChan
+		end()
+		fmt.Println("Exiting flute module...")
+		os.Exit(0)
 	}()
 
-	grpcsrv.Init()
+	server.Init()
 }

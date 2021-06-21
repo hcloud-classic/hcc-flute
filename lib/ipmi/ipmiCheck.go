@@ -2,502 +2,789 @@ package ipmi
 
 import (
 	"fmt"
+	"hcc/flute/action/grpc/client"
+	pb "hcc/flute/action/grpc/pb/rpcflute"
+	"hcc/flute/action/grpc/pb/rpcviolin"
+	"hcc/flute/daoext"
 	"hcc/flute/lib/config"
+	"hcc/flute/lib/iputil"
 	"hcc/flute/lib/logger"
 	"hcc/flute/lib/mysql"
-	"hcc/flute/model"
+	"net"
 	"strconv"
+	"strings"
+	"sync"
 	"time"
 )
 
-var checkAllLocked = false
-var checkStatusLocked = false
-var checkNodesDetailLocked = false
+var checkNodeAllLocked = false
+var checkNodeStatusLocked = false
+var checkServerStatusLocked = false
+var checkNodeDetailLocked = false
 
 func delayMillisecond(n time.Duration) {
 	time.Sleep(n * time.Millisecond)
 }
 
-func checkAllLock() {
-	checkAllLocked = true
+func checkNodeAllLock() {
+	checkNodeAllLocked = true
 }
 
-func checkAllUnlock() {
-	checkAllLocked = false
+func checkNodeAllUnlock() {
+	checkNodeAllLocked = false
 }
 
-func checkStatusLock() {
-	checkStatusLocked = true
+func checkNodeStatusLock() {
+	checkNodeStatusLocked = true
 }
 
-func checkStatusUnlock() {
-	checkStatusLocked = false
+func checkNodeStatusUnlock() {
+	checkNodeStatusLocked = false
 }
 
-func checkNodesDetailLock() {
-	checkNodesDetailLocked = true
+func checkServerStatusLock() {
+	checkServerStatusLocked = true
 }
 
-func checkNodesDetailUnlock() {
-	checkNodesDetailLocked = false
+func checkServerStatusUnlock() {
+	checkServerStatusLocked = false
 }
 
-// UpdateAllNodes : Get all infos from IPMI nodes and update database (except power state)
-func UpdateAllNodes() (interface{}, error) {
-	var nodes []model.Node
-	var bmcIP string
+func checkNodeDetailLock() {
+	checkNodeDetailLocked = true
+}
 
-	sql := "select bmc_ip from node where active = 1"
-	stmt, err := mysql.Db.Query(sql)
+func checkNodeDetailUnlock() {
+	checkNodeDetailLocked = false
+}
+
+// makeRackNumber : Split IP address and add numbers of 4 sections with prefix length.
+func makeRackNumber(bmcIPCIDR string) (int, error) {
+	err := iputil.CheckCIDRStr(bmcIPCIDR)
 	if err != nil {
-		logger.Logger.Println(err)
-		return nil, nil
+		return 0, err
 	}
-	defer func() {
-		_ = stmt.Close()
-	}()
 
-	for stmt.Next() {
-		err := stmt.Scan(&bmcIP)
-		if err != nil {
-			logger.Logger.Println(err)
-			continue
-		}
+	_, netIPNet, err := net.ParseCIDR(bmcIPCIDR)
+	if err != nil {
+		return 0, err
+	}
 
-		if config.Ipmi.Debug == "on" {
-			logger.Logger.Println("UpdateAllNodes(): Updating for bmc IP " + bmcIP)
-		}
+	CIDRSplit := strings.Split(bmcIPCIDR, "/")
+	netmask, err := strconv.Atoi(CIDRSplit[1])
+	if err != nil {
+		return 0, err
+	}
 
-		serialNo, err := GetSerialNo(bmcIP)
-		if err != nil {
-			logger.Logger.Println(err)
-			continue
-		}
+	networkIPStr := netIPNet.IP.String()
+	networkIPSplit := strings.Split(networkIPStr, ".")
 
-		if config.Ipmi.Debug == "on" {
-			logger.Logger.Println("UpdateAllNodes(): " + bmcIP + " Serial No: " + serialNo)
-		}
+	var ipSum = 0
+	for _, split := range networkIPSplit {
+		s, _ := strconv.Atoi(split)
+		ipSum += s
+	}
 
-		uuid, err := GetUUID(bmcIP, serialNo)
-		if err != nil {
-			logger.Logger.Println(err)
-			continue
-		}
+	rackNumber := ipSum + netmask
 
-		if config.Ipmi.Debug == "on" {
-			logger.Logger.Println("UpdateAllNodes(): " + bmcIP + " UUID: " + uuid)
-		}
+	return rackNumber, nil
+}
 
-		bmcMAC, err := GetNICMac(bmcIP, int(config.Ipmi.BaseboardNICNumBMC), true)
-		if err != nil {
-			logger.Logger.Println(err)
-			continue
-		}
+// DoUpdateAllNodes : Update the database of a specific node by getting bmcIP
+func DoUpdateAllNodes(bmcIPCIDR string, wait *sync.WaitGroup, isNew bool, description string) (string, error) {
+	if config.Ipmi.Debug == "on" {
+		logger.Logger.Println("DoUpdateAllNodes(): Updating for bmc IP " + bmcIPCIDR)
+	}
 
-		if config.Ipmi.Debug == "on" {
-			logger.Logger.Println("UpdateAllNodes(): " + bmcIP + " BMC MAC Addr: " + bmcMAC)
-		}
+	rackNumber, err := makeRackNumber(bmcIPCIDR)
+	if err != nil {
+		logger.Logger.Println("DoUpdateAllNodes(): " + bmcIPCIDR + " err=" + err.Error())
+		wait.Done()
+		return "", err
+	}
 
-		pxeMAC, err := GetNICMac(bmcIP, int(config.Ipmi.BaseboardNICNumPXE), false)
-		if err != nil {
-			logger.Logger.Println(err)
-			continue
-		}
+	netIP, _, err := net.ParseCIDR(bmcIPCIDR)
+	if err != nil {
+		logger.Logger.Println("DoUpdateAllNodes(): " + bmcIPCIDR + " err=" + err.Error())
+		wait.Done()
+		return "", err
+	}
+	bmcIP := netIP.String()
 
-		if config.Ipmi.Debug == "on" {
-			logger.Logger.Println("UpdateAllNodes(): " + bmcIP + " PXE MAC Addr: " + pxeMAC)
-		}
+	serialNo, err := GetSerialNo(bmcIP)
+	if err != nil {
+		logger.Logger.Println("DoUpdateAllNodes(): " + bmcIPCIDR + " err=" + err.Error())
+		wait.Done()
+		return "", err
+	}
 
-		processors, err := GetProcessors(bmcIP, serialNo)
-		if err != nil {
-			logger.Logger.Println(err)
-			continue
-		}
+	if config.Ipmi.Debug == "on" {
+		logger.Logger.Println("DoUpdateAllNodes(): " + bmcIPCIDR + " Serial No: " + serialNo)
+	}
 
-		if config.Ipmi.Debug == "on" {
-			logger.Logger.Println("UpdateAllNodes(): " + bmcIP + " Processors: " + strconv.Itoa(processors))
-		}
+	uuid, err := GetUUID(bmcIP, serialNo)
+	if err != nil {
+		logger.Logger.Println("DoUpdateAllNodes(): " + bmcIPCIDR + " err=" + err.Error())
+		wait.Done()
+		return "", err
+	}
 
-		cpuCores, err := GetProcessorsCores(bmcIP, serialNo, processors)
-		if err != nil {
-			logger.Logger.Println(err)
-			continue
-		}
+	if config.Ipmi.Debug == "on" {
+		logger.Logger.Println("DoUpdateAllNodes(): " + bmcIPCIDR + " UUID: " + uuid)
+	}
 
-		if config.Ipmi.Debug == "on" {
-			logger.Logger.Println("UpdateAllNodes(): " + bmcIP + " CPU Cores: " + strconv.Itoa(cpuCores))
-		}
+	bmcMAC, err := GetNICMac(bmcIP, int(config.Ipmi.BaseboardNICNumBMC), true)
+	if err != nil {
+		logger.Logger.Println("DoUpdateAllNodes(): " + bmcIPCIDR + " err=" + err.Error())
+		wait.Done()
+		return "", err
+	}
 
-		memory, err := GetTotalSystemMemory(bmcIP, serialNo)
-		if err != nil {
-			logger.Logger.Println(err)
-			continue
-		}
+	if config.Ipmi.Debug == "on" {
+		logger.Logger.Println("DoUpdateAllNodes(): " + bmcIPCIDR + " BMC MAC Addr: " + bmcMAC)
+	}
 
-		if config.Ipmi.Debug == "on" {
-			logger.Logger.Println("UpdateAllNodes(): " + bmcIP + " Memory: " + strconv.Itoa(memory))
-		}
+	pxeMAC, err := GetNICMac(bmcIP, int(config.Ipmi.BaseboardNICNumPXE), false)
+	if err != nil {
+		logger.Logger.Println("DoUpdateAllNodes(): " + bmcIPCIDR + " err=" + err.Error())
+		wait.Done()
+		return "", err
+	}
 
-		node := model.Node{
-			UUID:       uuid,
-			BmcMacAddr: bmcMAC,
-			BmcIP:      bmcIP,
-			PXEMacAddr: pxeMAC,
-			CPUCores:   cpuCores,
-			Memory:     memory,
-		}
+	if config.Ipmi.Debug == "on" {
+		logger.Logger.Println("DoUpdateAllNodes(): " + bmcIPCIDR + " PXE MAC Addr: " + pxeMAC)
+	}
 
-		sql := "update node set uuid = ?, bmc_mac_addr = ?, pxe_mac_addr = ?, cpu_cores = ?, memory = ? where bmc_ip = ?"
+	processors, err := GetProcessors(bmcIP, serialNo)
+	if err != nil {
+		logger.Logger.Println("DoUpdateAllNodes(): " + bmcIPCIDR + " err=" + err.Error())
+		wait.Done()
+		return "", err
+	}
+
+	if config.Ipmi.Debug == "on" {
+		logger.Logger.Println("DoUpdateAllNodes(): " + bmcIPCIDR + " Processors: " + strconv.Itoa(processors))
+	}
+
+	cpuCores, err := GetProcessorsCores(bmcIP, serialNo, processors)
+	if err != nil {
+		logger.Logger.Println("DoUpdateAllNodes(): " + bmcIPCIDR + " err=" + err.Error())
+		wait.Done()
+		return "", err
+	}
+
+	if config.Ipmi.Debug == "on" {
+		logger.Logger.Println("DoUpdateAllNodes(): " + bmcIPCIDR + " CPU Cores: " + strconv.Itoa(cpuCores))
+	}
+
+	memory, err := GetTotalSystemMemory(bmcIP, serialNo)
+	if err != nil {
+		logger.Logger.Println("DoUpdateAllNodes(): " + bmcIPCIDR + " err=" + err.Error())
+		wait.Done()
+		return "", err
+	}
+
+	if config.Ipmi.Debug == "on" {
+		logger.Logger.Println("DoUpdateAllNodes(): " + bmcIPCIDR + " Memory: " + strconv.Itoa(memory))
+	}
+
+	node := pb.Node{
+		UUID:       uuid,
+		BmcMacAddr: bmcMAC,
+		BmcIP:      bmcIPCIDR,
+		PXEMacAddr: pxeMAC,
+		CPUCores:   int32(cpuCores),
+		Memory:     int32(memory),
+		RackNumber: int32(rackNumber),
+	}
+
+	if isNew {
+		sql := "insert into node(uuid, server_uuid, bmc_mac_addr, bmc_ip, pxe_mac_addr, status, cpu_cores, memory, description, rack_number, created_at, available) values (?, '', ?, ?, ?, '', ?, ?, ?, ?, now(), 1)"
 		stmt, err := mysql.Db.Prepare(sql)
 		if err != nil {
-			logger.Logger.Println(err)
-			continue
+			logger.Logger.Println("DoUpdateAllNodes(): " + bmcIPCIDR + " err=" + err.Error())
+			wait.Done()
+			return "", err
 		}
-
-		result, err2 := stmt.Exec(node.UUID, node.BmcMacAddr, node.PXEMacAddr, node.CPUCores, node.Memory, node.BmcIP)
-		if err2 != nil {
-			logger.Logger.Println(err2)
+		defer func() {
 			_ = stmt.Close()
-			continue
+		}()
+		_, err = stmt.Exec(node.UUID, node.BmcMacAddr, node.BmcIP, node.PXEMacAddr, node.CPUCores, node.Memory, description, node.RackNumber)
+		if err != nil {
+			logger.Logger.Println("DoUpdateAllNodes(): " + bmcIPCIDR + " err=" + err.Error())
+			wait.Done()
+			return "", err
 		}
-		_ = stmt.Close()
 
-		if config.Ipmi.Debug == "on" {
-			result, err := result.LastInsertId()
-			if err != nil {
-				logger.Logger.Print("UpdateAllNodes(): err=" + err.Error())
-			} else {
-				logger.Logger.Print("UpdateAllNodes(): result=" + strconv.Itoa(int(result)))
-			}
-		}
-		nodes = append(nodes, node)
+		wait.Done()
+		return uuid, nil
 	}
 
-	return nodes, nil
-}
-
-// UpdateStatusNodes : Get status from IPMI nodes and update database
-func UpdateStatusNodes() (interface{}, error) {
-	var nodes []model.Node
-	var uuid interface{}
-	var bmcIP string
-
-	sql := "select uuid, bmc_ip from node where active = 1"
-	stmt, err := mysql.Db.Query(sql)
+	sql := "update node set uuid = ?, bmc_mac_addr = ?, pxe_mac_addr = ?, cpu_cores = ?, memory = ?, rack_number = ? where bmc_ip = ?"
+	stmt, err := mysql.Db.Prepare(sql)
 	if err != nil {
-		logger.Logger.Println(err)
-		return nil, nil
-	}
-	defer func() {
-		_ = stmt.Close()
-	}()
-
-	for stmt.Next() {
-		err := stmt.Scan(&uuid, &bmcIP)
-		if err != nil {
-			logger.Logger.Println(err)
-			continue
-		}
-
-		if uuid == nil || len(fmt.Sprintf("%s", uuid)) == 0 {
-			if config.Ipmi.Debug == "on" {
-				logger.Logger.Println("UpdateAllNodes(): " + bmcIP + "'s UUID is currently empty. Skipping...")
-			}
-			continue
-		}
-
-		if config.Ipmi.Debug == "on" {
-			logger.Logger.Println("UpdateStatusNodes(): Updating for bmc IP " + bmcIP)
-		}
-
-		serialNo, err := GetSerialNo(bmcIP)
-		if err != nil {
-			logger.Logger.Println(err)
-			continue
-		}
-
-		if config.Ipmi.Debug == "on" {
-			logger.Logger.Println("UpdateStatusNodes(): " + bmcIP + " Serial No: " + serialNo)
-		}
-
-		powerState, err := GetPowerState(bmcIP, serialNo)
-		if err != nil {
-			logger.Logger.Println(err)
-			continue
-		}
-
-		if config.Ipmi.Debug == "on" {
-			logger.Logger.Println("UpdateStatusNodes(): " + bmcIP + " Power State: " + powerState)
-		}
-
-		node := model.Node{
-			UUID:   fmt.Sprintf("%s", uuid),
-			Status: powerState,
-		}
-
-		sql = "update node set status = ? where uuid = ?"
-		stmt, err := mysql.Db.Prepare(sql)
-		if err != nil {
-			logger.Logger.Println(err)
-			continue
-		}
-
-		result, err2 := stmt.Exec(node.Status, node.UUID)
-		if err2 != nil {
-			logger.Logger.Println(err2)
-			_ = stmt.Close()
-			continue
-		}
-		_ = stmt.Close()
-
-		if config.Ipmi.Debug == "on" {
-			result, err := result.LastInsertId()
-			if err != nil {
-				logger.Logger.Print("UpdateStatusNodes(): err=" + err.Error())
-			} else {
-				logger.Logger.Print("UpdateStatusNodes(): result=" + strconv.Itoa(int(result)))
-			}
-		}
-		nodes = append(nodes, node)
+		logger.Logger.Println("DoUpdateAllNodes(): " + bmcIPCIDR + " err=" + err.Error())
+		wait.Done()
+		return "", err
 	}
 
-	return nodes, nil
-}
-
-// UpdateNodesDetail : Get detail infos from IPMI nodes and update database
-func UpdateNodesDetail() (interface{}, error) {
-	var nodedetails []model.NodeDetail
-	var uuid interface{}
-	var bmcIP string
-
-	sql := "select uuid, bmc_ip from node where active = 1"
-	stmt, err := mysql.Db.Query(sql)
-	if err != nil {
-		logger.Logger.Println(err)
-		return nil, nil
-	}
-	defer func() {
+	result, err2 := stmt.Exec(node.UUID, node.BmcMacAddr, node.PXEMacAddr, node.CPUCores, node.Memory, node.RackNumber, node.BmcIP)
+	if err2 != nil {
+		logger.Logger.Println("DoUpdateAllNodes(): " + bmcIPCIDR + " err=" + err2.Error())
 		_ = stmt.Close()
-	}()
+		wait.Done()
+		return "", err2
+	}
+	_ = stmt.Close()
 
-	for stmt.Next() {
-		err := stmt.Scan(&uuid, &bmcIP)
+	if config.Ipmi.Debug == "on" {
+		result, err := result.LastInsertId()
 		if err != nil {
-			logger.Logger.Println(err)
-			continue
-		}
-
-		if uuid == nil || len(fmt.Sprintf("%s", uuid)) == 0 {
-			if config.Ipmi.Debug == "on" {
-				logger.Logger.Println("UpdateAllNodes(): " + bmcIP + "'s UUID is currently empty. Skipping...")
-			}
-			continue
-		}
-
-		if config.Ipmi.Debug == "on" {
-			logger.Logger.Println("UpdateNodesDetail(): Updating for bmc IP " + bmcIP)
-		}
-
-		serialNo, err := GetSerialNo(bmcIP)
-		if err != nil {
-			logger.Logger.Println(err)
-			continue
-		}
-
-		if config.Ipmi.Debug == "on" {
-			logger.Logger.Println("UpdateNodesDetail(): " + bmcIP + " Serial No: " + serialNo)
-		}
-
-		processorModel, err := GetProcessorModel(bmcIP, serialNo)
-		if err != nil {
-			logger.Logger.Println(err)
-			continue
-		}
-
-		if config.Ipmi.Debug == "on" {
-			logger.Logger.Println("UpdateNodesDetail(): " + bmcIP + " Processor Model: " + processorModel)
-		}
-
-		processors, err := GetProcessors(bmcIP, serialNo)
-		if err != nil {
-			logger.Logger.Println(err)
-			continue
-		}
-
-		if config.Ipmi.Debug == "on" {
-			logger.Logger.Println("UpdateNodesDetail(): " + bmcIP + " Processors : " + strconv.Itoa(processors))
-		}
-
-		threads, err := GetProcessorsThreads(bmcIP, serialNo, processors)
-		if err != nil {
-			logger.Logger.Println(err)
-			continue
-		}
-
-		if config.Ipmi.Debug == "on" {
-			logger.Logger.Println("UpdateNodesDetail(): " + bmcIP + " Threads : " + strconv.Itoa(threads))
-		}
-
-		nodeUUID := fmt.Sprintf("%s", uuid)
-		nodeDetail := model.NodeDetail{
-			NodeUUID:      nodeUUID,
-			CPUModel:      processorModel,
-			CPUProcessors: processors,
-			CPUThreads:    threads,
-		}
-
-		sql := "select node_uuid from node_detail where node_uuid = ?"
-		err = mysql.Db.QueryRow(sql, uuid).Scan(&uuid)
-		if err != nil {
-			logger.Logger.Println("UpdateNodesDetail(): Inserting not existing new node_detail")
-
-			sql = "insert into node_detail(node_uuid, cpu_model, cpu_processors, cpu_threads) values (?, ?, ?, ?)"
-			stmt, err := mysql.Db.Prepare(sql)
-			if err != nil {
-				logger.Logger.Println(err)
-				continue
-			}
-
-			result, err2 := stmt.Exec(nodeDetail.NodeUUID, nodeDetail.CPUModel, nodeDetail.CPUProcessors, nodeDetail.CPUThreads)
-			if err2 != nil {
-				logger.Logger.Println(err2)
-				_ = stmt.Close()
-				continue
-			}
-			_ = stmt.Close()
-
-			if config.Ipmi.Debug == "on" {
-				result, err := result.LastInsertId()
-				if err != nil {
-					logger.Logger.Print("UpdateNodesDetail(): err=" + err.Error())
-				} else {
-					logger.Logger.Print("UpdateNodesDetail(): result=" + strconv.Itoa(int(result)))
-				}
-			}
+			logger.Logger.Println("DoUpdateAllNodes(): " + bmcIPCIDR + " err=" + err.Error())
 		} else {
-			sql = "update node_detail set cpu_model = ?, cpu_processors = ?, cpu_threads = ? where node_uuid = ?"
-			stmt, err := mysql.Db.Prepare(sql)
-			if err != nil {
-				logger.Logger.Println(err)
-				continue
-			}
+			logger.Logger.Print("DoUpdateAllNodes(): " + bmcIPCIDR + " result=" + strconv.Itoa(int(result)))
+		}
+	}
 
-			result, err2 := stmt.Exec(nodeDetail.CPUModel, nodeDetail.CPUProcessors, nodeDetail.CPUThreads, nodeDetail.NodeUUID)
-			if err2 != nil {
-				logger.Logger.Println(err2)
-				_ = stmt.Close()
-				continue
-			}
+	wait.Done()
+	return uuid, nil
+}
+
+// UpdateNodesAll : Get all infos from IPMI nodes and update the database (except power state)
+func UpdateNodesAll() {
+	var bmcIPCIDR string
+
+	sql := "select bmc_ip from node where available = 1"
+	stmt, err := mysql.Db.Query(sql)
+	if err != nil {
+		logger.Logger.Println("UpdateNodesAll(): err=" + err.Error())
+		return
+	}
+	defer func() {
+		_ = stmt.Close()
+	}()
+
+	resReadNodeNum, errCode, errText := daoext.ReadNodeNum()
+	if errCode != 0 {
+		logger.Logger.Println("UpdateNodesAll(): err=" + errText)
+		return
+	}
+
+	var wait sync.WaitGroup
+	wait.Add(int(resReadNodeNum.Num))
+
+	for stmt.Next() {
+		err := stmt.Scan(&bmcIPCIDR)
+		if err != nil {
+			logger.Logger.Println("UpdateNodesAll(): " + bmcIPCIDR + " err=" + err.Error())
+			continue
+		}
+
+		go func(bmcIPCIDR string, wait *sync.WaitGroup) {
+			_, _ = DoUpdateAllNodes(bmcIPCIDR, wait, false, "")
+		}(bmcIPCIDR, &wait)
+	}
+
+	wait.Wait()
+
+	if config.Ipmi.Debug == "on" {
+		logger.Logger.Print("UpdateNodesAll(): Done")
+	}
+}
+
+// DoUpdateStatusNodes : Get status from a specific node and update the database
+func DoUpdateStatusNodes(uuid interface{}, bmcIPCIDR string, wait *sync.WaitGroup) error {
+	err := iputil.CheckCIDRStr(bmcIPCIDR)
+	if err != nil {
+		logger.Logger.Println("DoUpdateStatusNodes(): " + bmcIPCIDR + " err=" + err.Error())
+		wait.Done()
+		return err
+	}
+
+	netIP, _, err := net.ParseCIDR(bmcIPCIDR)
+	if err != nil {
+		logger.Logger.Println("DoUpdateStatusNodes(): " + bmcIPCIDR + " err=" + err.Error())
+		wait.Done()
+		return err
+	}
+	bmcIP := netIP.String()
+
+	if uuid == nil || len(fmt.Sprintf("%s", uuid)) == 0 {
+		if config.Ipmi.Debug == "on" {
+			logger.Logger.Println("DoUpdateStatusNodes(): " + bmcIPCIDR + "'s UUID is currently empty. Skipping...")
+		}
+		wait.Done()
+		return err
+	}
+
+	if config.Ipmi.Debug == "on" {
+		logger.Logger.Println("DoUpdateStatusNodes(): Updating for bmc IP " + bmcIPCIDR)
+	}
+
+	serialNo, err := GetSerialNo(bmcIP)
+	if err != nil {
+		logger.Logger.Println("DoUpdateStatusNodes(): " + bmcIPCIDR + " err=" + err.Error())
+		wait.Done()
+		return err
+	}
+
+	if config.Ipmi.Debug == "on" {
+		logger.Logger.Println("DoUpdateStatusNodes(): " + bmcIPCIDR + " Serial No: " + serialNo)
+	}
+
+	powerState, err := GetPowerState(bmcIP, serialNo)
+	if err != nil {
+		logger.Logger.Println("DoUpdateStatusNodes(): " + bmcIPCIDR + " err=" + err.Error())
+		wait.Done()
+		return err
+	}
+
+	if config.Ipmi.Debug == "on" {
+		logger.Logger.Println("DoUpdateStatusNodes(): " + bmcIPCIDR + " Power State: " + powerState)
+	}
+
+	node := pb.Node{
+		UUID:   fmt.Sprintf("%s", uuid),
+		Status: powerState,
+	}
+
+	sql := "update node set status = ? where uuid = ?"
+	stmt, err := mysql.Db.Prepare(sql)
+	if err != nil {
+		logger.Logger.Println("DoUpdateStatusNodes(): " + bmcIPCIDR + " err=" + err.Error())
+		wait.Done()
+		return err
+	}
+
+	result, err2 := stmt.Exec(node.Status, node.UUID)
+	if err2 != nil {
+		logger.Logger.Println("DoUpdateStatusNodes(): " + bmcIPCIDR + " err=" + err2.Error())
+		_ = stmt.Close()
+		wait.Done()
+		return err2
+	}
+	_ = stmt.Close()
+
+	if config.Ipmi.Debug == "on" {
+		result, err := result.LastInsertId()
+		if err != nil {
+			logger.Logger.Println("DoUpdateStatusNodes(): " + bmcIPCIDR + " err=" + err.Error())
+		} else {
+			logger.Logger.Print("DoUpdateStatusNodes(): " + bmcIPCIDR + " result=" + strconv.Itoa(int(result)))
+		}
+	}
+
+	wait.Done()
+	return nil
+}
+
+// UpdateNodesStatus : Get status from IPMI nodes and update the database
+func UpdateNodesStatus() {
+	var uuid interface{}
+	var bmcIPCIDR string
+
+	sql := "select uuid, bmc_ip from node where available = 1"
+	stmt, err := mysql.Db.Query(sql)
+	if err != nil {
+		logger.Logger.Println("UpdateNodesStatus(): err=" + err.Error())
+		return
+	}
+	defer func() {
+		_ = stmt.Close()
+	}()
+
+	resReadNodeNum, errCode, errText := daoext.ReadNodeNum()
+	if errCode != 0 {
+		logger.Logger.Println("UpdateNodesStatus(): err=" + errText)
+		return
+	}
+
+	var wait sync.WaitGroup
+	wait.Add(int(resReadNodeNum.Num))
+
+	for stmt.Next() {
+		err := stmt.Scan(&uuid, &bmcIPCIDR)
+		if err != nil {
+			logger.Logger.Println("UpdateNodesStatus(): " + bmcIPCIDR + " err=" + err.Error())
+			continue
+		}
+
+		go func(uuid interface{}, bmcIPCIDR string, wait *sync.WaitGroup) {
+			_ = DoUpdateStatusNodes(uuid, bmcIPCIDR, wait)
+		}(uuid, bmcIPCIDR, &wait)
+	}
+
+	wait.Wait()
+
+	if config.Ipmi.Debug == "on" {
+		logger.Logger.Print("UpdateNodesStatus(): Done")
+	}
+}
+
+// UpdateServerStatus : Update status of the server
+func UpdateServerStatus() {
+	var status string
+
+	resGetServerList, err := client.RC.GetServerList(&rpcviolin.ReqGetServerList{})
+	if err != nil {
+		logger.Logger.Println("UpdateServerStatus(): err=" + err.Error())
+		return
+	}
+
+	for _, server := range resGetServerList.Server {
+		sql := "select status from node where server_uuid = '" + server.UUID + "'"
+		stmt, err := mysql.Db.Query(sql)
+		if err != nil {
+			logger.Logger.Println("UpdateServerStatus(): err=" + err.Error())
+			return
+		}
+		defer func() {
 			_ = stmt.Close()
+		}()
 
-			if config.Ipmi.Debug == "on" {
-				result, err := result.LastInsertId()
-				if err != nil {
-					logger.Logger.Print("UpdateNodesDetail(): err=" + err.Error())
-				} else {
-					logger.Logger.Print("UpdateNodesDetail(): result=" + strconv.Itoa(int(result)))
-				}
+		var isAllTurnedOff = true
+
+		for stmt.Next() {
+			err := stmt.Scan(&status)
+			if err != nil {
+				logger.Logger.Println("UpdateServerStatus(): err=" + err.Error())
+				continue
+			}
+
+			if strings.ToLower(status) != "off" {
+				isAllTurnedOff = false
+				break
 			}
 		}
 
-		nodedetails = append(nodedetails, nodeDetail)
+		if isAllTurnedOff {
+			_, err := client.RC.UpdateServer(&rpcviolin.ReqUpdateServer{
+				Server: &rpcviolin.Server{
+					UUID:   server.UUID,
+					Status: "Stopped",
+				},
+			})
+			if err != nil {
+				logger.Logger.Println("UpdateServerStatus(): err=" + err.Error())
+			}
+		}
 	}
 
-	return nodedetails, nil
+	if config.Ipmi.Debug == "on" {
+		logger.Logger.Print("UpdateServerStatus(): Done")
+	}
 }
 
-func queueCheckAll() {
+// DoUpdateNodesDetail : Get detail infos from a specific node and update the database
+func DoUpdateNodesDetail(uuid interface{}, bmcIPCIDR string, wait *sync.WaitGroup) error {
+	err := iputil.CheckCIDRStr(bmcIPCIDR)
+	if err != nil {
+		logger.Logger.Println("DoUpdateNodesDetail(): " + bmcIPCIDR + " err=" + err.Error())
+		wait.Done()
+		return err
+	}
+
+	netIP, _, err := net.ParseCIDR(bmcIPCIDR)
+	if err != nil {
+		logger.Logger.Println("DoUpdateNodesDetail(): " + bmcIPCIDR + " err=" + err.Error())
+		wait.Done()
+		return err
+	}
+	bmcIP := netIP.String()
+
+	if uuid == nil || len(fmt.Sprintf("%s", uuid)) == 0 {
+		if config.Ipmi.Debug == "on" {
+			logger.Logger.Println("DoUpdateNodesDetail(): " + bmcIPCIDR + "'s UUID is currently empty. Skipping...")
+		}
+		wait.Done()
+		return err
+	}
+
+	if config.Ipmi.Debug == "on" {
+		logger.Logger.Println("DoUpdateNodesDetail(): Updating for bmc IP " + bmcIPCIDR)
+	}
+
+	serialNo, err := GetSerialNo(bmcIP)
+	if err != nil {
+		logger.Logger.Println("DoUpdateNodesDetail(): " + bmcIPCIDR + " err=" + err.Error())
+		wait.Done()
+		return err
+	}
+
+	if config.Ipmi.Debug == "on" {
+		logger.Logger.Println("DoUpdateNodesDetail(): " + bmcIPCIDR + " Serial No: " + serialNo)
+	}
+
+	processorModel, err := GetProcessorModel(bmcIP, serialNo)
+	if err != nil {
+		logger.Logger.Println("DoUpdateNodesDetail(): " + bmcIPCIDR + " err=" + err.Error())
+		wait.Done()
+		return err
+	}
+
+	if config.Ipmi.Debug == "on" {
+		logger.Logger.Println("DoUpdateNodesDetail(): " + bmcIPCIDR + " Processor Model: " + processorModel)
+	}
+
+	processors, err := GetProcessors(bmcIP, serialNo)
+	if err != nil {
+		logger.Logger.Println("DoUpdateNodesDetail(): " + bmcIPCIDR + " err=" + err.Error())
+		wait.Done()
+		return err
+	}
+
+	if config.Ipmi.Debug == "on" {
+		logger.Logger.Println("DoUpdateNodesDetail(): " + bmcIPCIDR + " Processors : " + strconv.Itoa(processors))
+	}
+
+	threads, err := GetProcessorsThreads(bmcIP, serialNo, processors)
+	if err != nil {
+		logger.Logger.Println("DoUpdateNodesDetail(): " + bmcIPCIDR + " err=" + err.Error())
+		wait.Done()
+		return err
+	}
+
+	if config.Ipmi.Debug == "on" {
+		logger.Logger.Println("DoUpdateNodesDetail(): " + bmcIPCIDR + " Threads : " + strconv.Itoa(threads))
+	}
+
+	nodeUUID := fmt.Sprintf("%s", uuid)
+	nodeDetail := pb.NodeDetail{
+		NodeUUID:      nodeUUID,
+		CPUModel:      processorModel,
+		CPUProcessors: int32(processors),
+		CPUThreads:    int32(threads),
+	}
+
+	sql := "select node_uuid from node_detail where node_uuid = ?"
+	err = mysql.Db.QueryRow(sql, uuid).Scan(&uuid)
+	if err != nil {
+		logger.Logger.Println("DoUpdateNodesDetail(): Inserting not existing new node_detail")
+
+		sql = "insert into node_detail(node_uuid, cpu_model, cpu_processors, cpu_threads) values (?, ?, ?, ?)"
+		stmt, err := mysql.Db.Prepare(sql)
+		if err != nil {
+			logger.Logger.Println("DoUpdateNodesDetail(): " + bmcIPCIDR + " err=" + err.Error())
+			wait.Done()
+			return err
+		}
+
+		result, err2 := stmt.Exec(nodeDetail.NodeUUID, nodeDetail.CPUModel, nodeDetail.CPUProcessors, nodeDetail.CPUThreads)
+		if err2 != nil {
+			logger.Logger.Println("DoUpdateNodesDetail(): " + bmcIPCIDR + " err=" + err2.Error())
+			_ = stmt.Close()
+			wait.Done()
+			return err2
+		}
+		_ = stmt.Close()
+
+		if config.Ipmi.Debug == "on" {
+			result, err := result.LastInsertId()
+			if err != nil {
+				logger.Logger.Println("DoUpdateNodesDetail(): " + bmcIPCIDR + " err=" + err.Error())
+			} else {
+				logger.Logger.Print("DoUpdateNodesDetail(): " + bmcIPCIDR + " result=" + strconv.Itoa(int(result)))
+			}
+		}
+	} else {
+		sql = "update node_detail set cpu_model = ?, cpu_processors = ?, cpu_threads = ? where node_uuid = ?"
+		stmt, err := mysql.Db.Prepare(sql)
+		if err != nil {
+			logger.Logger.Println("DoUpdateNodesDetail(): " + bmcIPCIDR + " err=" + err.Error())
+			wait.Done()
+			return err
+		}
+
+		result, err2 := stmt.Exec(nodeDetail.CPUModel, nodeDetail.CPUProcessors, nodeDetail.CPUThreads, nodeDetail.NodeUUID)
+		if err2 != nil {
+			logger.Logger.Println("DoUpdateNodesDetail(): " + bmcIPCIDR + " err=" + err2.Error())
+			_ = stmt.Close()
+			wait.Done()
+			return err2
+		}
+		_ = stmt.Close()
+
+		if config.Ipmi.Debug == "on" {
+			result, err := result.LastInsertId()
+			if err != nil {
+				logger.Logger.Println("DoUpdateNodesDetail(): " + bmcIPCIDR + " err=" + err.Error())
+			} else {
+				logger.Logger.Print("DoUpdateNodesDetail(): " + bmcIPCIDR + " result=" + strconv.Itoa(int(result)))
+			}
+		}
+	}
+
+	wait.Done()
+	return nil
+}
+
+// UpdateNodesDetail : Get detail infos from IPMI nodes and update the database
+func UpdateNodesDetail() {
+	var uuid interface{}
+	var bmcIPCIDR string
+
+	sql := "select uuid, bmc_ip from node where available = 1"
+	stmt, err := mysql.Db.Query(sql)
+	if err != nil {
+		logger.Logger.Println("UpdateNodesDetail(): err=" + err.Error())
+		return
+	}
+	defer func() {
+		_ = stmt.Close()
+	}()
+
+	resReadNodeNum, errCode, errText := daoext.ReadNodeNum()
+	if errCode != 0 {
+		logger.Logger.Println("UpdateNodesDetail(): err=" + errText)
+		return
+	}
+
+	var wait sync.WaitGroup
+	wait.Add(int(resReadNodeNum.Num))
+
+	for stmt.Next() {
+		err := stmt.Scan(&uuid, &bmcIPCIDR)
+		if err != nil {
+			logger.Logger.Println("UpdateNodesDetail(): " + bmcIPCIDR + " err=" + err.Error())
+			continue
+		}
+
+		go func(uuid interface{}, bmcIPCIDR string, wait *sync.WaitGroup) {
+			_ = DoUpdateNodesDetail(uuid, bmcIPCIDR, wait)
+		}(uuid, bmcIPCIDR, &wait)
+	}
+
+	wait.Wait()
+
+	if config.Ipmi.Debug == "on" {
+		logger.Logger.Print("UpdateNodesDetail(): Done")
+	}
+}
+
+func queueCheckNodeAll() {
 	go func() {
 		if config.Ipmi.Debug == "on" {
-			logger.Logger.Println("queueCheckAll(): Rerun CheckAll() after " + strconv.Itoa(int(config.Ipmi.CheckAllIntervalMs)) + "ms")
+			logger.Logger.Println("queueCheckNodeAll(): Rerun CheckNodeAll() after " + strconv.Itoa(int(config.Ipmi.CheckNodeAllIntervalMs)) + "ms")
 		}
-		delayMillisecond(time.Duration(config.Ipmi.CheckAllIntervalMs))
-		CheckAll()
+		delayMillisecond(time.Duration(config.Ipmi.CheckNodeAllIntervalMs))
+		CheckNodeAll()
 	}()
 }
 
-func queueCheckStatus() {
+func queueCheckNodeStatus() {
 	go func() {
 		if config.Ipmi.Debug == "on" {
-			logger.Logger.Println("queueCheckStatus(): Rerun CheckStatus() after " + strconv.Itoa(int(config.Ipmi.CheckStatusIntervalMs)) + "ms")
+			logger.Logger.Println("queueCheckNodeStatus(): Rerun CheckNodeStatus() after " + strconv.Itoa(int(config.Ipmi.CheckNodeStatusIntervalMs)) + "ms")
 		}
-		delayMillisecond(time.Duration(config.Ipmi.CheckStatusIntervalMs))
-		CheckStatus()
+		delayMillisecond(time.Duration(config.Ipmi.CheckNodeStatusIntervalMs))
+		CheckNodeStatus()
 	}()
 }
 
-func queueNodesDetail() {
+func queueCheckServerStatus() {
 	go func() {
 		if config.Ipmi.Debug == "on" {
-			logger.Logger.Println("queueNodesDetail(): Rerun NodesDetail() after " + strconv.Itoa(int(config.Ipmi.CheckNodesDetailIntervalMs)) + "ms")
+			logger.Logger.Println("queueCheckServerStatus(): Rerun CheckNodeStatus() after " + strconv.Itoa(int(config.Ipmi.CheckServerStatusIntervalMs)) + "ms")
 		}
-		delayMillisecond(time.Duration(config.Ipmi.CheckNodesDetailIntervalMs))
-		CheckNodesDetail()
+		delayMillisecond(time.Duration(config.Ipmi.CheckServerStatusIntervalMs))
+		CheckServerStatus()
 	}()
 }
 
-// CheckAll : Check all IPMI infos by 'check_all_interval_ms' config option
-func CheckAll() {
-	if checkAllLocked {
+func queueNodeDetail() {
+	go func() {
 		if config.Ipmi.Debug == "on" {
-			logger.Logger.Println("CheckAll(): Locked")
+			logger.Logger.Println("queueNodeDetail(): Rerun NodesDetail() after " + strconv.Itoa(int(config.Ipmi.CheckNodeDetailIntervalMs)) + "ms")
 		}
-		queueCheckAll()
+		delayMillisecond(time.Duration(config.Ipmi.CheckNodeDetailIntervalMs))
+		CheckNodeDetail()
+	}()
+}
+
+// CheckNodeAll : Check node's all infos by interval of 'check_node_all_interval_ms' config option
+func CheckNodeAll() {
+	if checkNodeAllLocked {
+		if config.Ipmi.Debug == "on" {
+			logger.Logger.Println("CheckNodeAll(): Locked")
+		}
+		queueCheckNodeAll()
 		return
 	}
 
 	go func() {
-		checkAllLock()
+		checkNodeAllLock()
 		if config.Ipmi.Debug == "on" {
-			logger.Logger.Println("CheckAll(): Running UpdateAllNodes()")
+			logger.Logger.Println("CheckNodeAll(): Running UpdateNodesAll()")
 		}
-		_, _ = UpdateAllNodes()
-		checkAllUnlock()
+		UpdateNodesAll()
+		checkNodeAllUnlock()
 	}()
 
-	queueCheckAll()
+	queueCheckNodeAll()
 }
 
-// CheckStatus : Check power status of IPMI nodes by 'check_status_interval_ms' config option
-func CheckStatus() {
-	if checkStatusLocked {
+// CheckNodeStatus : Check node's power status by interval of 'check_node_status_interval_ms' config option
+func CheckNodeStatus() {
+	if checkNodeStatusLocked {
 		if config.Ipmi.Debug == "on" {
-			logger.Logger.Println("CheckStatus(): Locked")
+			logger.Logger.Println("CheckNodeStatus(): Locked")
 		}
-		queueCheckStatus()
+		queueCheckNodeStatus()
 		return
 	}
 
 	go func() {
-		checkStatusLock()
+		checkNodeStatusLock()
 		if config.Ipmi.Debug == "on" {
-			logger.Logger.Println("CheckStatus(): Running UpdateStatusNodes()")
+			logger.Logger.Println("CheckNodeStatus(): Running UpdateNodesStatus()")
 		}
-		_, _ = UpdateStatusNodes()
-		checkStatusUnlock()
+		UpdateNodesStatus()
+		checkNodeStatusUnlock()
 	}()
 
-	queueCheckStatus()
+	queueCheckNodeStatus()
 }
 
-// CheckNodesDetail : Check detail infos of IPMI nodes by 'check_nodes_detail_interval_ms' config option
-func CheckNodesDetail() {
-	if checkNodesDetailLocked {
+// CheckServerStatus : Check server's power status by interval of 'check_server_status_interval_ms' config option
+func CheckServerStatus() {
+	if checkServerStatusLocked {
 		if config.Ipmi.Debug == "on" {
-			logger.Logger.Println("NodesDetail(): Locked")
+			logger.Logger.Println("CheckServerStatus(): Locked")
 		}
-		queueNodesDetail()
+		queueCheckServerStatus()
 		return
 	}
 
 	go func() {
-		checkNodesDetailLock()
+		checkServerStatusLock()
 		if config.Ipmi.Debug == "on" {
-			logger.Logger.Println("NodesDetail(): Running UpdateNodesDetail()")
+			logger.Logger.Println("CheckServerStatus(): Running UpdateServerStatus()")
 		}
-		_, _ = UpdateNodesDetail()
-		checkNodesDetailUnlock()
+		UpdateServerStatus()
+		checkServerStatusUnlock()
 	}()
 
-	queueNodesDetail()
+	queueCheckServerStatus()
+}
+
+// CheckNodeDetail : Check node's detail infos by interval of 'check_node_detail_interval_ms' config option
+func CheckNodeDetail() {
+	if checkNodeDetailLocked {
+		if config.Ipmi.Debug == "on" {
+			logger.Logger.Println("CheckNodeDetail(): Locked")
+		}
+		queueNodeDetail()
+		return
+	}
+
+	go func() {
+		checkNodeDetailLock()
+		if config.Ipmi.Debug == "on" {
+			logger.Logger.Println("CheckNodeDetail(): Running UpdateNodesDetail()")
+		}
+		UpdateNodesDetail()
+		checkNodeDetailUnlock()
+	}()
+
+	queueNodeDetail()
 }
