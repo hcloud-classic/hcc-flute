@@ -1,9 +1,9 @@
 package mysql
 
 import (
-	"hcc/flute/lib/syscheck"
 	"hcc/flute/lib/config"
 	"hcc/flute/lib/logger"
+	"hcc/flute/lib/syscheck"
 	"testing"
 )
 
