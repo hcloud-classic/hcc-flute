@@ -110,21 +110,6 @@ func makeRackNumber(bmcIPCIDR string) (int, error) {
 	return rackNumber, nil
 }
 
-func checkGroupIDExist(groupID int64) error {
-	resGetGroupList, hccErrStack := client.RC.GetGroupList(&pb.Empty{})
-	if hccErrStack != nil {
-		return hccErrStack.Pop().ToError()
-	}
-
-	for _, pGroup := range resGetGroupList.Group {
-		if pGroup.Id == groupID {
-			return nil
-		}
-	}
-
-	return errors.New("given group ID is not in the database")
-}
-
 func checkNICSpeed(speed int) error {
 	switch speed {
 	case 10, 100, 1000, 2500, 5000, 10000, 20000, 40000:
@@ -141,14 +126,7 @@ func DoUpdateAllNodes(bmcIPCIDR string, wait *sync.WaitGroup, isNew bool, reqNod
 	}
 
 	if isNew {
-		err := checkGroupIDExist(reqNode.GroupID)
-		if err != nil {
-			logger.Logger.Println("DoUpdateAllNodes(): " + bmcIPCIDR + " err=" + err.Error())
-			wait.Done()
-			return "", err
-		}
-
-		err = checkNICSpeed(int(reqNode.NicSpeedMbps))
+		err := checkNICSpeed(int(reqNode.NicSpeedMbps))
 		if err != nil {
 			logger.Logger.Println("DoUpdateAllNodes(): " + bmcIPCIDR + " err=" + err.Error())
 			wait.Done()
@@ -259,9 +237,9 @@ func DoUpdateAllNodes(bmcIPCIDR string, wait *sync.WaitGroup, isNew bool, reqNod
 	}
 
 	if isNew {
-		sql := "insert into node(uuid, node_name, group_id, server_uuid, bmc_mac_addr, bmc_ip, pxe_mac_addr, status, cpu_cores, memory, " +
+		sql := "insert into node(uuid, node_name, server_uuid, bmc_mac_addr, bmc_ip, pxe_mac_addr, status, cpu_cores, memory, " +
 			"nic_speed_mbps, description, rack_number, created_at, available) " +
-			"values (?, ?, ?, '', ?, ?, ?, '', ?, ?, " +
+			"values (?, ?, '', ?, ?, ?, '', ?, ?, " +
 			"?, ?, ?, now(), 1)"
 
 		var stmt *dbsql.Stmt
@@ -274,7 +252,7 @@ func DoUpdateAllNodes(bmcIPCIDR string, wait *sync.WaitGroup, isNew bool, reqNod
 		defer func() {
 			_ = stmt.Close()
 		}()
-		_, err = stmt.Exec(node.UUID, reqNode.NodeName, reqNode.GroupID, node.BmcMacAddr, node.BmcIP, node.PXEMacAddr, node.CPUCores, node.Memory,
+		_, err = stmt.Exec(node.UUID, reqNode.NodeName, node.BmcMacAddr, node.BmcIP, node.PXEMacAddr, node.CPUCores, node.Memory,
 			reqNode.NicSpeedMbps, reqNode.GetDescription(), node.RackNumber)
 		if err != nil {
 			logger.Logger.Println("DoUpdateAllNodes(): " + bmcIPCIDR + " err=" + err.Error())
