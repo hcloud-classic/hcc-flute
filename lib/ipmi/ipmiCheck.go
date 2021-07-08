@@ -470,9 +470,9 @@ func UpdateNodesStatus() {
 			continue
 		}
 
-		go func(uuid interface{}, bmcIPCIDR string, wait *sync.WaitGroup) {
+		go func(uuid interface{}, bmcIPCIDR string, wait *sync.WaitGroup, oldStatus string) {
 			_ = DoUpdateStatusNodes(uuid, bmcIPCIDR, oldStatus, wait)
-		}(uuid, bmcIPCIDR, &wait)
+		}(uuid, bmcIPCIDR, &wait, oldStatus)
 	}
 
 	wait.Wait()
