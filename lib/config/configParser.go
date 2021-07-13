@@ -83,14 +83,12 @@ func parseIpmi() {
 	}
 	Ipmi.BMCIPListArray = strings.Split(Ipmi.BMCIPList, ",")
 
-	Ipmi.Username, err = config.IpmiConfig.String("username")
+	Ipmi.PasswordEncryptSecretKey, err = config.IpmiConfig.String("password_encrypt_secret_key")
 	if err != nil {
 		logger.Logger.Panicln(err)
 	}
-
-	Ipmi.Password, err = config.IpmiConfig.String("password")
-	if err != nil {
-		logger.Logger.Panicln(err)
+	if Ipmi.PasswordEncryptSecretKey == "" {
+		logger.Logger.Panicln("password_encrypt_secret_key should not be empty value")
 	}
 
 	Ipmi.RequestTimeoutMs, err = config.IpmiConfig.Int("request_timeout_ms")

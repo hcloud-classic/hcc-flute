@@ -125,15 +125,6 @@ func DoUpdateAllNodes(bmcIPCIDR string, wait *sync.WaitGroup, isNew bool, reqNod
 		logger.Logger.Println("DoUpdateAllNodes(): Updating for bmc IP " + bmcIPCIDR)
 	}
 
-	if isNew {
-		err := checkNICSpeed(int(reqNode.NicSpeedMbps))
-		if err != nil {
-			logger.Logger.Println("DoUpdateAllNodes(): " + bmcIPCIDR + " err=" + err.Error())
-			wait.Done()
-			return "", err
-		}
-	}
-
 	rackNumber, err := makeRackNumber(bmcIPCIDR)
 	if err != nil {
 		logger.Logger.Println("DoUpdateAllNodes(): " + bmcIPCIDR + " err=" + err.Error())
@@ -149,9 +140,28 @@ func DoUpdateAllNodes(bmcIPCIDR string, wait *sync.WaitGroup, isNew bool, reqNod
 	}
 	bmcIP := netIP.String()
 
+	if isNew {
+		err := checkNICSpeed(int(reqNode.NicSpeedMbps))
+		if err != nil {
+			logger.Logger.Println("DoUpdateAllNodes(): " + bmcIPCIDR + " err=" + err.Error())
+			wait.Done()
+			return "", err
+		}
+
+		err = daoext.AddIPMIUser(bmcIP, reqNode.IpmiUserID, reqNode.IpmiUserPassword)
+		if err != nil {
+			logger.Logger.Println("DoUpdateAllNodes(): " + bmcIPCIDR + " err=" + err.Error())
+			wait.Done()
+			return "", err
+		}
+	}
+
 	serialNo, err := GetSerialNo(bmcIP)
 	if err != nil {
 		logger.Logger.Println("DoUpdateAllNodes(): " + bmcIPCIDR + " err=" + err.Error())
+		if isNew {
+			_ = daoext.DeleteIPMIUser(bmcIP)
+		}
 		wait.Done()
 		return "", err
 	}
@@ -163,6 +173,9 @@ func DoUpdateAllNodes(bmcIPCIDR string, wait *sync.WaitGroup, isNew bool, reqNod
 	uuid, err := GetUUID(bmcIP, serialNo)
 	if err != nil {
 		logger.Logger.Println("DoUpdateAllNodes(): " + bmcIPCIDR + " err=" + err.Error())
+		if isNew {
+			_ = daoext.DeleteIPMIUser(bmcIP)
+		}
 		wait.Done()
 		return "", err
 	}
@@ -174,6 +187,9 @@ func DoUpdateAllNodes(bmcIPCIDR string, wait *sync.WaitGroup, isNew bool, reqNod
 	bmcMAC, err := GetNICMac(bmcIP, int(config.Ipmi.BaseboardNICNumBMC), true)
 	if err != nil {
 		logger.Logger.Println("DoUpdateAllNodes(): " + bmcIPCIDR + " err=" + err.Error())
+		if isNew {
+			_ = daoext.DeleteIPMIUser(bmcIP)
+		}
 		wait.Done()
 		return "", err
 	}
@@ -185,6 +201,9 @@ func DoUpdateAllNodes(bmcIPCIDR string, wait *sync.WaitGroup, isNew bool, reqNod
 	pxeMAC, err := GetNICMac(bmcIP, int(config.Ipmi.BaseboardNICNumPXE), false)
 	if err != nil {
 		logger.Logger.Println("DoUpdateAllNodes(): " + bmcIPCIDR + " err=" + err.Error())
+		if isNew {
+			_ = daoext.DeleteIPMIUser(bmcIP)
+		}
 		wait.Done()
 		return "", err
 	}
@@ -196,6 +215,9 @@ func DoUpdateAllNodes(bmcIPCIDR string, wait *sync.WaitGroup, isNew bool, reqNod
 	processors, err := getNumCPU(bmcIP, serialNo)
 	if err != nil {
 		logger.Logger.Println("DoUpdateAllNodes(): " + bmcIPCIDR + " err=" + err.Error())
+		if isNew {
+			_ = daoext.DeleteIPMIUser(bmcIP)
+		}
 		wait.Done()
 		return "", err
 	}
@@ -207,6 +229,9 @@ func DoUpdateAllNodes(bmcIPCIDR string, wait *sync.WaitGroup, isNew bool, reqNod
 	cpuCores, err := GetProcessorsCores(bmcIP, serialNo, processors)
 	if err != nil {
 		logger.Logger.Println("DoUpdateAllNodes(): " + bmcIPCIDR + " err=" + err.Error())
+		if isNew {
+			_ = daoext.DeleteIPMIUser(bmcIP)
+		}
 		wait.Done()
 		return "", err
 	}
@@ -218,6 +243,9 @@ func DoUpdateAllNodes(bmcIPCIDR string, wait *sync.WaitGroup, isNew bool, reqNod
 	memory, err := GetTotalSystemMemory(bmcIP, serialNo)
 	if err != nil {
 		logger.Logger.Println("DoUpdateAllNodes(): " + bmcIPCIDR + " err=" + err.Error())
+		if isNew {
+			_ = daoext.DeleteIPMIUser(bmcIP)
+		}
 		wait.Done()
 		return "", err
 	}
@@ -246,6 +274,7 @@ func DoUpdateAllNodes(bmcIPCIDR string, wait *sync.WaitGroup, isNew bool, reqNod
 		stmt, err := mysql.Prepare(sql)
 		if err != nil {
 			logger.Logger.Println("DoUpdateAllNodes(): " + bmcIPCIDR + " err=" + err.Error())
+			_ = daoext.DeleteIPMIUser(bmcIP)
 			wait.Done()
 			return "", err
 		}
@@ -256,6 +285,7 @@ func DoUpdateAllNodes(bmcIPCIDR string, wait *sync.WaitGroup, isNew bool, reqNod
 			reqNode.NicSpeedMbps, reqNode.GetDescription(), node.RackNumber)
 		if err != nil {
 			logger.Logger.Println("DoUpdateAllNodes(): " + bmcIPCIDR + " err=" + err.Error())
+			_ = daoext.DeleteIPMIUser(bmcIP)
 			wait.Done()
 			return "", err
 		}

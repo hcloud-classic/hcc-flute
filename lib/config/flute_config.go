@@ -30,8 +30,7 @@ port 7000
 [ipmi]
 debug off
 bmc_ip_list 172.31.0.10,172.31.0.1,172.31.0.3
-username admin
-password qwe1212!Q
+password_encrypt_secret_key XXXXXXXXXXXX
 request_timeout_ms 5000
 request_retry 3
 check_node_all_interval_ms 10000

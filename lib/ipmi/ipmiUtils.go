@@ -7,12 +7,36 @@ import (
 	"errors"
 	"hcc/flute/lib/config"
 	"hcc/flute/lib/logger"
+	"hcc/flute/lib/mysql"
+	"hcc/flute/lib/passwordEncrypt"
 	"io/ioutil"
 	"net/http"
 	"strconv"
 	"strings"
 	"time"
 )
+
+type ipmiUserType struct {
+	ID       string
+	Password string
+}
+
+func getIPMIUser(bmcIP string) (*ipmiUserType, error) {
+	var ipmiUser ipmiUserType
+	var encryptedPassword []byte
+
+	sql := "select id, password from ipmi_user where bmc_ip = ?"
+	row := mysql.Db.QueryRow(sql, bmcIP)
+	err := mysql.QueryRowScan(row, &ipmiUser.ID, &encryptedPassword)
+	if err != nil {
+		logger.Logger.Println("getIPMIUser(): " + err.Error())
+		return nil, err
+	}
+
+	ipmiUser.Password = passwordEncrypt.DecryptPassword(encryptedPassword)
+
+	return &ipmiUser, nil
+}
 
 // GetSerialNo : Get serial number from IPMI node
 func GetSerialNo(bmcIP string) (string, error) {
@@ -22,7 +46,13 @@ func GetSerialNo(bmcIP string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	req.SetBasicAuth(config.Ipmi.Username, config.Ipmi.Password)
+
+	ipmiUser, err := getIPMIUser(bmcIP)
+	if err != nil {
+		logger.Logger.Println("GetSerialNo(): " + err.Error())
+		return "", err
+	}
+	req.SetBasicAuth(ipmiUser.ID, ipmiUser.Password)
 
 	for i := 0; i < int(config.Ipmi.RequestRetry); i++ {
 		resp, err := client.Do(req)
@@ -70,7 +100,13 @@ func GetUUID(bmcIP string, serialNo string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	req.SetBasicAuth(config.Ipmi.Username, config.Ipmi.Password)
+
+	ipmiUser, err := getIPMIUser(bmcIP)
+	if err != nil {
+		logger.Logger.Println("GetUUID(): " + err.Error())
+		return "", err
+	}
+	req.SetBasicAuth(ipmiUser.ID, ipmiUser.Password)
 
 	for i := 0; i < int(config.Ipmi.RequestRetry); i++ {
 		resp, err := client.Do(req)
@@ -119,7 +155,13 @@ func GetPowerState(bmcIP string, serialNo string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	req.SetBasicAuth(config.Ipmi.Username, config.Ipmi.Password)
+
+	ipmiUser, err := getIPMIUser(bmcIP)
+	if err != nil {
+		logger.Logger.Println("GetPowerState(): " + err.Error())
+		return "", err
+	}
+	req.SetBasicAuth(ipmiUser.ID, ipmiUser.Password)
 
 	for i := 0; i < int(config.Ipmi.RequestRetry); i++ {
 		resp, err := client.Do(req)
@@ -169,7 +211,13 @@ func GetTotalSystemMemory(bmcIP string, serialNo string) (int, error) {
 	if err != nil {
 		return 0, err
 	}
-	req.SetBasicAuth(config.Ipmi.Username, config.Ipmi.Password)
+
+	ipmiUser, err := getIPMIUser(bmcIP)
+	if err != nil {
+		logger.Logger.Println("GetTotalSystemMemory(): " + err.Error())
+		return 0, err
+	}
+	req.SetBasicAuth(ipmiUser.ID, ipmiUser.Password)
 
 	for i := 0; i < int(config.Ipmi.RequestRetry); i++ {
 		resp, err := client.Do(req)
@@ -224,7 +272,13 @@ func ChangePowerState(bmcIP string, serialNo string, state string) (string, erro
 	if err != nil {
 		return "", err
 	}
-	req.SetBasicAuth(config.Ipmi.Username, config.Ipmi.Password)
+
+	ipmiUser, err := getIPMIUser(bmcIP)
+	if err != nil {
+		logger.Logger.Println("GetTotalSystemMemory(): " + err.Error())
+		return "", err
+	}
+	req.SetBasicAuth(ipmiUser.ID, ipmiUser.Password)
 
 	for i := 0; i < int(config.Ipmi.RequestRetry); i++ {
 		resp, err := client.Do(req)
@@ -268,7 +322,13 @@ func GetNICMac(bmcIP string, nicNO int, isBMC bool) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	req.SetBasicAuth(config.Ipmi.Username, config.Ipmi.Password)
+
+	ipmiUser, err := getIPMIUser(bmcIP)
+	if err != nil {
+		logger.Logger.Println("GetNICMac(): " + err.Error())
+		return "", err
+	}
+	req.SetBasicAuth(ipmiUser.ID, ipmiUser.Password)
 
 	for i := 0; i < int(config.Ipmi.RequestRetry); i++ {
 		resp, err := client.Do(req)
@@ -333,7 +393,13 @@ func getMemberCounts(bmcIP string, serialNo string, member string) (int, error) 
 	if err != nil {
 		return 0, err
 	}
-	req.SetBasicAuth(config.Ipmi.Username, config.Ipmi.Password)
+
+	ipmiUser, err := getIPMIUser(bmcIP)
+	if err != nil {
+		logger.Logger.Println("getMemberCounts(): " + err.Error())
+		return 0, err
+	}
+	req.SetBasicAuth(ipmiUser.ID, ipmiUser.Password)
 
 	for i := 0; i < int(config.Ipmi.RequestRetry); i++ {
 		resp, err := client.Do(req)
@@ -391,7 +457,13 @@ func GetProcessorsCores(bmcIP string, serialNo string, processors int) (int, err
 		if err != nil {
 			return 0, err
 		}
-		req.SetBasicAuth(config.Ipmi.Username, config.Ipmi.Password)
+
+		ipmiUser, err := getIPMIUser(bmcIP)
+		if err != nil {
+			logger.Logger.Println("GetProcessorsCores(): " + err.Error())
+			return 0, err
+		}
+		req.SetBasicAuth(ipmiUser.ID, ipmiUser.Password)
 
 		var j = 0
 		for ; j < int(config.Ipmi.RequestRetry); j++ {
@@ -445,7 +517,13 @@ func getCPUDetails(bmcIP string, serialNo string, ID string) (*cpu, error) {
 	if err != nil {
 		return nil, err
 	}
-	req.SetBasicAuth(config.Ipmi.Username, config.Ipmi.Password)
+
+	ipmiUser, err := getIPMIUser(bmcIP)
+	if err != nil {
+		logger.Logger.Println("getCPUDetails(): " + err.Error())
+		return nil, err
+	}
+	req.SetBasicAuth(ipmiUser.ID, ipmiUser.Password)
 
 	for i := 0; i < int(config.Ipmi.RequestRetry); i++ {
 		resp, err := client.Do(req)
@@ -528,7 +606,13 @@ func getMemoryDetails(bmcIP string, serialNo string, ID string) (*memory, error)
 	if err != nil {
 		return nil, err
 	}
-	req.SetBasicAuth(config.Ipmi.Username, config.Ipmi.Password)
+
+	ipmiUser, err := getIPMIUser(bmcIP)
+	if err != nil {
+		logger.Logger.Println("getMemoryDetails(): " + err.Error())
+		return nil, err
+	}
+	req.SetBasicAuth(ipmiUser.ID, ipmiUser.Password)
 
 	for i := 0; i < int(config.Ipmi.RequestRetry); i++ {
 		resp, err := client.Do(req)

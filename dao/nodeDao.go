@@ -251,9 +251,13 @@ func checkUpdateNodeArgs(reqNode *pb.Node) bool {
 	// gRPC use 0 value for unset. So I will use 9 value for inactive. - ish
 	activeOk := reqNode.Active != 0
 
+	ipmiUserIDOk := len(reqNode.IpmiUserID) != 0
+	ipmiUserPasswordOk := len(reqNode.IpmiUserPassword) != 0
+
 	return !nodeNameOk && !groupIDOk && !serverUUIDOk && !nodeNumOk && !nodeIPOk && !bmcMacAddrOk && !bmcIPOk && !pxeMacAdrOk &&
 		!statusOk && !cpuCoresOk && !memoryOk &&
-		!nicSpeedMbpsOk && !descriptionOk && !rackNumberOk && !activeOk
+		!nicSpeedMbpsOk && !descriptionOk && !rackNumberOk && !activeOk &&
+		!ipmiUserIDOk && !ipmiUserPasswordOk
 }
 
 // UpdateNode : Update infos of the node.
@@ -289,6 +293,9 @@ func UpdateNode(in *pb.ReqUpdateNode) (*pb.Node, uint64, string) {
 	var rackNumber int
 	var active int
 
+	var ipmiUserID string
+	var ipmiUserPassword string
+
 	nodeName = reqNode.NodeName
 	nodeNameOk := len(nodeName) != 0
 	groupID = reqNode.GroupID
@@ -321,6 +328,26 @@ func UpdateNode(in *pb.ReqUpdateNode) (*pb.Node, uint64, string) {
 	active = int(reqNode.Active)
 	// gRPC use 0 value for unset. So I will use 9 value for inactive. - ish
 	activeOk := active != 0
+
+	ipmiUserID = reqNode.IpmiUserID
+	ipmiUserIDOk := len(ipmiUserID) != 0
+	ipmiUserPassword = reqNode.IpmiUserPassword
+	ipmiUserPasswordOk := len(ipmiUserPassword) != 0
+
+	if ipmiUserIDOk || ipmiUserPasswordOk {
+		if !bmcIPOk {
+			node, errCode, errStr := daoext.ReadNode(reqNode.UUID)
+			if errCode != 0 {
+				return nil, errCode, errStr
+			}
+
+			bmcIP = node.BmcIP
+		}
+		err := daoext.UpdateIPMIUser(bmcIP, ipmiUserID, ipmiUserPassword)
+		if err != nil {
+			return nil, hcc_errors.FluteSQLOperationFail, err.Error()
+		}
+	}
 
 	sql := "update node set"
 	var updateSet = ""
@@ -394,25 +421,28 @@ func UpdateNode(in *pb.ReqUpdateNode) (*pb.Node, uint64, string) {
 		}
 		updateSet += " active = " + strconv.Itoa(active) + ", "
 	}
-	sql += updateSet[0:len(updateSet)-2] + " where uuid = ?"
 
-	logger.Logger.Println("update_node sql : ", sql)
+	if len(updateSet) != 0 {
+		sql += updateSet[0:len(updateSet)-2] + " where uuid = ?"
 
-	stmt, err := mysql.Prepare(sql)
-	if err != nil {
-		errStr := "UpdateNode(): " + err.Error()
-		logger.Logger.Println(errStr)
-		return nil, hcc_errors.FluteSQLOperationFail, errStr
-	}
-	defer func() {
-		_ = stmt.Close()
-	}()
+		logger.Logger.Println("update_node sql : ", sql)
 
-	_, err2 := stmt.Exec(requestedUUID)
-	if err2 != nil {
-		errStr := "UpdateNode(): " + err2.Error()
-		logger.Logger.Println(errStr)
-		return nil, hcc_errors.FluteSQLOperationFail, errStr
+		stmt, err := mysql.Prepare(sql)
+		if err != nil {
+			errStr := "UpdateNode(): " + err.Error()
+			logger.Logger.Println(errStr)
+			return nil, hcc_errors.FluteSQLOperationFail, errStr
+		}
+		defer func() {
+			_ = stmt.Close()
+		}()
+
+		_, err2 := stmt.Exec(requestedUUID)
+		if err2 != nil {
+			errStr := "UpdateNode(): " + err2.Error()
+			logger.Logger.Println(errStr)
+			return nil, hcc_errors.FluteSQLOperationFail, errStr
+		}
 	}
 
 	node, errCode, errStr := daoext.ReadNode(requestedUUID)
@@ -458,6 +488,11 @@ func DeleteNode(in *pb.ReqDeleteNode) (*pb.Node, uint64, string) {
 	_, errCode, errStr := DeleteNodeDetail(&pb.ReqDeleteNodeDetail{NodeUUID: requestedUUID})
 	if errCode != 0 {
 		logger.Logger.Println("DeleteNode(): " + errStr)
+	}
+
+	err = daoext.DeleteIPMIUser(node.BmcIP)
+	if err != nil {
+		logger.Logger.Println("DeleteNode(): " + err.Error())
 	}
 
 	return node, 0, ""
