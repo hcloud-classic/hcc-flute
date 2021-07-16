@@ -12,6 +12,7 @@ before_script:
     - export Branch_Name="$CI_COMMIT_REF_NAME"
     - export Serivce_Name="flute"
     - export Build_Path="/home/gitlab-runner/tmp_build"
+    - go mod vendor
 
 copy_dir:
     stage: init
