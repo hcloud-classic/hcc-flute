@@ -38,7 +38,7 @@ func ReadNode(uuid string) (*pb.Node, uint64, string) {
 	var active int
 
 	var ipmiUserID string
-	var ipmiUserPassword string
+	var ipmiUserPasswordEncryptedBytes []byte
 
 	sql := "select " + nodeSelectColumns + " from node where uuid = ? and available = 1"
 	row := mysql.Db.QueryRow(sql, uuid)
@@ -78,7 +78,7 @@ func ReadNode(uuid string) (*pb.Node, uint64, string) {
 
 	sql = "select id, password from ipmi_user where bmc_ip = ?"
 	row = mysql.Db.QueryRow(sql, bmcIP)
-	err = mysql.QueryRowScan(row, &ipmiUserID, &ipmiUserPassword)
+	err = mysql.QueryRowScan(row, &ipmiUserID, &ipmiUserPasswordEncryptedBytes)
 	if err != nil {
 		errStr := "ReadNode(): Failed to get IPMI user info (" + err.Error() + ")"
 		return nil, hcc_errors.FluteSQLOperationFail, errStr
@@ -104,7 +104,7 @@ func ReadNode(uuid string) (*pb.Node, uint64, string) {
 	node.CreatedAt = timestamppb.New(createdAt)
 
 	node.IpmiUserID = ipmiUserID
-	node.IpmiUserPassword = ipmiUserPassword
+	node.IpmiUserPasswordEncryptedBytes = ipmiUserPasswordEncryptedBytes
 
 	return &node, 0, ""
 }
@@ -134,7 +134,7 @@ func ReadNodeList(in *pb.ReqGetNodeList) (*pb.ResGetNodeList, uint64, string) {
 	var active int
 
 	var ipmiUserID string
-	var ipmiUserPassword string
+	var ipmiUserPasswordEncryptedBytes []byte
 
 	var isLimit bool
 	row := in.GetRow()
@@ -294,33 +294,33 @@ func ReadNodeList(in *pb.ReqGetNodeList) (*pb.ResGetNodeList, uint64, string) {
 
 		sql = "select id, password from ipmi_user where bmc_ip = ?"
 		_row := mysql.Db.QueryRow(sql, bmcIP)
-		err = mysql.QueryRowScan(_row, &ipmiUserID, &ipmiUserPassword)
+		err = mysql.QueryRowScan(_row, &ipmiUserID, &ipmiUserPasswordEncryptedBytes)
 		if err != nil {
 			errStr := "ReadNode(): Failed to get IPMI user info (" + err.Error() + ")"
 			return nil, hcc_errors.FluteSQLOperationFail, errStr
 		}
 
 		nodes = append(nodes, pb.Node{
-			UUID:             uuid,
-			NodeName:         nodeName,
-			GroupID:          groupID,
-			ServerUUID:       serverUUID,
-			NodeNum:          int32(nodeNum),
-			NodeIP:           nodeIP,
-			BmcMacAddr:       bmcMacAddr,
-			BmcIP:            bmcIP,
-			BmcIPSubnetMask:  bmcIPSubnetMask,
-			PXEMacAddr:       pxeMacAdr,
-			Status:           status,
-			CPUCores:         int32(cpuCores),
-			Memory:           int32(memory),
-			NicSpeedMbps:     int32(nicSpeedMbps),
-			Description:      description,
-			RackNumber:       int32(rackNumber),
-			Active:           int32(active),
-			CreatedAt:        timestamppb.New(createdAt),
-			IpmiUserID:       ipmiUserID,
-			IpmiUserPassword: ipmiUserPassword,
+			UUID:                           uuid,
+			NodeName:                       nodeName,
+			GroupID:                        groupID,
+			ServerUUID:                     serverUUID,
+			NodeNum:                        int32(nodeNum),
+			NodeIP:                         nodeIP,
+			BmcMacAddr:                     bmcMacAddr,
+			BmcIP:                          bmcIP,
+			BmcIPSubnetMask:                bmcIPSubnetMask,
+			PXEMacAddr:                     pxeMacAdr,
+			Status:                         status,
+			CPUCores:                       int32(cpuCores),
+			Memory:                         int32(memory),
+			NicSpeedMbps:                   int32(nicSpeedMbps),
+			Description:                    description,
+			RackNumber:                     int32(rackNumber),
+			Active:                         int32(active),
+			CreatedAt:                      timestamppb.New(createdAt),
+			IpmiUserID:                     ipmiUserID,
+			IpmiUserPasswordEncryptedBytes: ipmiUserPasswordEncryptedBytes,
 		})
 	}
 
