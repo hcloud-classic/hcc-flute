@@ -133,6 +133,9 @@ func ReadNodeList(in *pb.ReqGetNodeList) (*pb.ResGetNodeList, uint64, string) {
 	var createdAt time.Time
 	var active int
 
+	var ipmiUserID string
+	var ipmiUserPassword string
+
 	var isLimit bool
 	row := in.GetRow()
 	rowOk := row != 0
@@ -289,25 +292,35 @@ func ReadNodeList(in *pb.ReqGetNodeList) (*pb.ResGetNodeList, uint64, string) {
 		bmcIP := netIP.String()
 		bmcIPSubnetMask := net.IPv4(netIPNet.Mask[0], netIPNet.Mask[1], netIPNet.Mask[2], netIPNet.Mask[3]).To4().String()
 
+		sql = "select id, password from ipmi_user where bmc_ip = ?"
+		_row := mysql.Db.QueryRow(sql, bmcIP)
+		err = mysql.QueryRowScan(_row, &ipmiUserID, &ipmiUserPassword)
+		if err != nil {
+			errStr := "ReadNode(): Failed to get IPMI user info (" + err.Error() + ")"
+			return nil, hcc_errors.FluteSQLOperationFail, errStr
+		}
+
 		nodes = append(nodes, pb.Node{
-			UUID:            uuid,
-			NodeName:        nodeName,
-			GroupID:         groupID,
-			ServerUUID:      serverUUID,
-			NodeNum:         int32(nodeNum),
-			NodeIP:          nodeIP,
-			BmcMacAddr:      bmcMacAddr,
-			BmcIP:           bmcIP,
-			BmcIPSubnetMask: bmcIPSubnetMask,
-			PXEMacAddr:      pxeMacAdr,
-			Status:          status,
-			CPUCores:        int32(cpuCores),
-			Memory:          int32(memory),
-			NicSpeedMbps:    int32(nicSpeedMbps),
-			Description:     description,
-			RackNumber:      int32(rackNumber),
-			Active:          int32(active),
-			CreatedAt:       timestamppb.New(createdAt),
+			UUID:             uuid,
+			NodeName:         nodeName,
+			GroupID:          groupID,
+			ServerUUID:       serverUUID,
+			NodeNum:          int32(nodeNum),
+			NodeIP:           nodeIP,
+			BmcMacAddr:       bmcMacAddr,
+			BmcIP:            bmcIP,
+			BmcIPSubnetMask:  bmcIPSubnetMask,
+			PXEMacAddr:       pxeMacAdr,
+			Status:           status,
+			CPUCores:         int32(cpuCores),
+			Memory:           int32(memory),
+			NicSpeedMbps:     int32(nicSpeedMbps),
+			Description:      description,
+			RackNumber:       int32(rackNumber),
+			Active:           int32(active),
+			CreatedAt:        timestamppb.New(createdAt),
+			IpmiUserID:       ipmiUserID,
+			IpmiUserPassword: ipmiUserPassword,
 		})
 	}
 
