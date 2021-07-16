@@ -2,7 +2,7 @@ package daoext
 
 import (
 	dbsql "database/sql"
-	"github.com/golang/protobuf/ptypes"
+	"google.golang.org/protobuf/types/known/timestamppb"
 	"hcc/flute/lib/logger"
 	"hcc/flute/lib/mysql"
 	"innogrid.com/hcloud-classic/hcc_errors"
@@ -90,13 +90,7 @@ func ReadNode(uuid string) (*pb.Node, uint64, string) {
 	node.Description = description
 	node.RackNumber = int32(rackNumber)
 	node.Active = int32(active)
-
-	node.CreatedAt, err = ptypes.TimestampProto(createdAt)
-	if err != nil {
-		errStr := "ReadNode(): " + err.Error()
-		logger.Logger.Println(errStr)
-		return nil, hcc_errors.FluteInternalTimeStampConversionError, errStr
-	}
+	node.CreatedAt = timestamppb.New(createdAt)
 
 	return &node, 0, ""
 }
@@ -264,13 +258,6 @@ func ReadNodeList(in *pb.ReqGetNodeList) (*pb.ResGetNodeList, uint64, string) {
 			continue
 		}
 
-		_createdAt, err := ptypes.TimestampProto(createdAt)
-		if err != nil {
-			errStr := "ReadNodeList(): " + err.Error()
-			logger.Logger.Println(errStr)
-			return nil, hcc_errors.FluteInternalTimeStampConversionError, errStr
-		}
-
 		// gRPC use 0 value for unset. So I will use -1 for unset node_num. - ish
 		if nodeNum == -1 {
 			nodeNum = 0
@@ -306,7 +293,7 @@ func ReadNodeList(in *pb.ReqGetNodeList) (*pb.ResGetNodeList, uint64, string) {
 			Description:     description,
 			RackNumber:      int32(rackNumber),
 			Active:          int32(active),
-			CreatedAt:       _createdAt,
+			CreatedAt:       timestamppb.New(createdAt),
 		})
 	}
 
