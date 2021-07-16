@@ -37,6 +37,9 @@ func ReadNode(uuid string) (*pb.Node, uint64, string) {
 	var createdAt time.Time
 	var active int
 
+	var ipmiUserID string
+	var ipmiUserPassword string
+
 	sql := "select " + nodeSelectColumns + " from node where uuid = ? and available = 1"
 	row := mysql.Db.QueryRow(sql, uuid)
 	err := mysql.QueryRowScan(row,
@@ -73,6 +76,14 @@ func ReadNode(uuid string) (*pb.Node, uint64, string) {
 	bmcIP := netIP.String()
 	bmcIPSubnetMask := net.IP(netIPNet.Mask).To4().String()
 
+	sql = "select id, password from ipmi_user where bmc_ip = ?"
+	row = mysql.Db.QueryRow(sql, bmcIP)
+	err = mysql.QueryRowScan(row, &ipmiUserID, &ipmiUserPassword)
+	if err != nil {
+		errStr := "ReadNode(): Failed to get IPMI user info (" + err.Error() + ")"
+		return nil, hcc_errors.FluteSQLOperationFail, errStr
+	}
+
 	node.UUID = uuid
 	node.NodeName = nodeName
 	node.GroupID = groupID
@@ -91,6 +102,9 @@ func ReadNode(uuid string) (*pb.Node, uint64, string) {
 	node.RackNumber = int32(rackNumber)
 	node.Active = int32(active)
 	node.CreatedAt = timestamppb.New(createdAt)
+
+	node.IpmiUserID = ipmiUserID
+	node.IpmiUserPassword = ipmiUserPassword
 
 	return &node, 0, ""
 }
