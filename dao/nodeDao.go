@@ -25,11 +25,17 @@ func CreateNode(in *pb.ReqCreateNode) (*pb.Node, uint64, string) {
 	nicSpeedMbpsOk := reqNode.NicSpeedMbps != 0
 	descriptionOk := len(reqNode.Description) != 0
 
+	ipmiUserIDOk := len(reqNode.IpmiUserID) != 0
+	ipmiUserPasswordOk := len(reqNode.IpmiUserPassword) != 0
+
 	nicDetailDataOk := len(in.NicDetailData) != 0
 
-	if !nodeNameOk || !bmcIPOk || !nicSpeedMbpsOk || !descriptionOk || !nicDetailDataOk {
+	if !nodeNameOk || !bmcIPOk || !nicSpeedMbpsOk || !descriptionOk ||
+		!ipmiUserIDOk || !ipmiUserPasswordOk ||
+		!nicDetailDataOk {
 		return nil, hcc_errors.FluteGrpcRequestError,
 			"CreateNode(): need node_name and bmc_ip, nic_speed_mbps, description, " +
+				"ipmi_user_id, ipmi_user_password, " +
 				"nic_detail_data arguments"
 	}
 
