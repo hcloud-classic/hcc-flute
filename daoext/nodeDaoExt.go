@@ -199,7 +199,11 @@ func ReadNodeList(in *pb.ReqGetNodeList) (*pb.ResGetNodeList, uint64, string) {
 			sql += " and group_id = " + strconv.Itoa(int(groupID))
 		}
 		if serverUUIDOk {
-			sql += " and server_uuid like '%" + serverUUID + "%'"
+			if serverUUID == "---" {
+				sql += " and server_uuid = ''"
+			} else {
+				sql += " and server_uuid like '%" + serverUUID + "%'"
+			}
 		}
 		if nodeNumOk {
 			sql += " and node_num = " + strconv.Itoa(nodeNum)
