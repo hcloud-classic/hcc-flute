@@ -514,8 +514,6 @@ func UpdateNodesStatus() {
 
 // UpdateServerStatus : Update status of the server
 func UpdateServerStatus() {
-	var status string
-
 	resGetServerList, err := client.RC.GetServerList(&pb.ReqGetServerList{})
 	if err != nil {
 		logger.Logger.Println("UpdateServerStatus(): err=" + err.Error())
@@ -537,31 +535,40 @@ func UpdateServerStatus() {
 			_ = stmt.Close()
 		}()
 
+		var isAllTurnedOn = true
 		var isAllTurnedOff = true
+		var status = "Unknown"
 
 		for stmt.Next() {
 			err := stmt.Scan(&status)
 			if err != nil {
 				logger.Logger.Println("UpdateServerStatus(): err=" + err.Error())
-				continue
+				break
 			}
 
-			if strings.ToLower(status) != "off" {
+			if strings.ToLower(status) == "on" {
 				isAllTurnedOff = false
-				break
+			} else if strings.ToLower(status) == "off" {
+				isAllTurnedOn = false
 			}
 		}
 
-		if isAllTurnedOff {
-			_, err := client.RC.UpdateServer(&pb.ReqUpdateServer{
-				Server: &pb.Server{
-					UUID:   server.UUID,
-					Status: "Stopped",
-				},
-			})
-			if err != nil {
-				logger.Logger.Println("UpdateServerStatus(): err=" + err.Error())
-			}
+		if isAllTurnedOn {
+			status = "Running"
+		} else if isAllTurnedOff {
+			status = "Stopped"
+		} else if !isAllTurnedOn && !isAllTurnedOff {
+			status = "Failed"
+		}
+
+		_, err = client.RC.UpdateServer(&pb.ReqUpdateServer{
+			Server: &pb.Server{
+				UUID:   server.UUID,
+				Status: status,
+			},
+		})
+		if err != nil {
+			logger.Logger.Println("UpdateServerStatus(): err=" + err.Error())
 		}
 	}
 
