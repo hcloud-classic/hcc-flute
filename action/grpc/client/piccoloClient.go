@@ -47,6 +47,25 @@ func closePiccolo() {
 	_ = piccoloConn.Close()
 }
 
+// WriteServerAlarm : Write server alarms to the database
+func (rc *RPCClient) WriteServerAlarm(serverUUID string, reason string, detail string) error {
+	ctx, cancel := context.WithTimeout(context.Background(),
+		time.Duration(config.Piccolo.RequestTimeoutMs)*time.Millisecond)
+	defer cancel()
+	_, err := rc.piccolo.WriteServerAlarm(ctx, &pb.ReqWriteServerAlarm{
+		ServerUUID: serverUUID,
+		ServerAlarm: &pb.ServerAlarm{
+			Reason: reason,
+			Detail: detail,
+		},
+	})
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 // GetGroupList : Get list of the group
 func (rc *RPCClient) GetGroupList(_ *pb.Empty) (*pb.ResGetGroupList, *hcc_errors.HccErrorStack) {
 	var errStack *hcc_errors.HccErrorStack
