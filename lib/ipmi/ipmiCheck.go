@@ -538,6 +538,8 @@ func UpdateServerStatus() {
 		var isAllTurnedOn = true
 		var isAllTurnedOff = true
 		var status = "Unknown"
+		var reason = "Server Status Changed"
+		var reasonDetail = "Unknown"
 
 		for stmt.Next() {
 			err := stmt.Scan(&status)
@@ -555,10 +557,22 @@ func UpdateServerStatus() {
 
 		if isAllTurnedOn {
 			status = "Running"
+			reasonDetail = "All of nodes are turned on."
 		} else if isAllTurnedOff {
 			status = "Stopped"
+			reasonDetail = "All of nodes are turned off."
 		} else if !isAllTurnedOn && !isAllTurnedOff {
 			status = "Failed"
+			reasonDetail = "Some of nodes are not turned on or off!\\nPlease check your nodes!"
+		}
+
+		if server.Status == status {
+			continue
+		}
+
+		err = client.RC.WriteServerAlarm(server.UUID, reason, reasonDetail)
+		if err != nil {
+			logger.Logger.Println("UpdateServerStatus(): err=" + err.Error())
 		}
 
 		_, err = client.RC.UpdateServer(&pb.ReqUpdateServer{
