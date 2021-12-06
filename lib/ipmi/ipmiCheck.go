@@ -564,7 +564,7 @@ func UpdateServerStatus() {
 			status = "Stopped"
 			reasonDetail = "All of nodes are turned off."
 		} else if !isAllTurnedOn && !isAllTurnedOff {
-			status = "Failed"
+			status = "Node Failed"
 			reasonDetail = "Some of nodes are not turned on or off!\\nPlease check your nodes!"
 		}
 
