@@ -79,7 +79,7 @@ func (s *fluteServer) GetNode(_ context.Context, in *pb.ReqGetNode) (*pb.ResGetN
 }
 
 func (s *fluteServer) GetNodeList(_ context.Context, in *pb.ReqGetNodeList) (*pb.ResGetNodeList, error) {
-	logger.Logger.Println("Request received: GetNodeList()")
+	// logger.Logger.Println("Request received: GetNodeList()")
 
 	nodeList, errCode, errStr := daoext.ReadNodeList(in)
 	if errCode != 0 {
@@ -164,7 +164,7 @@ func (s *fluteServer) CreateNodeDetail(_ context.Context, in *pb.ReqCreateNodeDe
 }
 
 func (s *fluteServer) GetNodeDetail(_ context.Context, in *pb.ReqGetNodeDetail) (*pb.ResGetNodeDetail, error) {
-	logger.Logger.Println("Request received: GetNodeDetail()")
+	// logger.Logger.Println("Request received: GetNodeDetail()")
 
 	nodeDetail, errCode, errStr := daoext.ReadNodeDetail(in.GetNodeUUID())
 	if errCode != 0 {

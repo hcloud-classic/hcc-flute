@@ -521,7 +521,9 @@ func UpdateServerStatus() {
 	}
 
 	for _, server := range resGetServerList.Server {
-		if strings.ToLower(server.Status) == "creating" {
+		if strings.ToLower(server.Status) == "creating" ||
+			strings.ToLower(server.Status) == "deleting" ||
+			strings.ToLower(server.Status) == "failed" {
 			continue
 		}
 
@@ -562,7 +564,7 @@ func UpdateServerStatus() {
 			status = "Stopped"
 			reasonDetail = "All of nodes are turned off."
 		} else if !isAllTurnedOn && !isAllTurnedOff {
-			status = "Failed"
+			status = "Node Failed"
 			reasonDetail = "Some of nodes are not turned on or off!\\nPlease check your nodes!"
 		}
 
