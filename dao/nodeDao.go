@@ -2,6 +2,7 @@ package dao
 
 import (
 	"hcc/flute/daoext"
+	"hcc/flute/lib/config"
 	"hcc/flute/lib/ipmi"
 	"hcc/flute/lib/iputil"
 	"hcc/flute/lib/logger"
@@ -11,6 +12,7 @@ import (
 	"net"
 	"strconv"
 	"sync"
+	"time"
 )
 
 // CreateNode : Add a node to database.
@@ -98,6 +100,27 @@ func CreateNode(in *pb.ReqCreateNode) (*pb.Node, uint64, string) {
 	return pbNode, 0, ""
 }
 
+func nodeOffConfirmChecker(bmcIP string, serialNo string) {
+	for i := 0; i < int(config.Ipmi.CheckNodeOffConfirmRetryCounts); i++ {
+		_, err := ipmi.ChangePowerState(bmcIP, serialNo, "GracefulShutdown")
+		if err != nil {
+			logger.Logger.Println("nodeOffConfirmChecker(): Error occurred while GracefulShutdown the node (" + bmcIP + ")")
+		} else {
+			state, _ := ipmi.GetPowerState(bmcIP, serialNo)
+			if state == "Off" {
+				break
+			}
+		}
+		time.Sleep(time.Millisecond * time.Duration(config.Ipmi.CheckNodeOffConfirmIntervalMs))
+		logger.Logger.Println("nodeOffConfirmChecker(): Retrying turn off the node for " + bmcIP)
+	}
+	logger.Logger.Println("nodeOffConfirmChecker(): Retrying count exceeds for " + bmcIP + ". Sending FORCE_OFF.")
+	_, err := ipmi.ChangePowerState(bmcIP, serialNo, "ForceOff")
+	if err != nil {
+		logger.Logger.Println("nodeOffConfirmChecker(): Error occurred while turning off the node")
+	}
+}
+
 // NodePowerControl : Change power state of nodes
 func NodePowerControl(in *pb.ReqNodePowerControl) ([]string, uint64, string) {
 	nodes := in.GetNode()
@@ -179,7 +202,12 @@ func NodePowerControl(in *pb.ReqNodePowerControl) ([]string, uint64, string) {
 				}
 			}
 
-			result, err = ipmi.ChangePowerState(bmcIP, serialNo, changeState)
+			if changeState == "GracefulShutdown" {
+				result = "[" + bmcIP + "]: " + "GracefulShutdown is requested running nodeOffConfirmChecker()"
+				go nodeOffConfirmChecker(bmcIP, serialNo)
+			} else {
+				result, err = ipmi.ChangePowerState(bmcIP, serialNo, changeState)
+			}
 			if err != nil {
 				result = "[" + bmcIP + "]: " + err.Error()
 				logger.Logger.Println("NodePowerControl(): " + result)
