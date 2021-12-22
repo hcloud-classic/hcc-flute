@@ -135,6 +135,16 @@ func parseIpmi() {
 	if err != nil {
 		logger.Logger.Panicln(err)
 	}
+
+	Ipmi.CheckNodeOffConfirmIntervalMs, err = config.IpmiConfig.Int("check_node_off_confirm_interval_ms")
+	if err != nil {
+		logger.Logger.Panicln(err)
+	}
+
+	Ipmi.CheckNodeOffConfirmRetryCounts, err = config.IpmiConfig.Int("check_node_off_confirm_retry_counts")
+	if err != nil {
+		logger.Logger.Panicln(err)
+	}
 }
 
 func parseViolin() {

@@ -14,6 +14,8 @@ type ipmi struct {
 	UpdateNodeUptimeIntervalMs      int64    `goconf:"ipmi:update_node_uptime_interval_ms"`       // UpdateNodeUptimeIntervalMs : Node uptime update interval (ms)
 	BaseboardNICNumPXE              int64    `goconf:"ipmi:baseboard_nic_num_pxe"`                // BaseboardNICNoPXE : Baseboard NIC num used for PXE boot
 	BaseboardNICNumBMC              int64    `goconf:"ipmi:baseboard_nic_num_bmc"`                // BaseboardNICNoIPMI : Baseboard NIC num used for control IPMI
+	CheckNodeOffConfirmIntervalMs   int64    `goconf:"ipmi:check_node_off_confirm_interval_ms"`   // CheckNodeOffConfirmIntervalMs : Check interval for confirm nodes that turned off (ms)
+	CheckNodeOffConfirmRetryCounts  int64    `goconf:"ipmi:check_node_off_confirm_retry_counts"`  // CheckNodeOffConfirmRetryCounts : Retry counts for confirm nodes that turned off (ms)
 }
 
 // Ipmi : ipmi config structure
