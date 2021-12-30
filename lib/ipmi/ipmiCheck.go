@@ -328,7 +328,7 @@ func DoUpdateAllNodes(bmcIPCIDR string, wait *sync.WaitGroup, isNew bool, reqNod
 func UpdateNodesAll() {
 	var bmcIPCIDR string
 
-	sql := "select bmc_ip from node where available = 1"
+	sql := "select bmc_ip from node"
 	stmt, err := mysql.Query(sql)
 	if err != nil {
 		logger.Logger.Println("UpdateNodesAll(): err=" + err.Error())
@@ -338,7 +338,7 @@ func UpdateNodesAll() {
 		_ = stmt.Close()
 	}()
 
-	resReadNodeNum, errCode, errText := daoext.ReadNodeNum(&pb.ReqGetNodeNum{})
+	resReadNodeNum, errCode, errText := daoext.ReadNodeNum(&pb.ReqGetNodeNum{}, true)
 	if errCode != 0 {
 		logger.Logger.Println("UpdateNodesAll(): err=" + errText)
 		return
@@ -473,7 +473,7 @@ func UpdateNodesStatus() {
 	var bmcIPCIDR string
 	var oldStatus string
 
-	sql := "select uuid, bmc_ip, status from node where available = 1"
+	sql := "select uuid, bmc_ip, status from node"
 	stmt, err := mysql.Query(sql)
 	if err != nil {
 		logger.Logger.Println("UpdateNodesStatus(): err=" + err.Error())
@@ -483,7 +483,7 @@ func UpdateNodesStatus() {
 		_ = stmt.Close()
 	}()
 
-	resReadNodeNum, errCode, errText := daoext.ReadNodeNum(&pb.ReqGetNodeNum{})
+	resReadNodeNum, errCode, errText := daoext.ReadNodeNum(&pb.ReqGetNodeNum{}, true)
 	if errCode != 0 {
 		logger.Logger.Println("UpdateNodesStatus(): err=" + errText)
 		return
@@ -689,7 +689,7 @@ func doUpdateNodesDetail(uuid interface{}, bmcIPCIDR string, wait *sync.WaitGrou
 func updateNodeDetail(uuid string) error {
 	var bmcIPCIDR string
 
-	sql := "select uuid, bmc_ip from node where available = 1 and uuid = '" + uuid + "'"
+	sql := "select uuid, bmc_ip from node where uuid = '" + uuid + "'"
 	stmt, err := mysql.Query(sql)
 	if err != nil {
 		logger.Logger.Println("updateNodeDetail(): uuid=" + uuid + " err=" + err.Error())

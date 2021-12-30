@@ -338,12 +338,18 @@ func ReadNodeList(in *pb.ReqGetNodeList) (*pb.ResGetNodeList, uint64, string) {
 }
 
 // ReadNodeNum : Get count of nodes from database.
-func ReadNodeNum(in *pb.ReqGetNodeNum) (*pb.ResGetNodeNum, uint64, string) {
+func ReadNodeNum(in *pb.ReqGetNodeNum, includeNotAvailable bool) (*pb.ResGetNodeNum, uint64, string) {
 	var resNodeNum pb.ResGetNodeNum
 	var nodeNr int64
 	var groupID = in.GetGroupID()
+	var sql string
 
-	sql := "select count(*) from node where available = 1"
+	if includeNotAvailable {
+		sql = "select count(*) from node"
+	} else {
+		sql = "select count(*) from node where available = 1"
+	}
+
 	if groupID != 0 {
 		sql = "select count(*) from node where available = 1 and group_id = " + strconv.Itoa(int(groupID))
 	}

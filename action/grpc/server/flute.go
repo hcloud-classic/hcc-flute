@@ -93,7 +93,7 @@ func (s *fluteServer) GetNodeList(_ context.Context, in *pb.ReqGetNodeList) (*pb
 func (s *fluteServer) GetNodeNum(_ context.Context, in *pb.ReqGetNodeNum) (*pb.ResGetNodeNum, error) {
 	logger.Logger.Println("Request received: GetNodeNum()")
 
-	nodeNum, errCode, errStr := daoext.ReadNodeNum(in)
+	nodeNum, errCode, errStr := daoext.ReadNodeNum(in, false)
 	if errCode != 0 {
 		errStack := hcc_errors.NewHccErrorStack(hcc_errors.NewHccError(errCode, errStr))
 		return &pb.ResGetNodeNum{Num: 0, HccErrorStack: errconv.HccStackToGrpc(errStack)}, nil
