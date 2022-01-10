@@ -6,6 +6,7 @@ import (
 
 // RPCClient : Struct type of gRPC clients
 type RPCClient struct {
+	horn    pb.HornClient
 	violin  pb.ViolinClient
 	piccolo pb.PiccoloClient
 }
@@ -15,7 +16,12 @@ var RC = &RPCClient{}
 
 // Init : Initialize clients of gRPC
 func Init() error {
-	err := initViolin()
+	err := initHorn()
+	if err != nil {
+		return err
+	}
+
+	err = initViolin()
 	if err != nil {
 		return err
 	}
@@ -32,4 +38,5 @@ func Init() error {
 func End() {
 	closePiccolo()
 	closeViolin()
+	closeHorn()
 }

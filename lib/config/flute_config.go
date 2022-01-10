@@ -5,9 +5,11 @@ import "github.com/Terry-Mao/goconf"
 var configLocation = "/etc/hcc/flute/flute.conf"
 
 type fluteConfig struct {
+	RsakeyConfig  *goconf.Section
 	MysqlConfig   *goconf.Section
 	GrpcConfig    *goconf.Section
 	IpmiConfig    *goconf.Section
+	HornConfig    *goconf.Section
 	ViolinConfig  *goconf.Section
 	PiccoloConfig *goconf.Section
 }
@@ -15,9 +17,11 @@ type fluteConfig struct {
 /*-----------------------------------
          Config File Example
 -------------------------------------
+[rsakey]
+private_key_file /etc/hcc/privkey.rsa
+
 [mysql]
 id root
-password qwe1212!Q
 address 192.168.110.240
 port 3306
 database flute
@@ -40,6 +44,13 @@ update_node_detail_retry_interval_ms 3000
 update_node_uptime_interval_ms 1000
 baseboard_nic_num_pxe 2
 baseboard_nic_num_bmc 3
+
+[horn]
+horn_server_address 192.168.110.240
+horn_server_port 7777
+horn_connection_timeout_ms 5000
+horn_connection_retry_count 10
+horn_request_timeout_ms 5000
 
 [violin]
 violin_server_address 192.168.110.240

@@ -44,15 +44,15 @@ func init() {
 
 	config.Init()
 
-	err = mysql.Init()
-	if err != nil {
-		hcc_errors.NewHccError(hcc_errors.FluteInternalInitFail, "mysql.Init(): "+err.Error()).Fatal()
-		_ = pid.DeleteFlutePID()
-	}
-
 	err = client.Init()
 	if err != nil {
 		hcc_errors.NewHccError(hcc_errors.FluteInternalInitFail, "client.Init(): "+err.Error()).Fatal()
+		_ = pid.DeleteFlutePID()
+	}
+
+	err = mysql.Init()
+	if err != nil {
+		hcc_errors.NewHccError(hcc_errors.FluteInternalInitFail, "mysql.Init(): "+err.Error()).Fatal()
 		_ = pid.DeleteFlutePID()
 	}
 
