@@ -29,6 +29,10 @@ func delayMillisecond(n time.Duration) {
 	time.Sleep(n * time.Millisecond)
 }
 
+func delaySecond(n time.Duration) {
+	time.Sleep(n * time.Second)
+}
+
 func checkNodeAllLock() {
 	checkNodeAllLocked = true
 }
@@ -184,33 +188,34 @@ func DoUpdateAllNodes(bmcIPCIDR string, wait *sync.WaitGroup, isNew bool, reqNod
 		logger.Logger.Println("DoUpdateAllNodes(): " + bmcIPCIDR + " UUID: " + uuid)
 	}
 
-	bmcMAC, err := GetNICMac(bmcIP, int(config.Ipmi.BaseboardNICNumBMC), true)
-	if err != nil {
-		logger.Logger.Println("DoUpdateAllNodes(): " + bmcIPCIDR + " err=" + err.Error())
-		if isNew {
-			_ = daoext.DeleteIPMIUser(bmcIP)
-		}
-		wait.Done()
-		return "", err
-	}
-
-	if config.Ipmi.Debug == "on" {
-		logger.Logger.Println("DoUpdateAllNodes(): " + bmcIPCIDR + " BMC MAC Addr: " + bmcMAC)
-	}
-
-	pxeMAC, err := GetNICMac(bmcIP, int(config.Ipmi.BaseboardNICNumPXE), false)
-	if err != nil {
-		logger.Logger.Println("DoUpdateAllNodes(): " + bmcIPCIDR + " err=" + err.Error())
-		if isNew {
-			_ = daoext.DeleteIPMIUser(bmcIP)
-		}
-		wait.Done()
-		return "", err
-	}
-
-	if config.Ipmi.Debug == "on" {
-		logger.Logger.Println("DoUpdateAllNodes(): " + bmcIPCIDR + " PXE MAC Addr: " + pxeMAC)
-	}
+	// Can't get MAC addresses in BMC FW Rev 2.86.2da97d3f
+	//bmcMAC, err := GetNICMac(bmcIP, int(config.Ipmi.BaseboardNICNumBMC), true)
+	//if err != nil {
+	//	logger.Logger.Println("DoUpdateAllNodes(): " + bmcIPCIDR + " err=" + err.Error())
+	//	if isNew {
+	//		_ = daoext.DeleteIPMIUser(bmcIP)
+	//	}
+	//	wait.Done()
+	//	return "", err
+	//}
+	//
+	//if config.Ipmi.Debug == "on" {
+	//	logger.Logger.Println("DoUpdateAllNodes(): " + bmcIPCIDR + " BMC MAC Addr: " + bmcMAC)
+	//}
+	//
+	//pxeMAC, err := GetNICMac(bmcIP, int(config.Ipmi.BaseboardNICNumPXE), false)
+	//if err != nil {
+	//	logger.Logger.Println("DoUpdateAllNodes(): " + bmcIPCIDR + " err=" + err.Error())
+	//	if isNew {
+	//		_ = daoext.DeleteIPMIUser(bmcIP)
+	//	}
+	//	wait.Done()
+	//	return "", err
+	//}
+	//
+	//if config.Ipmi.Debug == "on" {
+	//	logger.Logger.Println("DoUpdateAllNodes(): " + bmcIPCIDR + " PXE MAC Addr: " + pxeMAC)
+	//}
 
 	processors, err := getNumCPU(bmcIP, serialNo)
 	if err != nil {
@@ -254,20 +259,26 @@ func DoUpdateAllNodes(bmcIPCIDR string, wait *sync.WaitGroup, isNew bool, reqNod
 		logger.Logger.Println("DoUpdateAllNodes(): " + bmcIPCIDR + " Memory: " + strconv.Itoa(memory))
 	}
 
+	// Can't get MAC addresses in BMC FW Rev 2.86.2da97d3f
 	node := pb.Node{
-		UUID:       uuid,
-		BmcMacAddr: bmcMAC,
-		BmcIP:      bmcIPCIDR,
-		PXEMacAddr: pxeMAC,
+		UUID: uuid,
+		//BmcMacAddr: bmcMAC,
+		BmcIP: bmcIPCIDR,
+		//PXEMacAddr: pxeMAC,
 		CPUCores:   int32(cpuCores),
 		Memory:     int32(memory),
 		RackNumber: int32(rackNumber),
 	}
 
 	if isNew {
-		sql := "insert into node(uuid, node_name, server_uuid, bmc_mac_addr, bmc_ip, pxe_mac_addr, status, cpu_cores, memory, " +
+		// Can't get MAC addresses in BMC FW Rev 2.86.2da97d3f
+		//sql := "insert into node(uuid, node_name, server_uuid, bmc_mac_addr, bmc_ip, pxe_mac_addr, status, cpu_cores, memory, " +
+		//	"nic_speed_mbps, description, rack_number, created_at, available) " +
+		//	"values (?, ?, '', ?, ?, ?, '', ?, ?, " +
+		//	"?, ?, ?, now(), 1)"
+		sql := "insert into node(uuid, node_name, server_uuid, bmc_ip, status, cpu_cores, memory, " +
 			"nic_speed_mbps, description, rack_number, created_at, available) " +
-			"values (?, ?, '', ?, ?, ?, '', ?, ?, " +
+			"values (?, ?, '', ?, '', ?, ?, " +
 			"?, ?, ?, now(), 1)"
 
 		var stmt *dbsql.Stmt
@@ -281,7 +292,10 @@ func DoUpdateAllNodes(bmcIPCIDR string, wait *sync.WaitGroup, isNew bool, reqNod
 		defer func() {
 			_ = stmt.Close()
 		}()
-		_, err = stmt.Exec(node.UUID, reqNode.NodeName, node.BmcMacAddr, node.BmcIP, node.PXEMacAddr, node.CPUCores, node.Memory,
+		// Can't get MAC addresses in BMC FW Rev 2.86.2da97d3f
+		//_, err = stmt.Exec(node.UUID, reqNode.NodeName, node.BmcMacAddr, node.BmcIP, node.PXEMacAddr, node.CPUCores, node.Memory,
+		//	reqNode.NicSpeedMbps, reqNode.GetDescription(), node.RackNumber)
+		_, err = stmt.Exec(node.UUID, reqNode.NodeName, node.BmcIP, node.CPUCores, node.Memory,
 			reqNode.NicSpeedMbps, reqNode.GetDescription(), node.RackNumber)
 		if err != nil {
 			logger.Logger.Println("DoUpdateAllNodes(): " + bmcIPCIDR + " err=" + err.Error())
@@ -293,8 +307,9 @@ func DoUpdateAllNodes(bmcIPCIDR string, wait *sync.WaitGroup, isNew bool, reqNod
 		wait.Done()
 		return uuid, nil
 	}
-
-	sql := "update node set uuid = ?, bmc_mac_addr = ?, pxe_mac_addr = ?, cpu_cores = ?, memory = ?, rack_number = ? where bmc_ip = ?"
+	// Can't get MAC addresses in BMC FW Rev 2.86.2da97d3f
+	//sql := "update node set uuid = ?, bmc_mac_addr = ?, pxe_mac_addr = ?, cpu_cores = ?, memory = ?, rack_number = ? where bmc_ip = ?"
+	sql := "update node set uuid = ?, cpu_cores = ?, memory = ?, rack_number = ? where bmc_ip = ?"
 	stmt, err := mysql.Prepare(sql)
 	if err != nil {
 		logger.Logger.Println("DoUpdateAllNodes(): " + bmcIPCIDR + " err=" + err.Error())
@@ -302,7 +317,9 @@ func DoUpdateAllNodes(bmcIPCIDR string, wait *sync.WaitGroup, isNew bool, reqNod
 		return "", err
 	}
 
-	result, err2 := stmt.Exec(node.UUID, node.BmcMacAddr, node.PXEMacAddr, node.CPUCores, node.Memory, node.RackNumber, node.BmcIP)
+	// Can't get MAC addresses in BMC FW Rev 2.86.2da97d3f
+	//result, err2 := stmt.Exec(node.UUID, node.BmcMacAddr, node.PXEMacAddr, node.CPUCores, node.Memory, node.RackNumber, node.BmcIP)
+	result, err2 := stmt.Exec(node.UUID, node.CPUCores, node.Memory, node.RackNumber, node.BmcIP)
 	if err2 != nil {
 		logger.Logger.Println("DoUpdateAllNodes(): " + bmcIPCIDR + " err=" + err2.Error())
 		_ = stmt.Close()
@@ -512,6 +529,28 @@ func UpdateNodesStatus() {
 	}
 }
 
+var serverBootTime = make(map[string]int)
+
+func checkTCPConnectivity(ip string, port int64) bool {
+	conn, err := net.DialTimeout("tcp", net.JoinHostPort(ip,
+		strconv.FormatInt(port, 10)),
+		time.Duration(5)*time.Second)
+	defer func() {
+		if conn != nil {
+			_ = conn.Close()
+		}
+	}()
+
+	if err != nil {
+		return false
+	}
+	if conn == nil {
+		return false
+	}
+
+	return true
+}
+
 // UpdateServerStatus : Update status of the server
 func UpdateServerStatus() {
 	resGetServerList, err := client.RC.GetServerList(&pb.ReqGetServerList{})
@@ -539,36 +578,124 @@ func UpdateServerStatus() {
 
 		var isAllTurnedOn = true
 		var isAllTurnedOff = true
-		var status = "Unknown"
+		var newStatus = "Unknown"
+		var previousStatus = strings.ToLower(server.Status)
 		var reason = "Server Status Changed"
 		var reasonDetail = "Unknown"
 
 		for stmt.Next() {
-			err := stmt.Scan(&status)
+			var nodeStatus string
+
+			err := stmt.Scan(&nodeStatus)
 			if err != nil {
 				logger.Logger.Println("UpdateServerStatus(): err=" + err.Error())
 				break
 			}
 
-			if strings.ToLower(status) == "on" {
+			if strings.ToLower(nodeStatus) == "on" {
 				isAllTurnedOff = false
-			} else if strings.ToLower(status) == "off" {
+			} else if strings.ToLower(nodeStatus) == "off" {
 				isAllTurnedOn = false
 			}
 		}
 
-		if isAllTurnedOn {
-			status = "Running"
+		if isAllTurnedOn && previousStatus == "stopped" {
+			newStatus = "Booting"
 			reasonDetail = "All of nodes are turned on."
 		} else if isAllTurnedOff {
-			status = "Stopped"
+			newStatus = "Stopped"
 			reasonDetail = "All of nodes are turned off."
-		} else if !isAllTurnedOn && !isAllTurnedOff {
-			status = "Node Failed"
-			reasonDetail = "Some of nodes are not turned on or off!\\nPlease check your nodes!"
+		} else if previousStatus == "running" || previousStatus == "vnc failed" {
+			if isAllTurnedOn {
+				subnet, err := client.RC.GetSubnetByServer(server.UUID)
+				if err != nil {
+					logger.Logger.Println("UpdateServerStatus(): serverUUID=" + server.UUID + ", err=" + err.Error())
+					continue
+				}
+
+				node, errCode, errText := daoext.ReadNode(subnet.Subnet.LeaderNodeUUID)
+				if errCode != 0 {
+					logger.Logger.Println("UpdateServerStatus(): serverUUID=" + server.UUID + ", err=" + errText)
+					continue
+				}
+				if checkTCPConnectivity(node.NodeIP, config.Ipmi.ServerStatusCheckSSHPort) {
+					if previousStatus == "running" {
+						delaySecond(5)
+						if !checkTCPConnectivity(node.NodeIP, config.Ipmi.ServerStatusCheckSSHPort) {
+							continue
+						}
+					}
+
+					if !checkTCPConnectivity(node.NodeIP, config.Ipmi.ServerStatusCheckVNCPort) {
+						newStatus = "VNC Failed"
+						reasonDetail = "VNC service is not responding."
+					} else {
+						if previousStatus == "running" {
+							continue
+						}
+						newStatus = "Running"
+						reasonDetail = "VNC service is now working."
+					}
+				} else {
+					newStatus = "Stopped+"
+					reasonDetail = "Server is not responding or maybe in turning off state."
+				}
+			} else if !isAllTurnedOn && !isAllTurnedOff {
+				newStatus = "Node Failed"
+				reasonDetail = "Some of nodes are not turned off!\\nPlease check your nodes!"
+			}
+		} else if previousStatus == "booting" {
+			_, exist := serverBootTime[server.UUID]
+			if !exist {
+				serverBootTime[server.UUID] = 0
+			}
+			serverBootTime[server.UUID]++
+
+			if !isAllTurnedOn && serverBootTime[server.UUID] > int(config.Ipmi.ServerStatusCheckPowerOnTimeOutSec) {
+				newStatus = "Node Failed"
+				reasonDetail = "Some of nodes are not turned off or on!\\nPlease check your nodes!"
+			} else if serverBootTime[server.UUID] > int(config.Ipmi.ServerStatusCheckBootingTimeoutSec) {
+				newStatus = "Failed"
+				reasonDetail = "Booting timeout exceeded!\\nPlease check your server!"
+			} else if isAllTurnedOn {
+				subnet, err := client.RC.GetSubnetByServer(server.UUID)
+				if err != nil {
+					logger.Logger.Println("UpdateServerStatus(): serverUUID=" + server.UUID + ", err=" + err.Error())
+					continue
+				}
+
+				node, errCode, errText := daoext.ReadNode(subnet.Subnet.LeaderNodeUUID)
+				if errCode != 0 {
+					logger.Logger.Println("UpdateServerStatus(): serverUUID=" + server.UUID + ", err=" + errText)
+					continue
+				}
+				if checkTCPConnectivity(node.NodeIP, config.Ipmi.ServerStatusCheckSSHPort) {
+					if serverBootTime[server.UUID] > int(config.Ipmi.ServerStatusCheckBootingTimeoutSec) {
+						newStatus = "VNC Failed"
+						reasonDetail = "Failed to running VNC server."
+					} else if checkTCPConnectivity(node.NodeIP, config.Ipmi.ServerStatusCheckVNCPort) {
+						newStatus = "Running"
+						reasonDetail = "Server is now ready to use."
+					} else {
+						continue
+					}
+				} else {
+					if serverBootTime[server.UUID] > int(config.Ipmi.ServerStatusCheckBootingTimeoutSec) {
+						newStatus = "Failed"
+						reasonDetail = "Booting timeout exceeded!\\nPlease check your server!"
+					} else {
+						continue
+					}
+				}
+			} else {
+				continue
+			}
+			delete(serverBootTime, server.UUID)
+		} else {
+			continue
 		}
 
-		if server.Status == status {
+		if previousStatus == strings.ToLower(newStatus) {
 			continue
 		}
 
@@ -580,7 +707,7 @@ func UpdateServerStatus() {
 		_, err = client.RC.UpdateServer(&pb.ReqUpdateServer{
 			Server: &pb.Server{
 				UUID:   server.UUID,
-				Status: status,
+				Status: newStatus,
 			},
 		})
 		if err != nil {
@@ -770,9 +897,9 @@ func queueCheckNodeStatus() {
 func queueCheckServerStatus() {
 	go func() {
 		if config.Ipmi.Debug == "on" {
-			logger.Logger.Println("queueCheckServerStatus(): Queued of running CheckServerStatus() after " + strconv.Itoa(int(config.Ipmi.CheckServerStatusIntervalMs)) + "ms")
+			logger.Logger.Println("queueCheckServerStatus(): Queued of running CheckServerStatus() after 1 sec")
 		}
-		delayMillisecond(time.Duration(config.Ipmi.CheckServerStatusIntervalMs))
+		delaySecond(1)
 		CheckServerStatus()
 	}()
 }
@@ -857,9 +984,9 @@ func CheckServerStatus() {
 				break
 			}
 			if config.Ipmi.Debug == "on" {
-				logger.Logger.Println("CheckServerStatus(): Rerun after " + strconv.Itoa(int(config.Ipmi.CheckServerStatusIntervalMs)) + "ms")
+				logger.Logger.Println("CheckServerStatus(): Rerun after 1 sec")
 			}
-			delayMillisecond(time.Duration(config.Ipmi.CheckServerStatusIntervalMs))
+			delaySecond(1)
 		}
 	}
 

@@ -118,11 +118,6 @@ func parseIpmi() {
 		logger.Logger.Panicln(err)
 	}
 
-	Ipmi.CheckServerStatusIntervalMs, err = config.IpmiConfig.Int("check_server_status_interval_ms")
-	if err != nil {
-		logger.Logger.Panicln(err)
-	}
-
 	Ipmi.UpdateNodeDetailRetryIntervalMs, err = config.IpmiConfig.Int("update_node_detail_retry_interval_ms")
 	if err != nil {
 		logger.Logger.Panicln(err)
@@ -149,6 +144,26 @@ func parseIpmi() {
 	}
 
 	Ipmi.CheckNodeOffConfirmRetryCounts, err = config.IpmiConfig.Int("check_node_off_confirm_retry_counts")
+	if err != nil {
+		logger.Logger.Panicln(err)
+	}
+
+	Ipmi.ServerStatusCheckPowerOnTimeOutSec, err = config.IpmiConfig.Int("server_status_check_power_on_timeout_sec")
+	if err != nil {
+		logger.Logger.Panicln(err)
+	}
+
+	Ipmi.ServerStatusCheckBootingTimeoutSec, err = config.IpmiConfig.Int("server_status_check_booting_timeout_sec")
+	if err != nil {
+		logger.Logger.Panicln(err)
+	}
+
+	Ipmi.ServerStatusCheckSSHPort, err = config.IpmiConfig.Int("server_status_check_ssh_port")
+	if err != nil {
+		logger.Logger.Panicln(err)
+	}
+
+	Ipmi.ServerStatusCheckVNCPort, err = config.IpmiConfig.Int("server_status_check_vnc_port")
 	if err != nil {
 		logger.Logger.Panicln(err)
 	}
@@ -220,6 +235,39 @@ func parseViolin() {
 	}
 }
 
+func parseHarp() {
+	config.HarpConfig = conf.Get("harp")
+	if config.HarpConfig == nil {
+		logger.Logger.Panicln("no harp section")
+	}
+
+	Harp = harp{}
+	Harp.ServerAddress, err = config.HarpConfig.String("harp_server_address")
+	if err != nil {
+		logger.Logger.Panicln(err)
+	}
+
+	Harp.ServerPort, err = config.HarpConfig.Int("harp_server_port")
+	if err != nil {
+		logger.Logger.Panicln(err)
+	}
+
+	Harp.ConnectionTimeOutMs, err = config.HarpConfig.Int("harp_connection_timeout_ms")
+	if err != nil {
+		logger.Logger.Panicln(err)
+	}
+
+	Harp.ConnectionRetryCount, err = config.HarpConfig.Int("harp_connection_retry_count")
+	if err != nil {
+		logger.Logger.Panicln(err)
+	}
+
+	Harp.RequestTimeoutMs, err = config.HarpConfig.Int("harp_request_timeout_ms")
+	if err != nil {
+		logger.Logger.Panicln(err)
+	}
+}
+
 func parsePiccolo() {
 	config.PiccoloConfig = conf.Get("piccolo")
 	if config.PiccoloConfig == nil {
@@ -265,5 +313,6 @@ func Init() {
 	parseIpmi()
 	parseHorn()
 	parseViolin()
+	parseHarp()
 	parsePiccolo()
 }

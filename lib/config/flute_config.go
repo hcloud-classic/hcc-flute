@@ -11,6 +11,7 @@ type fluteConfig struct {
 	IpmiConfig    *goconf.Section
 	HornConfig    *goconf.Section
 	ViolinConfig  *goconf.Section
+	HarpConfig    *goconf.Section
 	PiccoloConfig *goconf.Section
 }
 
