@@ -653,32 +653,34 @@ func doUpdateNodesDetail(uuid interface{}, bmcIPCIDR string, wait *sync.WaitGrou
 	row := mysql.Db.QueryRow(sql, uuid)
 	err = mysql.QueryRowScan(row, &uuid)
 	if err != nil {
-		logger.Logger.Println("doUpdateNodesDetail(): node_detail is not exist for uuid=" + uuid.(string))
+		logger.Logger.Println("doUpdateNodesDetail(): Inserting non-exist node_detail for uuid=" + uuid.(string))
+		sql = "insert into node_detail (node_detail_data, node_uuid) values (?, ?)"
 	} else {
 		sql = "update node_detail set node_detail_data = ? where node_uuid = ?"
-		stmt, err := mysql.Prepare(sql)
+	}
+
+	stmt, err := mysql.Prepare(sql)
+	if err != nil {
+		logger.Logger.Println("doUpdateNodesDetail(): " + bmcIPCIDR + " err=" + err.Error())
+		wait.Done()
+		return err
+	}
+
+	result, err2 := stmt.Exec(nodeDetail.NodeDetailData, nodeDetail.NodeUUID)
+	if err2 != nil {
+		logger.Logger.Println("doUpdateNodesDetail(): " + bmcIPCIDR + " err=" + err2.Error())
+		_ = stmt.Close()
+		wait.Done()
+		return err2
+	}
+	_ = stmt.Close()
+
+	if config.Ipmi.Debug == "on" {
+		result, err := result.LastInsertId()
 		if err != nil {
 			logger.Logger.Println("doUpdateNodesDetail(): " + bmcIPCIDR + " err=" + err.Error())
-			wait.Done()
-			return err
-		}
-
-		result, err2 := stmt.Exec(nodeDetail.NodeDetailData, nodeDetail.NodeUUID)
-		if err2 != nil {
-			logger.Logger.Println("doUpdateNodesDetail(): " + bmcIPCIDR + " err=" + err2.Error())
-			_ = stmt.Close()
-			wait.Done()
-			return err2
-		}
-		_ = stmt.Close()
-
-		if config.Ipmi.Debug == "on" {
-			result, err := result.LastInsertId()
-			if err != nil {
-				logger.Logger.Println("doUpdateNodesDetail(): " + bmcIPCIDR + " err=" + err.Error())
-			} else {
-				logger.Logger.Print("doUpdateNodesDetail(): " + bmcIPCIDR + " result=" + strconv.Itoa(int(result)))
-			}
+		} else {
+			logger.Logger.Print("doUpdateNodesDetail(): " + bmcIPCIDR + " result=" + strconv.Itoa(int(result)))
 		}
 	}
 
