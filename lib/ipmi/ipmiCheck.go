@@ -530,6 +530,7 @@ func UpdateNodesStatus() {
 }
 
 var serverBootTime = make(map[string]int)
+var serverStoppedTime = make(map[string]int)
 
 func checkTCPConnectivity(ip string, port int64) bool {
 	conn, err := net.DialTimeout("tcp", net.JoinHostPort(ip,
@@ -639,6 +640,18 @@ func UpdateServerStatus() {
 				} else {
 					newStatus = "Stopped+"
 					reasonDetail = "Server is not responding or maybe in turning off state."
+
+					_, exist := serverStoppedTime[server.UUID]
+					if !exist {
+						serverStoppedTime[server.UUID] = 0
+					}
+					serverStoppedTime[server.UUID]++
+
+					if !isAllTurnedOff && serverStoppedTime[server.UUID] > int(config.Ipmi.ServerStatusCheckNodeFailedTimeOutSec) {
+						newStatus = "Node Failed"
+						reasonDetail = "Nodes are not operating correctly!\\nPlease check your nodes!"
+						delete(serverStoppedTime, server.UUID)
+					}
 				}
 			} else if !isAllTurnedOn && !isAllTurnedOff {
 				newStatus = "Node Failed"
