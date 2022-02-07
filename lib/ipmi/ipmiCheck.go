@@ -606,7 +606,7 @@ func UpdateServerStatus() {
 		} else if isAllTurnedOff {
 			newStatus = "Stopped"
 			reasonDetail = "All of nodes are turned off."
-		} else if previousStatus == "running" || previousStatus == "vnc failed" {
+		} else if previousStatus == "running" || previousStatus == "vnc failed" || previousStatus == "stopped+" {
 			if isAllTurnedOn {
 				subnet, err := client.RC.GetSubnetByServer(server.UUID)
 				if err != nil {
