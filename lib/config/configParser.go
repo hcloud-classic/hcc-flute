@@ -252,16 +252,6 @@ func parseHarp() {
 		logger.Logger.Panicln(err)
 	}
 
-	Harp.ConnectionTimeOutMs, err = config.HarpConfig.Int("harp_connection_timeout_ms")
-	if err != nil {
-		logger.Logger.Panicln(err)
-	}
-
-	Harp.ConnectionRetryCount, err = config.HarpConfig.Int("harp_connection_retry_count")
-	if err != nil {
-		logger.Logger.Panicln(err)
-	}
-
 	Harp.RequestTimeoutMs, err = config.HarpConfig.Int("harp_request_timeout_ms")
 	if err != nil {
 		logger.Logger.Panicln(err)
