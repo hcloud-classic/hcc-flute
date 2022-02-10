@@ -44,15 +44,15 @@ func init() {
 
 	config.Init()
 
-	err = mysql.Init()
-	if err != nil {
-		hcc_errors.NewHccError(hcc_errors.FluteInternalInitFail, "mysql.Init(): "+err.Error()).Fatal()
-		_ = pid.DeleteFlutePID()
-	}
-
 	err = client.Init()
 	if err != nil {
 		hcc_errors.NewHccError(hcc_errors.FluteInternalInitFail, "client.Init(): "+err.Error()).Fatal()
+		_ = pid.DeleteFlutePID()
+	}
+
+	err = mysql.Init()
+	if err != nil {
+		hcc_errors.NewHccError(hcc_errors.FluteInternalInitFail, "mysql.Init(): "+err.Error()).Fatal()
 		_ = pid.DeleteFlutePID()
 	}
 
@@ -66,7 +66,7 @@ func init() {
 	ipmi.CheckNodeAll()
 	logger.Logger.Println("Starting ipmi.CheckNodeStatus(). Interval is " + strconv.Itoa(int(config.Ipmi.CheckNodeStatusIntervalMs)) + "ms")
 	ipmi.CheckNodeStatus()
-	logger.Logger.Println("Starting ipmi.CheckServerStatus(). Interval is " + strconv.Itoa(int(config.Ipmi.CheckServerStatusIntervalMs)) + "ms")
+	logger.Logger.Println("Starting ipmi.CheckServerStatus(). Interval is 1 sec")
 	ipmi.CheckServerStatus()
 	logger.Logger.Println("Starting ipmi.UpdateNodeUptime(). Interval is " + strconv.Itoa(int(config.Ipmi.UpdateNodeUptimeIntervalMs)) + "ms")
 	ipmi.UpdateNodeUptime(time.Now())

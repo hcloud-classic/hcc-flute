@@ -14,8 +14,14 @@ var Db *sql.DB
 // Init : Initialize mysql connection
 func Init() error {
 	var err error
+
+	password, err := getDecryptPassword()
+	if err != nil {
+		return err
+	}
+
 	Db, err = sql.Open("mysql",
-		config.Mysql.ID+":"+config.Mysql.Password+"@tcp("+
+		config.Mysql.ID+":"+password+"@tcp("+
 			config.Mysql.Address+":"+strconv.Itoa(int(config.Mysql.Port))+")/"+
 			config.Mysql.Database+"?parseTime=true")
 	if err != nil {

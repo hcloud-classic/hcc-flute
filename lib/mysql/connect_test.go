@@ -1,6 +1,7 @@
 package mysql
 
 import (
+	"hcc/flute/action/grpc/client"
 	"hcc/flute/lib/config"
 	"hcc/flute/lib/logger"
 	"innogrid.com/hcloud-classic/hcc_errors"
@@ -19,6 +20,11 @@ func Test_DB_Prepare(t *testing.T) {
 	}()
 
 	config.Init()
+
+	err = client.Init()
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	err = Init()
 	if err != nil {
